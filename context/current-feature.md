@@ -17,3 +17,5 @@
 ## History
 
 <!-- Keep thsis updated. Earliest to latest -->
+
+- Initial Next.js and Tailwind setup
