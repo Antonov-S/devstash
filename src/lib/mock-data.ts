@@ -9,9 +9,12 @@ export type MockUser = {
 export type MockItemType = {
   id: string;
   name: string;
+  slug: string;
+  label: string;
   icon: string;
   color: string;
   isSystem: boolean;
+  itemCount: number;
 };
 
 export type MockItem = {
@@ -58,51 +61,72 @@ export const mockItemTypes: MockItemType[] = [
   {
     id: "type_snippet",
     name: "snippet",
+    slug: "snippets",
+    label: "Snippets",
     icon: "Code",
     color: "#3b82f6",
-    isSystem: true
+    isSystem: true,
+    itemCount: 24
   },
   {
     id: "type_prompt",
     name: "prompt",
+    slug: "prompts",
+    label: "Prompts",
     icon: "Sparkles",
     color: "#8b5cf6",
-    isSystem: true
+    isSystem: true,
+    itemCount: 18
   },
   {
     id: "type_command",
     name: "command",
+    slug: "commands",
+    label: "Commands",
     icon: "Terminal",
     color: "#f97316",
-    isSystem: true
+    isSystem: true,
+    itemCount: 15
   },
   {
     id: "type_note",
     name: "note",
+    slug: "notes",
+    label: "Notes",
     icon: "StickyNote",
     color: "#fde047",
-    isSystem: true
+    isSystem: true,
+    itemCount: 12
   },
   {
     id: "type_file",
     name: "file",
+    slug: "files",
+    label: "Files",
     icon: "File",
     color: "#6b7280",
-    isSystem: true
+    isSystem: true,
+    itemCount: 5
   },
   {
     id: "type_image",
     name: "image",
+    slug: "images",
+    label: "Images",
     icon: "Image",
     color: "#ec4899",
-    isSystem: true
+    isSystem: true,
+    itemCount: 3
   },
   {
     id: "type_link",
     name: "link",
+    slug: "links",
+    label: "Links",
     icon: "Link",
     color: "#10b981",
-    isSystem: true
+    isSystem: true,
+    itemCount: 8
   }
 ];
 
