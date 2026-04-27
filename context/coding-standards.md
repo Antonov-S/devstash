@@ -59,7 +59,7 @@ Example v4 configuration:
 ## Naming
 
 - Components: PascalCase (`ItemCard.tsx`)
-- Files: Match component name or kebab-case
+- Files: Kebab-case
 - Functions: camelCase
 - Constants: SCREAMING_SNAKE_CASE
 - Types/Interfaces: PascalCase (no prefix)
