@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Folder, Settings, Star } from "lucide-react";
+import { ChevronDown, Folder, Settings, Star } from "lucide-react";
 
 import {
   Sidebar,
@@ -11,21 +11,27 @@ import {
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
-  SidebarMenuItem
+  SidebarMenuItem,
+  SidebarSeparator
 } from "@/components/ui/sidebar";
 import { iconMap } from "@/lib/icons";
 import { mockCollections, mockItemTypes, mockUser } from "@/lib/mock-data";
 
+const groupClass = "px-3 py-2";
+const groupLabelClass = "h-9 px-3 text-sm";
+const menuClass = "gap-1";
+const menuButtonClass = "h-10 gap-3 px-3 text-[15px]";
+
 export function DashboardSidebar() {
-  const favoriteCollections = mockCollections.filter((c) => c.isFavorite);
+  const favoriteCollections = mockCollections.filter(c => c.isFavorite);
   const recentCollections = mockCollections
-    .filter((c) => !c.isFavorite)
+    .filter(c => !c.isFavorite)
     .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
 
   const initials =
     mockUser.name
       ?.split(" ")
-      .map((part) => part[0])
+      .map(part => part[0])
       .join("")
       .slice(0, 2)
       .toUpperCase() ?? "?";
@@ -43,16 +49,25 @@ export function DashboardSidebar() {
         </Link>
       </SidebarHeader>
 
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Types</SidebarGroupLabel>
+      <SidebarContent className="gap-1">
+        <SidebarGroup className={groupClass}>
+          <SidebarGroupLabel
+            className={`${groupLabelClass} gap-2 font-normal uppercase tracking-wider text-sidebar-foreground/70`}
+          >
+            <ChevronDown
+              className="size-4 shrink-0 text-sidebar-foreground/60"
+              aria-hidden
+            />
+            <span>Types</span>
+          </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
-              {mockItemTypes.map((type) => {
+            <SidebarMenu className={menuClass}>
+              {mockItemTypes.map(type => {
                 const Icon = iconMap[type.icon];
                 return (
                   <SidebarMenuItem key={type.id}>
                     <SidebarMenuButton
+                      className={menuButtonClass}
                       render={<Link href={`/items/${type.slug}`} />}
                       tooltip={type.label}
                     >
@@ -74,20 +89,31 @@ export function DashboardSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup>
-          <SidebarGroupLabel>Collections</SidebarGroupLabel>
+        <SidebarSeparator className="my-1 group-data-[collapsible=icon]:hidden" />
+
+        <SidebarGroup className={groupClass}>
+          <SidebarGroupLabel
+            className={`${groupLabelClass} gap-2 font-normal uppercase tracking-wider text-sidebar-foreground/70`}
+          >
+            <ChevronDown
+              className="size-4 shrink-0 text-sidebar-foreground/60"
+              aria-hidden
+            />
+            <span>Collections</span>
+          </SidebarGroupLabel>
         </SidebarGroup>
 
         {favoriteCollections.length > 0 && (
-          <SidebarGroup className="pt-0">
-            <SidebarGroupLabel className="text-[10px] uppercase tracking-wider text-sidebar-foreground/50">
+          <SidebarGroup className={`${groupClass} pt-0`}>
+            <SidebarGroupLabel className="px-3 text-xs font-medium tracking-wider text-sidebar-foreground/50">
               Favorites
             </SidebarGroupLabel>
             <SidebarGroupContent>
-              <SidebarMenu>
-                {favoriteCollections.map((collection) => (
+              <SidebarMenu className={menuClass}>
+                {favoriteCollections.map(collection => (
                   <SidebarMenuItem key={collection.id}>
                     <SidebarMenuButton
+                      className={menuButtonClass}
                       render={<Link href={`/collections/${collection.id}`} />}
                       tooltip={collection.name}
                     >
@@ -103,15 +129,16 @@ export function DashboardSidebar() {
         )}
 
         {recentCollections.length > 0 && (
-          <SidebarGroup className="pt-0">
-            <SidebarGroupLabel className="text-[10px] uppercase tracking-wider text-sidebar-foreground/50">
+          <SidebarGroup className={`${groupClass} pt-0`}>
+            <SidebarGroupLabel className="px-3 text-xs font-medium tracking-wider text-sidebar-foreground/50">
               Recent
             </SidebarGroupLabel>
             <SidebarGroupContent>
-              <SidebarMenu>
-                {recentCollections.map((collection) => (
+              <SidebarMenu className={menuClass}>
+                {recentCollections.map(collection => (
                   <SidebarMenuItem key={collection.id}>
                     <SidebarMenuButton
+                      className={menuButtonClass}
                       render={<Link href={`/collections/${collection.id}`} />}
                       tooltip={collection.name}
                     >
