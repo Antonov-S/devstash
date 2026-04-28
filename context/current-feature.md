@@ -24,3 +24,4 @@
 - Dashboard UI Phase 2 — Completed
 - Dashboard UI Phase 3 — Completed
 - Prisma + Neon PostgreSQL setup — Completed
+- Database seed (demo user + system types + 5 collections / 18 items) — Completed
