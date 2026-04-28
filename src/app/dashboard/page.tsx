@@ -4,12 +4,21 @@ import { Clock, Pin } from "lucide-react";
 import { CollectionCard } from "@/components/dashboard/collection-card";
 import { ItemCard } from "@/components/dashboard/item-card";
 import { StatsCards } from "@/components/dashboard/stats-cards";
-import { mockCollections, mockItems } from "@/lib/mock-data";
+import {
+  getCollectionStatsForUser,
+  getRecentCollectionsForUser
+} from "@/lib/db/collections";
+import { getDemoUserId } from "@/lib/db/users";
+import { mockItems } from "@/lib/mock-data";
 
-export default function DashboardPage() {
-  const recentCollections = [...mockCollections].sort(
-    (a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()
-  );
+export const dynamic = "force-dynamic";
+
+export default async function DashboardPage() {
+  const userId = await getDemoUserId();
+  const [recentCollections, collectionStats] = await Promise.all([
+    getRecentCollectionsForUser(userId, 6),
+    getCollectionStatsForUser(userId)
+  ]);
 
   const pinnedItems = mockItems.filter((i) => i.isPinned);
 
@@ -25,10 +34,15 @@ export default function DashboardPage() {
     <div className="mx-auto flex max-w-6xl flex-col gap-8">
       <div>
         <h1 className="text-2xl font-semibold">Dashboard</h1>
-        <p className="text-sm text-muted-foreground">Your developer knowledge hub</p>
+        <p className="text-sm text-muted-foreground">
+          Your developer knowledge hub
+        </p>
       </div>
 
-      <StatsCards />
+      <StatsCards
+        collectionCount={collectionStats.total}
+        favoriteCollectionCount={collectionStats.favorites}
+      />
 
       <section className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
