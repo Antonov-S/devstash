@@ -8,27 +8,30 @@ import {
   getCollectionStatsForUser,
   getRecentCollectionsForUser
 } from "@/lib/db/collections";
+import {
+  getItemStatsForUser,
+  getPinnedItemsForUser,
+  getRecentItemsForUser
+} from "@/lib/db/items";
 import { getDemoUserId } from "@/lib/db/users";
-import { mockItems } from "@/lib/mock-data";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const userId = await getDemoUserId();
-  const [recentCollections, collectionStats] = await Promise.all([
+  const [
+    recentCollections,
+    collectionStats,
+    pinnedItems,
+    recentItems,
+    itemStats
+  ] = await Promise.all([
     getRecentCollectionsForUser(userId, 6),
-    getCollectionStatsForUser(userId)
+    getCollectionStatsForUser(userId),
+    getPinnedItemsForUser(userId),
+    getRecentItemsForUser(userId, 10),
+    getItemStatsForUser(userId)
   ]);
-
-  const pinnedItems = mockItems.filter((i) => i.isPinned);
-
-  const recentItems = [...mockItems]
-    .sort((a, b) => {
-      const aDate = (a.lastUsedAt ?? a.updatedAt).getTime();
-      const bDate = (b.lastUsedAt ?? b.updatedAt).getTime();
-      return bDate - aDate;
-    })
-    .slice(0, 10);
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-8">
@@ -40,6 +43,8 @@ export default async function DashboardPage() {
       </div>
 
       <StatsCards
+        itemCount={itemStats.total}
+        favoriteItemCount={itemStats.favorites}
         collectionCount={collectionStats.total}
         favoriteCollectionCount={collectionStats.favorites}
       />
@@ -61,19 +66,32 @@ export default async function DashboardPage() {
         </div>
       </section>
 
-      {pinnedItems.length > 0 && (
-        <section className="flex flex-col gap-3">
-          <h2 className="flex items-center gap-2 text-base font-semibold">
-            <Pin className="size-4" />
-            Pinned
-          </h2>
+      <section className="flex flex-col gap-3">
+        <h2 className="flex items-center gap-2 text-base font-semibold">
+          <Pin className="size-4" />
+          Pinned
+        </h2>
+        {pinnedItems.length > 0 ? (
           <div className="flex flex-col gap-2">
             {pinnedItems.map((item) => (
               <ItemCard key={item.id} item={item} />
             ))}
           </div>
-        </section>
-      )}
+        ) : (
+          <div className="flex flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-border bg-card p-8 text-center">
+            <span
+              className="flex size-8 items-center justify-center rounded-md bg-muted/50"
+              aria-hidden
+            >
+              <Pin className="size-4 text-muted-foreground" />
+            </span>
+            <p className="mt-1 text-sm font-medium">No pinned items</p>
+            <p className="text-xs text-muted-foreground">
+              Pin an item to keep it at the top of your dashboard.
+            </p>
+          </div>
+        )}
+      </section>
 
       <section className="flex flex-col gap-3">
         <h2 className="flex items-center gap-2 text-base font-semibold">

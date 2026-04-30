@@ -1,21 +1,24 @@
 import { FolderHeart, Folders, Package, Star } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
-import { mockItems } from "@/lib/mock-data";
 
 type StatsCardsProps = {
+  itemCount: number;
+  favoriteItemCount: number;
   collectionCount: number;
   favoriteCollectionCount: number;
 };
 
 export function StatsCards({
+  itemCount,
+  favoriteItemCount,
   collectionCount,
   favoriteCollectionCount
 }: StatsCardsProps) {
   const stats = [
     {
       label: "Total Items",
-      value: mockItems.length,
+      value: itemCount,
       icon: Package,
       color: "text-blue-400"
     },
@@ -27,7 +30,7 @@ export function StatsCards({
     },
     {
       label: "Favorite Items",
-      value: mockItems.filter((i) => i.isFavorite).length,
+      value: favoriteItemCount,
       icon: Star,
       color: "text-yellow-400"
     },
