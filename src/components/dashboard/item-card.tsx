@@ -1,38 +1,32 @@
 import { Pin, Star } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import type { ItemWithMeta } from "@/lib/db/items";
 import { iconMap } from "@/lib/icons";
-import {
-  type MockItem,
-  type MockItemType,
-  mockItemTypes
-} from "@/lib/mock-data";
-
-const typeById = new Map<string, MockItemType>(
-  mockItemTypes.map((type) => [type.id, type])
-);
 
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
   month: "short",
   day: "numeric"
 });
 
-export function ItemCard({ item }: { item: MockItem }) {
-  const type = typeById.get(item.itemTypeId);
-  const Icon = type ? iconMap[type.icon] : null;
+export function ItemCard({ item }: { item: ItemWithMeta }) {
+  const Icon = iconMap[item.itemType.icon] ?? null;
   const date = item.lastUsedAt ?? item.updatedAt;
 
   return (
     <div
       className="flex items-start gap-3 rounded-lg border border-border bg-card p-4 transition-colors hover:bg-card/80"
-      style={{ borderLeftWidth: "3px", borderLeftColor: type?.color ?? "var(--border)" }}
+      style={{
+        borderLeftWidth: "3px",
+        borderLeftColor: item.itemType.color
+      }}
     >
       {Icon && (
         <span
           className="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted/50"
           aria-hidden
         >
-          <Icon className="size-4" style={{ color: type?.color }} />
+          <Icon className="size-4" style={{ color: item.itemType.color }} />
         </span>
       )}
 
@@ -49,15 +43,20 @@ export function ItemCard({ item }: { item: MockItem }) {
             {item.description}
           </p>
         )}
-        {item.tags.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-1">
-            {item.tags.map((tag) => (
-              <Badge key={tag} variant="secondary" className="text-[10px]">
-                {tag}
-              </Badge>
-            ))}
-          </div>
-        )}
+        <div className="mt-2 flex flex-wrap items-center gap-1">
+          <Badge
+            variant="outline"
+            className="text-[10px] capitalize"
+            style={{ borderColor: item.itemType.color, color: item.itemType.color }}
+          >
+            {item.itemType.name}
+          </Badge>
+          {item.tags.map((tag) => (
+            <Badge key={tag} variant="secondary" className="text-[10px]">
+              {tag}
+            </Badge>
+          ))}
+        </div>
       </div>
 
       <span className="shrink-0 text-xs text-muted-foreground">
