@@ -103,3 +103,52 @@ export async function getItemStatsForUser(userId: string): Promise<ItemStats> {
   ]);
   return { total, favorites };
 }
+
+export type SystemItemTypeWithCount = ItemTypeMeta & {
+  itemCount: number;
+};
+
+const SYSTEM_TYPE_ORDER = [
+  "snippet",
+  "prompt",
+  "command",
+  "note",
+  "file",
+  "image",
+  "link"
+] as const;
+
+export async function getSystemItemTypesWithCountsForUser(
+  userId: string
+): Promise<SystemItemTypeWithCount[]> {
+  const [types, counts] = await Promise.all([
+    prisma.itemType.findMany({
+      where: { isSystem: true, userId: null },
+      select: { id: true, name: true, icon: true, color: true }
+    }),
+    prisma.item.groupBy({
+      by: ["itemTypeId"],
+      where: { userId },
+      _count: { _all: true }
+    })
+  ]);
+
+  const countByTypeId = new Map(
+    counts.map((row) => [row.itemTypeId, row._count._all])
+  );
+
+  const orderIndex = (name: string) => {
+    const i = SYSTEM_TYPE_ORDER.indexOf(name as (typeof SYSTEM_TYPE_ORDER)[number]);
+    return i === -1 ? SYSTEM_TYPE_ORDER.length : i;
+  };
+
+  return types
+    .map((type) => ({
+      id: type.id,
+      name: type.name,
+      icon: type.icon,
+      color: type.color,
+      itemCount: countByTypeId.get(type.id) ?? 0
+    }))
+    .sort((a, b) => orderIndex(a.name) - orderIndex(b.name));
+}

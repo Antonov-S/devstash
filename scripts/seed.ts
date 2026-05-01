@@ -32,6 +32,7 @@ type ItemSeed = {
 type CollectionSeed = {
   name: string;
   description: string;
+  isFavorite?: boolean;
   items: ItemSeed[];
 };
 
@@ -39,6 +40,7 @@ const collections: CollectionSeed[] = [
   {
     name: "React Patterns",
     description: "Reusable React patterns and hooks",
+    isFavorite: true,
     items: [
       {
         title: "useDebounce hook",
@@ -226,6 +228,7 @@ CMD ["node", "server.js"]
   {
     name: "Terminal Commands",
     description: "Useful shell commands for everyday development",
+    isFavorite: true,
     items: [
       {
         title: "Undo last commit (keep changes staged)",
@@ -331,21 +334,33 @@ async function seedCollectionsAndItems(prisma: PrismaClient, userId: string) {
   const typeIdByName = new Map(typeRecords.map((t) => [t.name, t.id]));
 
   for (const col of collections) {
+    const isFavorite = col.isFavorite ?? false;
     let collection = await prisma.collection.findFirst({
       where: { userId, name: col.name }
     });
     if (collection) {
-      console.log(`  · "${col.name}" already exists, skipping items`);
+      if (collection.isFavorite !== isFavorite) {
+        collection = await prisma.collection.update({
+          where: { id: collection.id },
+          data: { isFavorite }
+        });
+        console.log(
+          `  ↻ "${col.name}" — isFavorite synced to ${isFavorite}`
+        );
+      } else {
+        console.log(`  · "${col.name}" already exists, skipping items`);
+      }
       continue;
     }
     collection = await prisma.collection.create({
       data: {
         userId,
         name: col.name,
-        description: col.description
+        description: col.description,
+        isFavorite
       }
     });
-    console.log(`  ✓ collection "${col.name}"`);
+    console.log(`  ✓ collection "${col.name}"${isFavorite ? " ★" : ""}`);
 
     for (const item of col.items) {
       const itemTypeId = typeIdByName.get(item.type);
