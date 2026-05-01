@@ -1,6 +1,10 @@
 import Link from "next/link";
-import { ChevronDown, Folder, Settings, Star } from "lucide-react";
+import { ChevronDown, Settings } from "lucide-react";
 
+import {
+  SidebarCollections,
+  type SidebarCollection
+} from "@/components/dashboard/sidebar-collections";
 import {
   Sidebar,
   SidebarContent,
@@ -14,27 +18,58 @@ import {
   SidebarMenuItem,
   SidebarSeparator
 } from "@/components/ui/sidebar";
+import {
+  type CollectionWithMeta,
+  getAllCollectionsForUser
+} from "@/lib/db/collections";
+import { getSystemItemTypesWithCountsForUser } from "@/lib/db/items";
+import { getDemoUser } from "@/lib/db/users";
 import { iconMap } from "@/lib/icons";
-import { mockCollections, mockItemTypes, mockUser } from "@/lib/mock-data";
 
 const groupClass = "px-3 py-2";
 const groupLabelClass = "h-9 px-3 text-sm";
 const menuClass = "gap-1";
 const menuButtonClass = "h-10 gap-3 px-3 text-[15px]";
 
-export function DashboardSidebar() {
-  const favoriteCollections = mockCollections.filter(c => c.isFavorite);
-  const recentCollections = mockCollections
-    .filter(c => !c.isFavorite)
-    .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+function pluralize(name: string) {
+  return `${name}s`;
+}
 
-  const initials =
-    mockUser.name
-      ?.split(" ")
-      .map(part => part[0])
+function capitalize(name: string) {
+  return name.charAt(0).toUpperCase() + name.slice(1);
+}
+
+function initialsOf(name: string | null, email: string) {
+  const source = name ?? email;
+  return (
+    source
+      .split(/[\s@.]+/)
+      .filter(Boolean)
+      .map((part) => part[0])
       .join("")
       .slice(0, 2)
-      .toUpperCase() ?? "?";
+      .toUpperCase() || "?"
+  );
+}
+
+export async function DashboardSidebar() {
+  const user = await getDemoUser();
+  const [types, collections] = await Promise.all([
+    getSystemItemTypesWithCountsForUser(user.id),
+    getAllCollectionsForUser(user.id)
+  ]);
+
+  const toSidebar = (c: CollectionWithMeta): SidebarCollection => ({
+    id: c.id,
+    name: c.name,
+    isFavorite: c.isFavorite,
+    itemCount: c.itemCount,
+    dominantColor: c.dominantType?.color ?? null
+  });
+  const favoriteCollections = collections.filter((c) => c.isFavorite).map(toSidebar);
+  const recentCollections = collections.filter((c) => !c.isFavorite).map(toSidebar);
+  const initials = initialsOf(user.name, user.email);
+  const displayName = user.name ?? user.email;
 
   return (
     <Sidebar collapsible="icon">
@@ -62,14 +97,15 @@ export function DashboardSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu className={menuClass}>
-              {mockItemTypes.map(type => {
+              {types.map((type) => {
                 const Icon = iconMap[type.icon];
+                const label = capitalize(pluralize(type.name));
                 return (
                   <SidebarMenuItem key={type.id}>
                     <SidebarMenuButton
                       className={menuButtonClass}
-                      render={<Link href={`/items/${type.slug}`} />}
-                      tooltip={type.label}
+                      render={<Link href={`/items/${pluralize(type.name)}`} />}
+                      tooltip={label}
                     >
                       {Icon && (
                         <Icon
@@ -77,7 +113,7 @@ export function DashboardSidebar() {
                           style={{ color: type.color }}
                         />
                       )}
-                      <span className="flex-1 truncate">{type.label}</span>
+                      <span className="flex-1 truncate">{label}</span>
                       <span className="text-xs text-sidebar-foreground/60 group-data-[collapsible=icon]:hidden">
                         {type.itemCount}
                       </span>
@@ -91,69 +127,10 @@ export function DashboardSidebar() {
 
         <SidebarSeparator className="my-1 group-data-[collapsible=icon]:hidden" />
 
-        <SidebarGroup className={groupClass}>
-          <SidebarGroupLabel
-            className={`${groupLabelClass} gap-2 font-normal uppercase tracking-wider text-sidebar-foreground/70`}
-          >
-            <ChevronDown
-              className="size-4 shrink-0 text-sidebar-foreground/60"
-              aria-hidden
-            />
-            <span>Collections</span>
-          </SidebarGroupLabel>
-        </SidebarGroup>
-
-        {favoriteCollections.length > 0 && (
-          <SidebarGroup className={`${groupClass} pt-0`}>
-            <SidebarGroupLabel className="px-3 text-xs font-medium tracking-wider text-sidebar-foreground/50">
-              Favorites
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu className={menuClass}>
-                {favoriteCollections.map(collection => (
-                  <SidebarMenuItem key={collection.id}>
-                    <SidebarMenuButton
-                      className={menuButtonClass}
-                      render={<Link href={`/collections/${collection.id}`} />}
-                      tooltip={collection.name}
-                    >
-                      <Folder className="size-4 shrink-0" />
-                      <span className="flex-1 truncate">{collection.name}</span>
-                      <Star className="size-3.5 shrink-0 fill-yellow-400 text-yellow-400 group-data-[collapsible=icon]:hidden" />
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
-
-        {recentCollections.length > 0 && (
-          <SidebarGroup className={`${groupClass} pt-0`}>
-            <SidebarGroupLabel className="px-3 text-xs font-medium tracking-wider text-sidebar-foreground/50">
-              Recent
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu className={menuClass}>
-                {recentCollections.map(collection => (
-                  <SidebarMenuItem key={collection.id}>
-                    <SidebarMenuButton
-                      className={menuButtonClass}
-                      render={<Link href={`/collections/${collection.id}`} />}
-                      tooltip={collection.name}
-                    >
-                      <Folder className="size-4 shrink-0" />
-                      <span className="flex-1 truncate">{collection.name}</span>
-                      <span className="text-xs text-sidebar-foreground/60 group-data-[collapsible=icon]:hidden">
-                        {collection.itemCount}
-                      </span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
+        <SidebarCollections
+          favorites={favoriteCollections}
+          recents={recentCollections}
+        />
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border p-2">
@@ -161,18 +138,16 @@ export function DashboardSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton
               size="lg"
-              tooltip={mockUser.name ?? "Account"}
+              tooltip={displayName}
               className="data-[slot=sidebar-menu-button]:h-12"
             >
               <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-sidebar-accent text-sm font-medium text-sidebar-accent-foreground">
                 {initials}
               </span>
               <div className="flex min-w-0 flex-1 flex-col text-left group-data-[collapsible=icon]:hidden">
-                <span className="truncate text-sm font-medium">
-                  {mockUser.name}
-                </span>
+                <span className="truncate text-sm font-medium">{displayName}</span>
                 <span className="truncate text-xs text-sidebar-foreground/60">
-                  {mockUser.email}
+                  {user.email}
                 </span>
               </div>
               <Settings className="size-4 shrink-0 text-sidebar-foreground/60 group-data-[collapsible=icon]:hidden" />

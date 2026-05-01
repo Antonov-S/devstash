@@ -27,3 +27,4 @@
 - Database seed (demo user + system types + 5 collections / 18 items) — Completed
 - Dashboard collections wired to Neon DB + sidebar polish (uppercase TYPES/COLLECTIONS, chevrons, separator) — Completed
 - Dashboard items (pinned + recent) wired to Neon DB with empty-state for pinned — Completed
+- Sidebar wired to Neon DB (item types with counts, collections favorites/recent with dominant-type circles, View all link) + COLLECTIONS group collapse toggle — Completed

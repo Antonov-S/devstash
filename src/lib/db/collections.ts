@@ -20,14 +20,14 @@ export type CollectionWithMeta = {
   types: CollectionTypeIcon[];
 };
 
-export async function getRecentCollectionsForUser(
+async function fetchCollectionsWithMeta(
   userId: string,
-  limit = 6
+  take?: number
 ): Promise<CollectionWithMeta[]> {
   const rows = await prisma.collection.findMany({
     where: { userId },
     orderBy: { updatedAt: "desc" },
-    take: limit,
+    take,
     include: {
       items: {
         include: {
@@ -73,6 +73,19 @@ export async function getRecentCollectionsForUser(
       types
     };
   });
+}
+
+export async function getRecentCollectionsForUser(
+  userId: string,
+  limit = 6
+): Promise<CollectionWithMeta[]> {
+  return fetchCollectionsWithMeta(userId, limit);
+}
+
+export async function getAllCollectionsForUser(
+  userId: string
+): Promise<CollectionWithMeta[]> {
+  return fetchCollectionsWithMeta(userId);
 }
 
 export type CollectionStats = {
