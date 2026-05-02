@@ -5,6 +5,7 @@ import {
   SidebarCollections,
   type SidebarCollection
 } from "@/components/dashboard/sidebar-collections";
+import { Badge } from "@/components/ui/badge";
 import {
   Sidebar,
   SidebarContent,
@@ -100,6 +101,7 @@ export async function DashboardSidebar() {
               {types.map((type) => {
                 const Icon = iconMap[type.icon];
                 const label = capitalize(pluralize(type.name));
+                const isPro = type.name === "file" || type.name === "image";
                 return (
                   <SidebarMenuItem key={type.id}>
                     <SidebarMenuButton
@@ -113,7 +115,17 @@ export async function DashboardSidebar() {
                           style={{ color: type.color }}
                         />
                       )}
-                      <span className="flex-1 truncate">{label}</span>
+                      <span className="truncate">{label}</span>
+                      <span className="flex flex-1 justify-center group-data-[collapsible=icon]:hidden">
+                        {isPro && (
+                          <Badge
+                            variant="outline"
+                            className="h-4 px-1.5 text-[10px] font-semibold tracking-wide text-sidebar-foreground/60"
+                          >
+                            PRO
+                          </Badge>
+                        )}
+                      </span>
                       <span className="text-xs text-sidebar-foreground/60 group-data-[collapsible=icon]:hidden">
                         {type.itemCount}
                       </span>
