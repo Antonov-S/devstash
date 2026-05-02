@@ -1,25 +1,18 @@
-# Current Feature: Add Pro Badge to Sidebar
+# Current Feature
 
 <!-- Feature name and short description -->
 
-Add a PRO badge to the `files` and `images` item types in the sidebar to indicate they are Pro-only features.
-
 ## Status
 
-In Progress
+<!-- Not Started | In Progress | Completed -->
 
 ## Goals
 
-- Render a PRO badge next to the `files` and `images` item type entries in the sidebar
-- Use the shadcn/ui Badge component
-- Badge text is "PRO" (all uppercase)
-- Keep the badge clean and subtle so it does not compete with the type label
+<!-- Goals and requirements -->
 
 ## Notes
 
-- Source spec: `context/features/add-pro-badge-sidebar.md`
-- Only the `file` and `image` system types are Pro-gated per `context/project-overview.md`
-- shadcn Badge component may need to be added if not already present in the project
+<!-- Any extra notes -->
 
 ## History
 
@@ -35,3 +28,4 @@ In Progress
 - Dashboard collections wired to Neon DB + sidebar polish (uppercase TYPES/COLLECTIONS, chevrons, separator) — Completed
 - Dashboard items (pinned + recent) wired to Neon DB with empty-state for pinned — Completed
 - Sidebar wired to Neon DB (item types with counts, collections favorites/recent with dominant-type circles, View all link) + COLLECTIONS group collapse toggle — Completed
+- PRO badge added to `file` and `image` types in sidebar (subtle outline shadcn Badge, centered between label and count, hidden in collapsed mode) — Completed
