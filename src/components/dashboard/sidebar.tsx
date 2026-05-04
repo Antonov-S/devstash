@@ -32,8 +32,10 @@ const groupLabelClass = "h-9 px-3 text-sm";
 const menuClass = "gap-1";
 const menuButtonClass = "h-10 gap-3 px-3 text-[15px]";
 
+const IRREGULAR_PLURALS: Record<string, string | undefined> = {};
+
 function pluralize(name: string) {
-  return `${name}s`;
+  return IRREGULAR_PLURALS[name] ?? `${name}s`;
 }
 
 function capitalize(name: string) {
