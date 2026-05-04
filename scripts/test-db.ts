@@ -53,10 +53,14 @@ async function main() {
         email: true,
         isPro: true,
         emailVerified: true,
-        password: true,
         createdAt: true
       }
     });
+    const passwordHashed = demoUser
+      ? (await prisma.user.count({
+          where: { email: DEMO_EMAIL, password: { not: null } }
+        })) > 0
+      : false;
 
     if (!demoUser) {
       console.log("  ✗ demo user not found — run `npm run db:seed`");
@@ -66,7 +70,7 @@ async function main() {
       console.log(`  · email:          ${demoUser.email}`);
       console.log(`  · isPro:          ${demoUser.isPro}`);
       console.log(`  · emailVerified:  ${demoUser.emailVerified?.toISOString() ?? "—"}`);
-      console.log(`  · passwordHashed: ${demoUser.password ? "yes" : "no"}`);
+      console.log(`  · passwordHashed: ${passwordHashed ? "yes" : "no"}`);
       console.log(`  · createdAt:      ${demoUser.createdAt.toISOString()}`);
 
       console.log("Demo user collections + items…");

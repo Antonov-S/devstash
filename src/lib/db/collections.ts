@@ -28,39 +28,57 @@ async function fetchCollectionsWithMeta(
     where: { userId },
     orderBy: { updatedAt: "desc" },
     take,
-    include: {
-      items: {
-        include: {
-          item: {
-            select: {
-              itemType: {
-                select: { id: true, name: true, icon: true, color: true }
-              }
-            }
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      isFavorite: true,
+      updatedAt: true,
+      _count: { select: { items: true } }
+    }
+  });
+
+  if (rows.length === 0) return [];
+
+  const collectionIds = rows.map((row) => row.id);
+  const links = await prisma.itemCollection.findMany({
+    where: { collectionId: { in: collectionIds } },
+    select: {
+      collectionId: true,
+      item: {
+        select: {
+          itemType: {
+            select: { id: true, name: true, icon: true, color: true }
           }
         }
       }
     }
   });
 
-  return rows.map((row) => {
-    const counts = new Map<
-      string,
-      { count: number; type: CollectionTypeIcon }
-    >();
-    for (const link of row.items) {
-      const type = link.item.itemType;
-      const current = counts.get(type.id);
-      if (current) {
-        current.count += 1;
-      } else {
-        counts.set(type.id, { count: 1, type });
-      }
+  const perCollection = new Map<
+    string,
+    Map<string, { count: number; type: CollectionTypeIcon }>
+  >();
+  for (const link of links) {
+    let typeCounts = perCollection.get(link.collectionId);
+    if (!typeCounts) {
+      typeCounts = new Map();
+      perCollection.set(link.collectionId, typeCounts);
     }
+    const type = link.item.itemType;
+    const current = typeCounts.get(type.id);
+    if (current) {
+      current.count += 1;
+    } else {
+      typeCounts.set(type.id, { count: 1, type });
+    }
+  }
 
-    const sorted = [...counts.values()].sort((a, b) => b.count - a.count);
-    const dominantType = sorted[0]?.type ?? null;
-    const types = sorted.map(({ type }) => type);
+  return rows.map((row) => {
+    const typeCounts = perCollection.get(row.id);
+    const sorted = typeCounts
+      ? [...typeCounts.values()].sort((a, b) => b.count - a.count)
+      : [];
 
     return {
       id: row.id,
@@ -68,9 +86,9 @@ async function fetchCollectionsWithMeta(
       description: row.description,
       isFavorite: row.isFavorite,
       updatedAt: row.updatedAt,
-      itemCount: row.items.length,
-      dominantType,
-      types
+      itemCount: row._count.items,
+      dominantType: sorted[0]?.type ?? null,
+      types: sorted.map(({ type }) => type)
     };
   });
 }
