@@ -362,30 +362,44 @@ async function seedCollectionsAndItems(prisma: PrismaClient, userId: string) {
     });
     console.log(`  ✓ collection "${col.name}"${isFavorite ? " ★" : ""}`);
 
-    for (const item of col.items) {
+    if (col.items.length === 0) continue;
+
+    const itemsData = col.items.map((item) => {
       const itemTypeId = typeIdByName.get(item.type);
       if (!itemTypeId) {
         throw new Error(`Missing system item type "${item.type}" — seed types first`);
       }
+      return {
+        userId,
+        itemTypeId,
+        title: item.title,
+        description: item.description ?? null,
+        language: item.language ?? null,
+        contentType:
+          item.type === "link"
+            ? ("URL" as const)
+            : item.type === "file" || item.type === "image"
+              ? ("FILE" as const)
+              : ("TEXT" as const),
+        content: item.url ? null : item.content ?? null,
+        url: item.url ?? null
+      };
+    });
 
-      const created = await prisma.item.create({
-        data: {
-          userId,
-          itemTypeId,
-          title: item.title,
-          description: item.description ?? null,
-          language: item.language ?? null,
-          contentType:
-            item.type === "link" ? "URL" : item.type === "file" || item.type === "image" ? "FILE" : "TEXT",
-          content: item.url ? null : item.content ?? null,
-          url: item.url ?? null
-        }
-      });
+    const createdItems = await prisma.item.createManyAndReturn({
+      data: itemsData,
+      select: { id: true, title: true }
+    });
 
-      await prisma.itemCollection.create({
-        data: { itemId: created.id, collectionId: collection.id }
-      });
-      console.log(`    · item "${item.title}"`);
+    await prisma.itemCollection.createMany({
+      data: createdItems.map((created) => ({
+        itemId: created.id,
+        collectionId: collection.id
+      }))
+    });
+
+    for (const created of createdItems) {
+      console.log(`    · item "${created.title}"`);
     }
   }
 }
