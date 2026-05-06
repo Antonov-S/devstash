@@ -1,0 +1,76 @@
+import { NextResponse } from "next/server";
+import { hash } from "bcryptjs";
+
+import { prisma } from "@/lib/prisma";
+
+export const runtime = "nodejs";
+
+const MIN_PASSWORD_LENGTH = 8;
+const SALT_ROUNDS = 10;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export async function POST(request: Request) {
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+
+  if (!body || typeof body !== "object") {
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+  }
+
+  const { name, email, password, confirmPassword } = body as Record<
+    string,
+    unknown
+  >;
+
+  if (typeof name !== "string" || !name.trim()) {
+    return NextResponse.json({ error: "Name is required" }, { status: 400 });
+  }
+  if (typeof email !== "string" || !EMAIL_REGEX.test(email.trim())) {
+    return NextResponse.json(
+      { error: "A valid email is required" },
+      { status: 400 },
+    );
+  }
+  if (typeof password !== "string" || password.length < MIN_PASSWORD_LENGTH) {
+    return NextResponse.json(
+      { error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters` },
+      { status: 400 },
+    );
+  }
+  if (password !== confirmPassword) {
+    return NextResponse.json(
+      { error: "Passwords do not match" },
+      { status: 400 },
+    );
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+
+  const existing = await prisma.user.findUnique({
+    where: { email: normalizedEmail },
+    select: { id: true },
+  });
+  if (existing) {
+    return NextResponse.json(
+      { error: "An account with that email already exists" },
+      { status: 409 },
+    );
+  }
+
+  const passwordHash = await hash(password, SALT_ROUNDS);
+
+  const user = await prisma.user.create({
+    data: {
+      name: name.trim(),
+      email: normalizedEmail,
+      password: passwordHash,
+    },
+    select: { id: true, name: true, email: true },
+  });
+
+  return NextResponse.json({ success: true, user }, { status: 201 });
+}
