@@ -1,18 +1,16 @@
 # Current Feature
 
-<!-- Feature name and short description -->
-
 ## Status
 
-<!-- Not Started | In Progress | Completed -->
+Not Started
 
 ## Goals
 
-<!-- Goals and requirements -->
+<!-- Bullet points of what success looks like -->
 
 ## Notes
 
-<!-- Any extra notes -->
+<!-- Additional context, constraints, or details from spec -->
 
 ## History
 
@@ -30,3 +28,4 @@
 - Sidebar wired to Neon DB (item types with counts, collections favorites/recent with dominant-type circles, View all link) + COLLECTIONS group collapse toggle — Completed
 - PRO badge added to `file` and `image` types in sidebar (subtle outline shadcn Badge, centered between label and count, hidden in collapsed mode) — Completed
 - Code audit quick wins — N+1 fix in `fetchCollectionsWithMeta` (Prisma `_count` + bounded `itemCollection` findMany), deleted dead `mock-data.ts`, irregular-plurals lookup in sidebar `pluralize`, batched seed with `createManyAndReturn`, dropped password-hash select from `test-db.ts` — Completed
+- Auth Phase 1 — NextAuth v5 + GitHub OAuth with split config (edge-compatible `auth.config.ts` + full `auth.ts` with Prisma adapter), JWT session, and `src/proxy.ts` gating `/dashboard` — Completed
