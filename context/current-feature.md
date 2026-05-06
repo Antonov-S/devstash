@@ -1,30 +1,16 @@
-# Current Feature: Auth UI - Sign In, Register & Sign Out
+# Current Feature
 
 ## Status
 
-In Progress
+Not Started
 
 ## Goals
 
-- Custom `/sign-in` page with email/password fields, "Sign in with GitHub" button, link to register, and form validation/error display
-- Custom `/register` page with name, email, password, confirm password fields, validation (passwords match, email format), submit to `/api/auth/register`, redirect to sign-in on success
-- Replace NextAuth default pages with these custom UIs
-- Bottom of sidebar shows user avatar (GitHub image or initials fallback), user name, and a dropdown/up menu on click with "Sign out" link
-- Clicking the avatar/icon navigates to `/profile`
-- Reusable Avatar component handling both GitHub image and generated initials (e.g., "Brad Traversy" → "BT")
+<!-- Bullet points of what success looks like -->
 
 ## Notes
 
-- Avatar logic: if user has `image` (GitHub), use that; otherwise generate initials from name
-- Build a reusable initials/avatar component for both cases
-- Testing checklist:
-  1. `/sign-in` renders custom page
-  2. GitHub sign-in flow works
-  3. Email/password sign-in flow works
-  4. Avatar shows in sidebar (GitHub image or initials)
-  5. Clicking avatar opens dropdown
-  6. "Sign out" logs out and redirects
-  7. `/register` creates account and redirects to `/sign-in`
+<!-- Additional context, constraints, or details from spec -->
 
 ## History
 
@@ -44,3 +30,4 @@ In Progress
 - Code audit quick wins — N+1 fix in `fetchCollectionsWithMeta` (Prisma `_count` + bounded `itemCollection` findMany), deleted dead `mock-data.ts`, irregular-plurals lookup in sidebar `pluralize`, batched seed with `createManyAndReturn`, dropped password-hash select from `test-db.ts` — Completed
 - Auth Phase 1 — NextAuth v5 + GitHub OAuth with split config (edge-compatible `auth.config.ts` + full `auth.ts` with Prisma adapter), JWT session, and `src/proxy.ts` gating `/dashboard` — Completed
 - Auth Phase 2 — Credentials provider (email/password) added via split-config override in `auth.ts` with bcryptjs validation, plus `POST /api/auth/register` (Node runtime) for new-user signup — Completed
+- Auth Phase 3 — Custom `/sign-in` and `/register` pages replacing NextAuth defaults, reusable `UserAvatar` (image-or-initials), sidebar footer dropdown (Profile + Sign out), `/profile` placeholder, sonner toast on post-registration redirect, dashboard wired to authenticated session instead of demo user — Completed
