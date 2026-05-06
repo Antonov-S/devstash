@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Clock, Pin } from "lucide-react";
 
+import { auth } from "@/auth";
 import { CollectionCard } from "@/components/dashboard/collection-card";
 import { ItemCard } from "@/components/dashboard/item-card";
 import { StatsCards } from "@/components/dashboard/stats-cards";
@@ -13,12 +15,13 @@ import {
   getPinnedItemsForUser,
   getRecentItemsForUser
 } from "@/lib/db/items";
-import { getDemoUserId } from "@/lib/db/users";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const userId = await getDemoUserId();
+  const session = await auth();
+  if (!session?.user?.id) redirect("/sign-in?callbackUrl=/dashboard");
+  const userId = session.user.id;
   const [
     recentCollections,
     collectionStats,
