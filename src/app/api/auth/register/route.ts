@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { hash } from "bcryptjs";
 
 import { prisma } from "@/lib/prisma";
+import { sendVerificationEmail } from "@/lib/email";
+import { createVerificationToken } from "@/lib/verification-token";
+import { getBaseUrl } from "@/lib/base-url";
 
 export const runtime = "nodejs";
 
@@ -72,5 +75,31 @@ export async function POST(request: Request) {
     select: { id: true, name: true, email: true },
   });
 
-  return NextResponse.json({ success: true, user }, { status: 201 });
+  try {
+    const { token } = await createVerificationToken(normalizedEmail);
+    const baseUrl = await getBaseUrl();
+    const verifyUrl = `${baseUrl}/api/auth/verify?token=${encodeURIComponent(token)}`;
+    await sendVerificationEmail({
+      to: normalizedEmail,
+      name: user.name,
+      verifyUrl,
+    });
+  } catch (error) {
+    console.error("[register] failed to send verification email", error);
+    return NextResponse.json(
+      {
+        success: true,
+        user,
+        emailSent: false,
+        error:
+          "Account created, but we couldn't send the verification email. Please request a new one.",
+      },
+      { status: 201 },
+    );
+  }
+
+  return NextResponse.json(
+    { success: true, user, emailSent: true },
+    { status: 201 },
+  );
 }

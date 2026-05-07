@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { credentialsSignInAction, githubSignInAction } from "@/actions/auth";
+import { ResendVerificationButton } from "@/components/auth/resend-verification-button";
 
 function SubmitButton({ children }: { children: React.ReactNode }) {
   const { pending } = useFormStatus();
@@ -82,12 +83,15 @@ export function SignInForm({ callbackUrl }: { callbackUrl?: string }) {
         </div>
 
         {state?.error ? (
-          <p
+          <div
             role="alert"
-            className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+            className="flex flex-col gap-3 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
           >
-            {state.error}
-          </p>
+            <p>{state.error}</p>
+            {state.code === "email_not_verified" ? (
+              <ResendVerificationButton initialEmail={state.email} />
+            ) : null}
+          </div>
         ) : null}
 
         <SubmitButton>Sign in</SubmitButton>

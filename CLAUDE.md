@@ -22,3 +22,5 @@ When using any `mcp__neon__*` tool in this repo, follow these rules **without ex
 - **Read-only by default:** Even though the MCP server is configured read-only, never attempt schema changes, data mutations, or branch/endpoint management against any branch. Schema changes go through Prisma migrations (see `coding-standards.md`), not MCP.
 - **Cross-branch / cross-project work:** Only allowed when I explicitly request it in the current message (e.g. "compare dev vs production", "check the staging project"). A prior approval does not carry over to later messages.
 - **Production safety:** If I ask for something that would require production data, stop and confirm before running anything against `br-bitter-art-alhndz9m`.
+
+**IMPORTANT:** Do not add Claude to any commit messages.
