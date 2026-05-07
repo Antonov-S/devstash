@@ -83,7 +83,9 @@ export function RegisterForm() {
           return;
         }
 
-        router.push("/sign-in?registered=1");
+        const target = new URL("/verify-email", window.location.origin);
+        target.searchParams.set("email", values.email.toLowerCase());
+        router.push(`${target.pathname}${target.search}`);
       } catch {
         setErrors({ form: "Network error. Please try again." });
       }

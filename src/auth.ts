@@ -1,4 +1,4 @@
-import NextAuth from "next-auth";
+import NextAuth, { CredentialsSignin } from "next-auth";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import Credentials from "next-auth/providers/credentials";
 import { compare } from "bcryptjs";
@@ -6,10 +6,24 @@ import { compare } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import authConfig from "@/auth.config";
 
+export class EmailNotVerifiedError extends CredentialsSignin {
+  code = "email_not_verified";
+}
+
 export const { auth, handlers, signIn, signOut } = NextAuth({
   ...authConfig,
   adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },
+  events: {
+    async linkAccount({ user, account }) {
+      if (account.provider === "github" && user.id) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { emailVerified: new Date() },
+        });
+      }
+    },
+  },
   providers: authConfig.providers.map((provider) => {
     if (typeof provider === "function") return provider;
     if (provider.id !== "credentials") return provider;
@@ -35,6 +49,10 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
 
         const valid = await compare(credentials.password, user.password);
         if (!valid) return null;
+
+        if (!user.emailVerified) {
+          throw new EmailNotVerifiedError();
+        }
 
         return {
           id: user.id,
