@@ -1,22 +1,17 @@
-import Link from "next/link";
-
 export default function AuthLayout({
   children
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-10">
-      <Link
-        href="/"
-        className="mb-8 flex items-center gap-2 text-sm font-semibold"
-      >
-        <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary text-[11px] font-bold text-primary-foreground">
-          DS
-        </span>
-        DevStash
-      </Link>
-      <div className="w-full max-w-sm">{children}</div>
+    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-background px-4 py-10">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,--theme(--color-primary/12%)_0%,transparent_55%),radial-gradient(ellipse_at_bottom,--theme(--color-primary/6%)_0%,transparent_60%)]"
+      />
+      <div className="w-full max-w-md rounded-2xl border border-border/60 bg-card/60 p-6 shadow-xl shadow-black/20 backdrop-blur-sm duration-300 animate-in fade-in slide-in-from-bottom-2 sm:p-8 dark:bg-card/40">
+        {children}
+      </div>
     </div>
   );
 }
