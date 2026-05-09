@@ -1,26 +1,16 @@
-# Current Feature: Profile Page
+# Current Feature
 
 ## Status
 
-In Progress
+Not Started
 
 ## Goals
 
-- Build authenticated `/profile` page replacing the existing placeholder
-- Display user info: email, name, avatar (GitHub image or initials), account creation date
-- Display usage stats: total items, total collections, and a per-item-type breakdown (snippets, prompts, notes, commands, links, files, images)
-- Provide a "Change password" action for credentials users only (hidden for GitHub-OAuth-only accounts)
-- Provide a "Delete account" action gated by a confirmation dialog
-- Match existing codebase patterns (server-component data fetching with Prisma, shadcn/ui, server actions / API routes per coding standards)
+<!-- Bullet points of what success looks like -->
 
 ## Notes
 
-- Avatar logic mirrors existing `UserAvatar` component: GitHub OAuth image when present, otherwise initials derived from name/email
-- "Change password" visibility: show only if the user has a `password` set (i.e. not OAuth-only). Likely flow: current password + new password, validated via bcryptjs like sign-in
-- "Delete account" must use a confirmation dialog (e.g. shadcn AlertDialog) before issuing the destructive request; cascades via Prisma `onDelete: Cascade` should clean up sessions, items, collections, etc.
-- Item-type breakdown should cover all 7 system types and use efficient queries (e.g. `groupBy` on `itemTypeId` with `_count`) — avoid N+1
-- Route is protected: redirect unauthenticated users to `/sign-in` (consistent with `/dashboard` gating in `src/proxy.ts`)
-- Spec source: `context/features/profile-spec.md`
+<!-- Additional context, constraints, or details from spec -->
 
 ## History
 
@@ -45,3 +35,4 @@ In Progress
 - Email verification toggle — `EMAIL_VERIFICATION_ENABLED` env var (default on) centralized in `src/lib/email.ts`; when set to `"false"`, register auto-sets `emailVerified` and skips Resend, credentials sign-in stops throwing `EmailNotVerifiedError`, and `/api/auth/resend-verification` short-circuits to the existing leak-resistant no-op — Completed
 - Forgot password — `/forgot-password` and `/reset-password` pages with sent/invalid/expired/success states, `POST /api/auth/forgot-password` (leak-resistant, skips OAuth-only users) + `POST /api/auth/reset-password` issuing single-use 1h SHA-256-hashed tokens via `VerificationToken` with `password-reset:<email>` identifier prefix, `consumeVerificationToken` hardened to reject cross-purpose tokens, `sendPasswordResetEmail()` mirroring the verification-email template, "Forgot password?" link added to `/sign-in`, independent of `EMAIL_VERIFICATION_ENABLED` — Completed
 - Sign-in/register UI redesign — centered `max-w-md` rounded-2xl auth card with subtle border, dark elevated bg, and ambient radial-gradient backdrop; reordered sign-in flow (Email → Password w/ inline "Forgot password?" → primary CTA → "OR CONTINUE WITH" divider → GitHub → Register link); new reusable `EmailField`/`PasswordField`/`IconField` with leading Mail/Lock/User icons + Eye/EyeOff visibility toggle; `LoaderCircle` spinner inside CTAs replaces label-swap; reserved-height field error slots on register prevent layout jump; card entrance fade/slide animation — Completed
+- Profile page — moved `/dashboard` and `/profile` into a shared `(dashboard)` route group so profile renders inside the sidebar/topbar shell; rebuilt `/profile` with two cards (Account Information: avatar + name/email/member-since + Change Password / Delete Account actions; Usage Statistics: total items + collections + per-system-type breakdown grid); `getUserProfileById` helper exposes `hasPassword` without leaking the hash; `POST /api/account/change-password` bcrypt-validates current password and rejects identical reuse; `deleteAccountAction` server action cascades the user delete via Prisma and signs out to `/`; reusable base-ui `Dialog` primitive (matches existing Sheet pattern) backs the confirmation dialogs (`KeyRound` / `Trash2` triggers, type-`DELETE`-to-confirm gate) — Completed
