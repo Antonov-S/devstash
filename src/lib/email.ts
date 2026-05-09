@@ -4,6 +4,9 @@ import { Resend } from "resend";
 
 const FROM = "DevStash <onboarding@resend.dev>";
 
+export const EMAIL_VERIFICATION_ENABLED =
+  process.env.EMAIL_VERIFICATION_ENABLED !== "false";
+
 let cached: Resend | null = null;
 
 function getResend(): Resend {

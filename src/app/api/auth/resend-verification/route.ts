@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
-import { sendVerificationEmail } from "@/lib/email";
+import { EMAIL_VERIFICATION_ENABLED, sendVerificationEmail } from "@/lib/email";
 import { createVerificationToken } from "@/lib/verification-token";
 import { getBaseUrl } from "@/lib/base-url";
 
@@ -25,6 +25,12 @@ export async function POST(request: Request) {
       { error: "A valid email is required" },
       { status: 400 }
     );
+  }
+
+  // Verification disabled — respond like a successful no-op so the UI stays
+  // consistent without revealing the toggle state.
+  if (!EMAIL_VERIFICATION_ENABLED) {
+    return GENERIC_OK;
   }
 
   const normalizedEmail = email.trim().toLowerCase();
