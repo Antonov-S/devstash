@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { hash } from "bcryptjs";
 
 import { prisma } from "@/lib/prisma";
-import { sendVerificationEmail } from "@/lib/email";
+import { EMAIL_VERIFICATION_ENABLED, sendVerificationEmail } from "@/lib/email";
 import { createVerificationToken } from "@/lib/verification-token";
 import { getBaseUrl } from "@/lib/base-url";
 
@@ -71,9 +71,17 @@ export async function POST(request: Request) {
       name: name.trim(),
       email: normalizedEmail,
       password: passwordHash,
+      emailVerified: EMAIL_VERIFICATION_ENABLED ? null : new Date(),
     },
     select: { id: true, name: true, email: true },
   });
+
+  if (!EMAIL_VERIFICATION_ENABLED) {
+    return NextResponse.json(
+      { success: true, user, emailSent: false },
+      { status: 201 },
+    );
+  }
 
   try {
     const { token } = await createVerificationToken(normalizedEmail);

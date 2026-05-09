@@ -1,20 +1,29 @@
-# Current Feature
+# Current Feature: Email Verification Toggle
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+- Add an `EMAIL_VERIFICATION_ENABLED` env var (default `true`) that gates the entire email verification flow.
+- When disabled:
+  - `POST /api/auth/register` skips sending the Resend email and auto-sets `emailVerified = new Date()` on the new user (mirroring how GitHub OAuth handles it).
+  - Credentials sign-in does not throw `EmailNotVerifiedError`; unverified existing users are treated as verified and allowed in.
+  - `POST /api/auth/resend-verification` returns a no-op success (or a clear "verification disabled" response) so the UI doesn't break.
+  - `/verify-email` page still renders sensibly if hit directly (e.g. an old link), but no new tokens are issued.
+- When enabled (default): existing behavior is unchanged.
+- Document the new env var in `.env.example` with a one-line comment explaining its purpose.
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+- Motivation: no custom domain is currently linked to Resend, so only the Resend account email can actually receive verification mail. Need a fast switch to disable verification for local dev and other test accounts without removing the system.
+- Centralize the flag read in one place (e.g. `src/lib/email.ts` or a small `src/lib/auth-config.ts` helper) — `process.env.EMAIL_VERIFICATION_ENABLED !== "false"` so the default is "on" if the var is unset.
+- Do **not** delete the verification code or DB model — the flag must be flippable back on with a single env change.
+- Server-side only; no UI surface for this toggle.
+- Don't expose the flag value to the client. The UI flows (sign-in error inline resend button, /verify-email page) will simply not be reached when disabled.
 
 ## History
-
-<!-- Keep thsis updated. Earliest to latest -->
 
 - Initial Next.js and Tailwind setup
 - Mock data added for dashboard UI (`src/lib/mock-data.ts`)
