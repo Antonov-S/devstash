@@ -1,29 +1,16 @@
-# Current Feature: Update Login/Register UI
+# Current Feature
 
 ## Status
 
-In Progress
+Not Started
 
 ## Goals
 
-- Transform `/sign-in` and `/register` pages into a centered auth card layout matching `@context/screenshots/logIn-screen-dev-stash.jpg`
-- Centered card container: `max-w-md`, `rounded-xl`/`rounded-2xl`, subtle border, dark elevated background, soft shadow
-- Reorder content: Title → Subtitle → Email → Password → Primary CTA → Divider → GitHub OAuth → Register/Sign-in link
-- Apply consistent 8pt spacing system (`gap-2`, `gap-4`, `gap-6`, `gap-8`); reduce excessive whitespace
-- Strong typographic hierarchy: bold compact heading, muted subtitle, improved label readability
-- Inputs: dark background, subtle border, smooth radius, proper focus ring, consistent height
-- Place "Forgot password?" right-aligned inside the password row
-- Primary button: full-width, high-contrast light bg with dark text, medium-large height, hover transition
-- GitHub button: secondary variant, bordered dark with icon, visually less dominant than primary CTA
-- Divider: horizontal line — centered "OR CONTINUE WITH" — horizontal line
-- Mobile-first responsive, centered on all breakpoints
+<!-- Bullet points of what success looks like -->
 
 ## Notes
 
-- **UI/UX only** — do NOT touch any functionality (form validation, auth logic, GitHub OAuth, navigation links, accessibility must all be preserved)
-- Reference screenshot: `@context/screenshots/logIn-screen-dev-stash.jpg`
-- Apply consistent treatment to both sign-in and register pages
-- Spec source: `@context/features/update-UI-login-registrer.md`
+<!-- Additional context, constraints, or details from spec -->
 
 ## History
 
@@ -47,3 +34,4 @@ In Progress
 - Email verification on register — Resend SDK integration sending single-use 24h SHA-256-hashed tokens via existing `VerificationToken` model, `GET /api/auth/verify` + `POST /api/auth/resend-verification` (leak-resistant), `/verify-email` page with sent/verified/expired/invalid states, unverified credentials sign-in blocked via `EmailNotVerifiedError` with inline resend button, GitHub OAuth users auto-verified via `events.linkAccount`, plus `scripts/reset-users.ts` testing helper — Completed
 - Email verification toggle — `EMAIL_VERIFICATION_ENABLED` env var (default on) centralized in `src/lib/email.ts`; when set to `"false"`, register auto-sets `emailVerified` and skips Resend, credentials sign-in stops throwing `EmailNotVerifiedError`, and `/api/auth/resend-verification` short-circuits to the existing leak-resistant no-op — Completed
 - Forgot password — `/forgot-password` and `/reset-password` pages with sent/invalid/expired/success states, `POST /api/auth/forgot-password` (leak-resistant, skips OAuth-only users) + `POST /api/auth/reset-password` issuing single-use 1h SHA-256-hashed tokens via `VerificationToken` with `password-reset:<email>` identifier prefix, `consumeVerificationToken` hardened to reject cross-purpose tokens, `sendPasswordResetEmail()` mirroring the verification-email template, "Forgot password?" link added to `/sign-in`, independent of `EMAIL_VERIFICATION_ENABLED` — Completed
+- Sign-in/register UI redesign — centered `max-w-md` rounded-2xl auth card with subtle border, dark elevated bg, and ambient radial-gradient backdrop; reordered sign-in flow (Email → Password w/ inline "Forgot password?" → primary CTA → "OR CONTINUE WITH" divider → GitHub → Register link); new reusable `EmailField`/`PasswordField`/`IconField` with leading Mail/Lock/User icons + Eye/EyeOff visibility toggle; `LoaderCircle` spinner inside CTAs replaces label-swap; reserved-height field error slots on register prevent layout jump; card entrance fade/slide animation — Completed
