@@ -1,0 +1,1 @@
+- [DevStash Project Conventions](project_conventions.md) — Safe patterns, known stubs, architecture decisions, and false-positive traps for DevStash audits

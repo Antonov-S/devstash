@@ -9,7 +9,7 @@ import { getBaseUrl } from "@/lib/base-url";
 export const runtime = "nodejs";
 
 const MIN_PASSWORD_LENGTH = 8;
-const SALT_ROUNDS = 10;
+const SALT_ROUNDS = 12;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(request: Request) {
@@ -21,7 +21,10 @@ export async function POST(request: Request) {
   }
 
   if (!body || typeof body !== "object") {
-    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Invalid request body" },
+      { status: 400 }
+    );
   }
 
   const { name, email, password, confirmPassword } = body as Record<
@@ -35,19 +38,19 @@ export async function POST(request: Request) {
   if (typeof email !== "string" || !EMAIL_REGEX.test(email.trim())) {
     return NextResponse.json(
       { error: "A valid email is required" },
-      { status: 400 },
+      { status: 400 }
     );
   }
   if (typeof password !== "string" || password.length < MIN_PASSWORD_LENGTH) {
     return NextResponse.json(
       { error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters` },
-      { status: 400 },
+      { status: 400 }
     );
   }
   if (password !== confirmPassword) {
     return NextResponse.json(
       { error: "Passwords do not match" },
-      { status: 400 },
+      { status: 400 }
     );
   }
 
@@ -55,12 +58,12 @@ export async function POST(request: Request) {
 
   const existing = await prisma.user.findUnique({
     where: { email: normalizedEmail },
-    select: { id: true },
+    select: { id: true }
   });
   if (existing) {
     return NextResponse.json(
       { error: "An account with that email already exists" },
-      { status: 409 },
+      { status: 409 }
     );
   }
 
@@ -71,15 +74,15 @@ export async function POST(request: Request) {
       name: name.trim(),
       email: normalizedEmail,
       password: passwordHash,
-      emailVerified: EMAIL_VERIFICATION_ENABLED ? null : new Date(),
+      emailVerified: EMAIL_VERIFICATION_ENABLED ? null : new Date()
     },
-    select: { id: true, name: true, email: true },
+    select: { id: true, name: true, email: true }
   });
 
   if (!EMAIL_VERIFICATION_ENABLED) {
     return NextResponse.json(
       { success: true, user, emailSent: false },
-      { status: 201 },
+      { status: 201 }
     );
   }
 
@@ -90,7 +93,7 @@ export async function POST(request: Request) {
     await sendVerificationEmail({
       to: normalizedEmail,
       name: user.name,
-      verifyUrl,
+      verifyUrl
     });
   } catch (error) {
     console.error("[register] failed to send verification email", error);
@@ -100,14 +103,14 @@ export async function POST(request: Request) {
         user,
         emailSent: false,
         error:
-          "Account created, but we couldn't send the verification email. Please request a new one.",
+          "Account created, but we couldn't send the verification email. Please request a new one."
       },
-      { status: 201 },
+      { status: 201 }
     );
   }
 
   return NextResponse.json(
     { success: true, user, emailSent: true },
-    { status: 201 },
+    { status: 201 }
   );
 }

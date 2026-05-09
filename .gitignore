@@ -48,3 +48,7 @@ next-env.d.ts
 
 # playwright MCP test artifacts
 /.playwright-mcp/
+
+# claude code local-only files
+.claude/settings.local.json
+.claude/scheduled_tasks.lock
