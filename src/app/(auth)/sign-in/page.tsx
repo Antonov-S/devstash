@@ -28,9 +28,11 @@ export default async function SignInPage({
         <RegisteredToast />
       </Suspense>
       <div className="flex flex-col gap-2 text-center">
-        <h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
+        <h1 className="text-2xl font-bold tracking-tight sm:text-[1.625rem]">
+          Sign in to DevStash
+        </h1>
         <p className="text-sm text-muted-foreground">
-          Sign in to continue to DevStash
+          Enter your credentials or use GitHub to sign in
         </p>
       </div>
       <SignInForm callbackUrl={callback} />

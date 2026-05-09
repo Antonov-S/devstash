@@ -3,10 +3,15 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { LoaderCircle, User } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  EmailField,
+  IconField,
+  PasswordField
+} from "@/components/auth/fields";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD_LENGTH = 8;
@@ -14,6 +19,17 @@ const MIN_PASSWORD_LENGTH = 8;
 type FieldErrors = Partial<
   Record<"name" | "email" | "password" | "confirmPassword" | "form", string>
 >;
+
+function FieldError({ message }: { message?: string }) {
+  return (
+    <p
+      className="min-h-4 text-xs leading-4 text-destructive"
+      aria-live="polite"
+    >
+      {message ?? " "}
+    </p>
+  );
+}
 
 export function RegisterForm() {
   const router = useRouter();
@@ -99,9 +115,9 @@ export function RegisterForm() {
       className="flex flex-col gap-4"
       aria-busy={isPending}
     >
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-1.5">
         <Label htmlFor="name">Name</Label>
-        <Input
+        <IconField
           id="name"
           name="name"
           type="text"
@@ -109,58 +125,48 @@ export function RegisterForm() {
           required
           aria-invalid={errors.name ? true : undefined}
           placeholder="Your name"
+          icon={<User className="size-4" />}
         />
-        {errors.name ? (
-          <p className="text-xs text-destructive">{errors.name}</p>
-        ) : null}
+        <FieldError message={errors.name} />
       </div>
 
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-1.5">
         <Label htmlFor="email">Email</Label>
-        <Input
+        <EmailField
           id="email"
           name="email"
-          type="email"
           autoComplete="email"
           required
           aria-invalid={errors.email ? true : undefined}
           placeholder="you@example.com"
         />
-        {errors.email ? (
-          <p className="text-xs text-destructive">{errors.email}</p>
-        ) : null}
+        <FieldError message={errors.email} />
       </div>
 
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-1.5">
         <Label htmlFor="password">Password</Label>
-        <Input
+        <PasswordField
           id="password"
           name="password"
-          type="password"
           autoComplete="new-password"
           required
           aria-invalid={errors.password ? true : undefined}
           placeholder="At least 8 characters"
         />
-        {errors.password ? (
-          <p className="text-xs text-destructive">{errors.password}</p>
-        ) : null}
+        <FieldError message={errors.password} />
       </div>
 
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-1.5">
         <Label htmlFor="confirmPassword">Confirm password</Label>
-        <Input
+        <PasswordField
           id="confirmPassword"
           name="confirmPassword"
-          type="password"
           autoComplete="new-password"
           required
           aria-invalid={errors.confirmPassword ? true : undefined}
           placeholder="Repeat your password"
         />
-        {errors.confirmPassword ? (
-          <p className="text-xs text-destructive">{errors.confirmPassword}</p>
-        ) : null}
+        <FieldError message={errors.confirmPassword} />
       </div>
 
       {errors.form ? (
@@ -172,8 +178,16 @@ export function RegisterForm() {
         </p>
       ) : null}
 
-      <Button type="submit" size="lg" className="w-full" disabled={isPending}>
-        {isPending ? "Creating account…" : "Create account"}
+      <Button
+        type="submit"
+        size="lg"
+        className="h-11 w-full text-sm font-medium"
+        disabled={isPending}
+      >
+        {isPending ? (
+          <LoaderCircle className="size-4 animate-spin" aria-hidden />
+        ) : null}
+        Create account
       </Button>
 
       <p className="text-center text-sm text-muted-foreground">

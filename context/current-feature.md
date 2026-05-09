@@ -1,16 +1,29 @@
-# Current Feature
+# Current Feature: Update Login/Register UI
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+- Transform `/sign-in` and `/register` pages into a centered auth card layout matching `@context/screenshots/logIn-screen-dev-stash.jpg`
+- Centered card container: `max-w-md`, `rounded-xl`/`rounded-2xl`, subtle border, dark elevated background, soft shadow
+- Reorder content: Title → Subtitle → Email → Password → Primary CTA → Divider → GitHub OAuth → Register/Sign-in link
+- Apply consistent 8pt spacing system (`gap-2`, `gap-4`, `gap-6`, `gap-8`); reduce excessive whitespace
+- Strong typographic hierarchy: bold compact heading, muted subtitle, improved label readability
+- Inputs: dark background, subtle border, smooth radius, proper focus ring, consistent height
+- Place "Forgot password?" right-aligned inside the password row
+- Primary button: full-width, high-contrast light bg with dark text, medium-large height, hover transition
+- GitHub button: secondary variant, bordered dark with icon, visually less dominant than primary CTA
+- Divider: horizontal line — centered "OR CONTINUE WITH" — horizontal line
+- Mobile-first responsive, centered on all breakpoints
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+- **UI/UX only** — do NOT touch any functionality (form validation, auth logic, GitHub OAuth, navigation links, accessibility must all be preserved)
+- Reference screenshot: `@context/screenshots/logIn-screen-dev-stash.jpg`
+- Apply consistent treatment to both sign-in and register pages
+- Spec source: `@context/features/update-UI-login-registrer.md`
 
 ## History
 
