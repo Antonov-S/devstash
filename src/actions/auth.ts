@@ -1,12 +1,14 @@
 "use server";
 
 import { AuthError } from "next-auth";
+import { headers } from "next/headers";
 
 import { signIn, signOut } from "@/auth";
+import { extractIp, rateLimit, rateLimitMessage } from "@/lib/rate-limit";
 
 export type AuthActionResult = {
   error?: string;
-  code?: "email_not_verified";
+  code?: "email_not_verified" | "rate_limited";
   email?: string;
 };
 
@@ -26,6 +28,12 @@ export async function credentialsSignInAction(
   }
 
   const normalizedEmail = email.trim().toLowerCase();
+
+  const ip = extractIp(await headers());
+  const limit = await rateLimit("login", `${ip}:${normalizedEmail}`);
+  if (!limit.success) {
+    return { error: rateLimitMessage(limit), code: "rate_limited" };
+  }
 
   try {
     await signIn("credentials", {

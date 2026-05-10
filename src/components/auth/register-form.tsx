@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { LoaderCircle, User } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -93,9 +94,10 @@ export function RegisterForm() {
           const data = (await res.json().catch(() => null)) as
             | { error?: string }
             | null;
-          setErrors({
-            form: data?.error ?? "Could not create account. Please try again."
-          });
+          const message =
+            data?.error ?? "Could not create account. Please try again.";
+          if (res.status === 429) toast.error(message);
+          setErrors({ form: message });
           return;
         }
 
