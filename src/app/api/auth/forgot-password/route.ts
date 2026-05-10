@@ -4,6 +4,11 @@ import { prisma } from "@/lib/prisma";
 import { sendPasswordResetEmail } from "@/lib/email";
 import { createPasswordResetToken } from "@/lib/verification-token";
 import { getBaseUrl } from "@/lib/base-url";
+import {
+  extractIp,
+  rateLimit,
+  rateLimitJsonResponse
+} from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -12,6 +17,9 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const GENERIC_OK = NextResponse.json({ success: true }, { status: 200 });
 
 export async function POST(request: Request) {
+  const limit = await rateLimit("forgotPassword", extractIp(request.headers));
+  if (!limit.success) return rateLimitJsonResponse(limit);
+
   let body: unknown;
   try {
     body = await request.json();

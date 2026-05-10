@@ -4,6 +4,11 @@ import { prisma } from "@/lib/prisma";
 import { EMAIL_VERIFICATION_ENABLED, sendVerificationEmail } from "@/lib/email";
 import { createVerificationToken } from "@/lib/verification-token";
 import { getBaseUrl } from "@/lib/base-url";
+import {
+  extractIp,
+  rateLimit,
+  rateLimitJsonResponse
+} from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -27,13 +32,19 @@ export async function POST(request: Request) {
     );
   }
 
+  const normalizedEmail = email.trim().toLowerCase();
+
+  const limit = await rateLimit(
+    "resendVerification",
+    `${extractIp(request.headers)}:${normalizedEmail}`
+  );
+  if (!limit.success) return rateLimitJsonResponse(limit);
+
   // Verification disabled — respond like a successful no-op so the UI stays
   // consistent without revealing the toggle state.
   if (!EMAIL_VERIFICATION_ENABLED) {
     return GENERIC_OK;
   }
-
-  const normalizedEmail = email.trim().toLowerCase();
 
   const user = await prisma.user.findUnique({
     where: { email: normalizedEmail },

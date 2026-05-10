@@ -5,6 +5,11 @@ import { prisma } from "@/lib/prisma";
 import { EMAIL_VERIFICATION_ENABLED, sendVerificationEmail } from "@/lib/email";
 import { createVerificationToken } from "@/lib/verification-token";
 import { getBaseUrl } from "@/lib/base-url";
+import {
+  extractIp,
+  rateLimit,
+  rateLimitJsonResponse
+} from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -13,6 +18,9 @@ const SALT_ROUNDS = 12;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(request: Request) {
+  const limit = await rateLimit("register", extractIp(request.headers));
+  if (!limit.success) return rateLimitJsonResponse(limit);
+
   let body: unknown;
   try {
     body = await request.json();

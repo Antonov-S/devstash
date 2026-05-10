@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,10 +39,11 @@ export function ForgotPasswordForm() {
           const data = (await res.json().catch(() => null)) as
             | { error?: string }
             | null;
+          const message =
+            data?.error ?? "Could not send reset email. Try again.";
+          if (res.status === 429) toast.error(message);
           setStatus("error");
-          setErrorMessage(
-            data?.error ?? "Could not send reset email. Try again."
-          );
+          setErrorMessage(message);
           return;
         }
 

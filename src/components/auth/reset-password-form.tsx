@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
+import { toast } from "sonner";
 
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,9 +53,10 @@ export function ResetPasswordForm({ token }: { token: string }) {
           const body = (await res.json().catch(() => null)) as
             | { error?: string }
             | null;
-          setErrors({
-            form: body?.error ?? "Could not reset your password. Try again."
-          });
+          const message =
+            body?.error ?? "Could not reset your password. Try again.";
+          if (res.status === 429) toast.error(message);
+          setErrors({ form: message });
           return;
         }
 

@@ -1,9 +1,10 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useRef } from "react";
 import { useFormStatus } from "react-dom";
 import Link from "next/link";
 import { LoaderCircle } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -63,6 +64,18 @@ function GithubButton() {
 
 export function SignInForm({ callbackUrl }: { callbackUrl?: string }) {
   const [state, formAction] = useActionState(credentialsSignInAction, undefined);
+  const lastToastedError = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (state?.code === "rate_limited" && state.error) {
+      if (lastToastedError.current !== state.error) {
+        toast.error(state.error);
+        lastToastedError.current = state.error;
+      }
+    } else {
+      lastToastedError.current = null;
+    }
+  }, [state]);
 
   return (
     <div className="flex flex-col gap-6">

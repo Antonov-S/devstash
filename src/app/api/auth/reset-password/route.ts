@@ -3,6 +3,11 @@ import { hash } from "bcryptjs";
 
 import { prisma } from "@/lib/prisma";
 import { consumePasswordResetToken } from "@/lib/verification-token";
+import {
+  extractIp,
+  rateLimit,
+  rateLimitJsonResponse
+} from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -10,6 +15,9 @@ const MIN_PASSWORD_LENGTH = 8;
 const SALT_ROUNDS = 10;
 
 export async function POST(request: Request) {
+  const limit = await rateLimit("resetPassword", extractIp(request.headers));
+  if (!limit.success) return rateLimitJsonResponse(limit);
+
   let body: unknown;
   try {
     body = await request.json();
