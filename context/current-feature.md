@@ -2,15 +2,24 @@
 
 ## Status
 
-Not Started
+In Progress — Vitest setup for server actions and utilities
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+- Install and configure Vitest for unit testing
+- Scope: server actions (`src/actions/**`) and utilities (`src/lib/**`) — NOT components
+- Mock Prisma via `vi.mock` so tests stay pure/fast and don't touch the database
+- Provide a small set of sample tests to validate the setup and demonstrate patterns
+- Add `npm test` / `npm run test:run` scripts
+- Update `context/ai-interaction.md` workflow so the "test later" caveat is removed and unit tests are part of the standard flow
+- Update `context/coding-standards.md` with a brief Testing section
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+- TypeScript path alias `@/* → ./src/*` must resolve in tests (use `vite-tsconfig-paths`)
+- Test environment: `node` (no jsdom — we are not testing components)
+- Sample tests cover: `system-types.ts`, `rate-limit.ts` pure helpers, `utils.cn`, and one server action (`deleteAccountAction`) demonstrating the `vi.mock` pattern for `@/auth` and `@/lib/prisma`
+- Vitest must coexist with the existing Next.js / Prisma / NextAuth setup without breaking `npm run build`
 
 ## History
 
