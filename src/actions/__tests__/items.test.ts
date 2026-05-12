@@ -5,15 +5,25 @@ vi.mock("@/auth", () => ({
 }));
 
 vi.mock("@/lib/db/items", () => ({
+  createItemForUser: vi.fn(),
   updateItemForUser: vi.fn(),
   deleteItemForUser: vi.fn()
 }));
 
 import { auth } from "@/auth";
-import { deleteItemForUser, updateItemForUser } from "@/lib/db/items";
-import { deleteItemAction, updateItemAction } from "@/actions/items";
+import {
+  createItemForUser,
+  deleteItemForUser,
+  updateItemForUser
+} from "@/lib/db/items";
+import {
+  createItemAction,
+  deleteItemAction,
+  updateItemAction
+} from "@/actions/items";
 
 const mockedAuth = auth as unknown as ReturnType<typeof vi.fn>;
+const mockedCreate = createItemForUser as unknown as ReturnType<typeof vi.fn>;
 const mockedUpdate = updateItemForUser as unknown as ReturnType<typeof vi.fn>;
 const mockedDelete = deleteItemForUser as unknown as ReturnType<typeof vi.fn>;
 
@@ -148,6 +158,172 @@ describe("updateItemAction", () => {
     expect(result).toEqual({
       success: false,
       error: "Could not update item. Please try again."
+    });
+
+    errSpy.mockRestore();
+  });
+});
+
+describe("createItemAction", () => {
+  beforeEach(() => {
+    mockedAuth.mockReset();
+    mockedCreate.mockReset();
+  });
+
+  it("rejects when there is no session", async () => {
+    mockedAuth.mockResolvedValue(null);
+
+    const result = await createItemAction({
+      type: "snippet",
+      title: "Hi",
+      tags: []
+    });
+
+    expect(result).toEqual({ success: false, error: "You are not signed in." });
+    expect(mockedCreate).not.toHaveBeenCalled();
+  });
+
+  it("rejects when title is empty/whitespace", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+
+    const result = await createItemAction({
+      type: "snippet",
+      title: "   ",
+      tags: []
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toBe("Title is required");
+    }
+    expect(mockedCreate).not.toHaveBeenCalled();
+  });
+
+  it("rejects link items without a URL", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+
+    const result = await createItemAction({
+      type: "link",
+      title: "My Link",
+      url: null,
+      tags: []
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toBe("URL is required");
+    }
+    expect(mockedCreate).not.toHaveBeenCalled();
+  });
+
+  it("rejects invalid URLs", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+
+    const result = await createItemAction({
+      type: "link",
+      title: "Bad",
+      url: "not-a-url",
+      tags: []
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toBe("Invalid URL");
+    }
+  });
+
+  it("normalizes input and drops fields irrelevant to the chosen type", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+    mockedCreate.mockResolvedValue(sampleDetail);
+
+    const result = await createItemAction({
+      type: "note",
+      title: "  My Note  ",
+      description: "   ",
+      content: "  body  ",
+      url: "https://example.com",
+      language: "typescript",
+      tags: ["a", " a ", "", "b"]
+    });
+
+    expect(result).toEqual({ success: true, data: sampleDetail });
+    expect(mockedCreate).toHaveBeenCalledOnce();
+    const [userId, input] = mockedCreate.mock.calls[0];
+    expect(userId).toBe("user_1");
+    expect(input.typeName).toBe("note");
+    expect(input.title).toBe("My Note");
+    expect(input.description).toBeNull();
+    expect(input.content).toBe("body");
+    expect(input.url).toBeNull();
+    expect(input.language).toBeNull();
+    // dedup happens in the db helper, not the action
+    expect(input.tags).toEqual(["a", "a", "b"]);
+  });
+
+  it("keeps URL for link type and clears content/language", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+    mockedCreate.mockResolvedValue(sampleDetail);
+
+    await createItemAction({
+      type: "link",
+      title: "Docs",
+      content: "ignored",
+      url: "https://example.com",
+      language: "ignored",
+      tags: []
+    });
+
+    const [, input] = mockedCreate.mock.calls[0];
+    expect(input.typeName).toBe("link");
+    expect(input.content).toBeNull();
+    expect(input.url).toBe("https://example.com");
+    expect(input.language).toBeNull();
+  });
+
+  it("keeps language for snippet/command", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+    mockedCreate.mockResolvedValue(sampleDetail);
+
+    await createItemAction({
+      type: "snippet",
+      title: "useAuth",
+      content: "const x = 1",
+      language: "typescript",
+      tags: []
+    });
+
+    const [, input] = mockedCreate.mock.calls[0];
+    expect(input.language).toBe("typescript");
+    expect(input.content).toBe("const x = 1");
+  });
+
+  it("returns 'Item type not found' when the db reports no matching system type", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+    mockedCreate.mockResolvedValue(null);
+
+    const result = await createItemAction({
+      type: "snippet",
+      title: "Hi",
+      tags: []
+    });
+
+    expect(result).toEqual({ success: false, error: "Item type not found" });
+  });
+
+  it("returns a generic error when the db function throws", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+    mockedCreate.mockRejectedValue(new Error("db down"));
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const result = await createItemAction({
+      type: "snippet",
+      title: "Hi",
+      tags: []
+    });
+
+    expect(result).toEqual({
+      success: false,
+      error: "Could not create item. Please try again."
     });
 
     errSpy.mockRestore();

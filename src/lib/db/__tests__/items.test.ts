@@ -4,8 +4,12 @@ vi.mock("@/lib/prisma", () => ({
   prisma: {
     item: {
       findFirst: vi.fn(),
+      create: vi.fn(),
       update: vi.fn(),
       deleteMany: vi.fn()
+    },
+    itemType: {
+      findFirst: vi.fn()
     },
     tagsOnItems: {
       deleteMany: vi.fn()
@@ -16,6 +20,7 @@ vi.mock("@/lib/prisma", () => ({
 
 import { prisma } from "@/lib/prisma";
 import {
+  createItemForUser,
   deleteItemForUser,
   getItemDetailForUser,
   updateItemForUser
@@ -202,6 +207,127 @@ describe("updateItemForUser", () => {
       { id: "coll_1", name: "React Patterns" },
       { id: "coll_2", name: "Hooks" }
     ]);
+  });
+});
+
+describe("createItemForUser", () => {
+  const mockedItemTypeFindFirst = prisma.itemType.findFirst as unknown as ReturnType<
+    typeof vi.fn
+  >;
+  const mockedItemCreate = prisma.item.create as unknown as ReturnType<
+    typeof vi.fn
+  >;
+
+  beforeEach(() => {
+    mockedItemTypeFindFirst.mockReset();
+    mockedItemCreate.mockReset();
+    mockedFindFirst.mockReset();
+  });
+
+  it("returns null when no matching system item type exists", async () => {
+    mockedItemTypeFindFirst.mockResolvedValue(null);
+
+    const result = await createItemForUser("user_1", {
+      typeName: "snippet",
+      title: "Hi",
+      description: null,
+      content: null,
+      url: null,
+      language: null,
+      tags: []
+    });
+
+    expect(result).toBeNull();
+    expect(mockedItemCreate).not.toHaveBeenCalled();
+  });
+
+  it("creates a TEXT item with deduped connect-or-create tags for snippet", async () => {
+    mockedItemTypeFindFirst.mockResolvedValue({ id: "type_1" });
+    mockedItemCreate.mockResolvedValue({ id: "item_new" });
+    mockedFindFirst.mockResolvedValue(baseRow);
+
+    await createItemForUser("user_1", {
+      typeName: "snippet",
+      title: "useAuth",
+      description: "desc",
+      content: "const x = 1;",
+      url: null,
+      language: "typescript",
+      tags: ["react", "react", "hooks"]
+    });
+
+    expect(mockedItemTypeFindFirst).toHaveBeenCalledWith({
+      where: { name: "snippet", isSystem: true, userId: null },
+      select: { id: true }
+    });
+    expect(mockedItemCreate).toHaveBeenCalledTimes(1);
+    const createArg = mockedItemCreate.mock.calls[0][0];
+    expect(createArg.data.title).toBe("useAuth");
+    expect(createArg.data.contentType).toBe("TEXT");
+    expect(createArg.data.userId).toBe("user_1");
+    expect(createArg.data.itemTypeId).toBe("type_1");
+    expect(createArg.data.language).toBe("typescript");
+    expect(createArg.data.url).toBeNull();
+    expect(createArg.data.tags.create).toEqual([
+      {
+        tag: {
+          connectOrCreate: {
+            where: { name: "react" },
+            create: { name: "react" }
+          }
+        }
+      },
+      {
+        tag: {
+          connectOrCreate: {
+            where: { name: "hooks" },
+            create: { name: "hooks" }
+          }
+        }
+      }
+    ]);
+  });
+
+  it("creates a URL item with contentType=URL for link type", async () => {
+    mockedItemTypeFindFirst.mockResolvedValue({ id: "type_link" });
+    mockedItemCreate.mockResolvedValue({ id: "item_new" });
+    mockedFindFirst.mockResolvedValue(baseRow);
+
+    await createItemForUser("user_1", {
+      typeName: "link",
+      title: "Docs",
+      description: null,
+      content: null,
+      url: "https://example.com",
+      language: null,
+      tags: []
+    });
+
+    const createArg = mockedItemCreate.mock.calls[0][0];
+    expect(createArg.data.contentType).toBe("URL");
+    expect(createArg.data.url).toBe("https://example.com");
+  });
+
+  it("returns the refreshed ItemDetail after a successful create", async () => {
+    mockedItemTypeFindFirst.mockResolvedValue({ id: "type_1" });
+    mockedItemCreate.mockResolvedValue({ id: "item_new" });
+    mockedFindFirst.mockResolvedValue(baseRow);
+
+    const result = await createItemForUser("user_1", {
+      typeName: "snippet",
+      title: "Hi",
+      description: null,
+      content: null,
+      url: null,
+      language: null,
+      tags: []
+    });
+
+    expect(result).not.toBeNull();
+    expect(result?.tags).toEqual(["react", "auth"]);
+    expect(mockedFindFirst).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: "item_new", userId: "user_1" } })
+    );
   });
 });
 
