@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { auth } from "@/auth";
 import {
+  createItemForUser,
   deleteItemForUser,
   updateItemForUser,
   type ItemDetail
@@ -94,6 +95,88 @@ export async function updateItemAction(
   } catch (error) {
     console.error("updateItemAction failed", error);
     return { success: false, error: "Could not update item. Please try again." };
+  }
+}
+
+const CREATE_TYPES = [
+  "snippet",
+  "prompt",
+  "command",
+  "note",
+  "link"
+] as const;
+
+export type CreateItemType = (typeof CREATE_TYPES)[number];
+
+const createItemSchema = z
+  .object({
+    type: z.enum(CREATE_TYPES),
+    title: z
+      .string()
+      .transform((value) => value.trim())
+      .refine((value) => value.length > 0, { message: "Title is required" }),
+    description: optionalTrimmedString,
+    content: optionalTrimmedString,
+    url: urlField,
+    language: optionalTrimmedString,
+    tags: z
+      .array(z.string())
+      .transform((tags) =>
+        tags.map((tag) => tag.trim()).filter((tag) => tag.length > 0)
+      )
+  })
+  .superRefine((data, ctx) => {
+    if (data.type === "link" && !data.url) {
+      ctx.addIssue({
+        code: "custom",
+        message: "URL is required",
+        path: ["url"]
+      });
+    }
+  });
+
+export type CreateItemPayload = z.input<typeof createItemSchema>;
+
+export type CreateItemResult =
+  | { success: true; data: ItemDetail }
+  | { success: false; error: string };
+
+export async function createItemAction(
+  payload: CreateItemPayload
+): Promise<CreateItemResult> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, error: "You are not signed in." };
+  }
+
+  const parsed = createItemSchema.safeParse(payload);
+  if (!parsed.success) {
+    const first = parsed.error.issues[0];
+    return {
+      success: false,
+      error: first?.message ?? "Invalid input"
+    };
+  }
+
+  const { type, ...fields } = parsed.data;
+
+  try {
+    const created = await createItemForUser(session.user.id, {
+      typeName: type,
+      title: fields.title,
+      description: fields.description,
+      content: type === "link" ? null : fields.content,
+      url: type === "link" ? fields.url : null,
+      language: type === "snippet" || type === "command" ? fields.language : null,
+      tags: fields.tags
+    });
+    if (!created) {
+      return { success: false, error: "Item type not found" };
+    }
+    return { success: true, data: created };
+  } catch (error) {
+    console.error("createItemAction failed", error);
+    return { success: false, error: "Could not create item. Please try again." };
   }
 }
 

@@ -3,6 +3,17 @@ import "server-only";
 import type { ContentType } from "@/generated/prisma/enums";
 
 import { prisma } from "@/lib/prisma";
+import type { SystemTypeName } from "@/lib/system-types";
+
+const CREATE_CONTENT_TYPE: Record<SystemTypeName, ContentType> = {
+  snippet: "TEXT",
+  prompt: "TEXT",
+  command: "TEXT",
+  note: "TEXT",
+  link: "URL",
+  file: "FILE",
+  image: "FILE"
+};
 
 export type ItemTypeMeta = {
   id: string;
@@ -228,6 +239,55 @@ export async function deleteItemForUser(
     where: { id: itemId, userId }
   });
   return result.count > 0;
+}
+
+export type CreateItemInput = {
+  typeName: SystemTypeName;
+  title: string;
+  description: string | null;
+  content: string | null;
+  url: string | null;
+  language: string | null;
+  tags: string[];
+};
+
+export async function createItemForUser(
+  userId: string,
+  data: CreateItemInput
+): Promise<ItemDetail | null> {
+  const itemType = await prisma.itemType.findFirst({
+    where: { name: data.typeName, isSystem: true, userId: null },
+    select: { id: true }
+  });
+  if (!itemType) return null;
+
+  const uniqueTags = Array.from(new Set(data.tags));
+
+  const created = await prisma.item.create({
+    data: {
+      title: data.title,
+      description: data.description,
+      content: data.content,
+      url: data.url,
+      language: data.language,
+      contentType: CREATE_CONTENT_TYPE[data.typeName],
+      userId,
+      itemTypeId: itemType.id,
+      tags: {
+        create: uniqueTags.map((name) => ({
+          tag: {
+            connectOrCreate: {
+              where: { name },
+              create: { name }
+            }
+          }
+        }))
+      }
+    },
+    select: { id: true }
+  });
+
+  return getItemDetailForUser(userId, created.id);
 }
 
 export async function getItemStatsForUser(userId: string): Promise<ItemStats> {
