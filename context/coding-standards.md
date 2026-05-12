@@ -90,6 +90,16 @@ Example v4 configuration:
 - Return `{ success, data, error }` pattern from actions
 - Display user-friendly error messages via toast
 
+## Testing
+
+- **Framework**: Vitest (Node environment, no jsdom)
+- **Scope**: Test server actions (`src/actions/**`) and utilities (`src/lib/**`) only. Do **not** test React components.
+- **Location**: Co-locate tests under `__tests__/` next to the file under test (e.g. `src/lib/__tests__/system-types.test.ts`, `src/actions/__tests__/account.test.ts`). Use the `.test.ts` suffix.
+- **Database**: Never hit a real database in tests. Mock `@/lib/prisma` with `vi.mock(...)` and stub only the calls the unit under test makes.
+- **External services**: Mock NextAuth (`@/auth`), Resend, Upstash, and any other I/O at the module boundary. Tests should be pure and fast.
+- **What to cover**: input validation, branching/error paths, and the contract a caller depends on. Skip trivial pass-throughs.
+- **Commands**: `npm test` for watch mode, `npm run test:run` for a single CI-style run. Both must pass before commit.
+
 ## Code Quality
 
 - No commented-out code unless specified
