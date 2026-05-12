@@ -171,6 +171,55 @@ export type ItemStats = {
   favorites: number;
 };
 
+export type UpdateItemInput = {
+  title: string;
+  description: string | null;
+  content: string | null;
+  url: string | null;
+  language: string | null;
+  tags: string[];
+};
+
+export async function updateItemForUser(
+  userId: string,
+  itemId: string,
+  data: UpdateItemInput
+): Promise<ItemDetail | null> {
+  const existing = await prisma.item.findFirst({
+    where: { id: itemId, userId },
+    select: { id: true }
+  });
+  if (!existing) return null;
+
+  const uniqueTags = Array.from(new Set(data.tags));
+
+  await prisma.$transaction([
+    prisma.tagsOnItems.deleteMany({ where: { itemId } }),
+    prisma.item.update({
+      where: { id: itemId },
+      data: {
+        title: data.title,
+        description: data.description,
+        content: data.content,
+        url: data.url,
+        language: data.language,
+        tags: {
+          create: uniqueTags.map((name) => ({
+            tag: {
+              connectOrCreate: {
+                where: { name },
+                create: { name }
+              }
+            }
+          }))
+        }
+      }
+    })
+  ]);
+
+  return getItemDetailForUser(userId, itemId);
+}
+
 export async function getItemStatsForUser(userId: string): Promise<ItemStats> {
   const [total, favorites] = await Promise.all([
     prisma.item.count({ where: { userId } }),

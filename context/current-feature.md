@@ -1,16 +1,33 @@
-# Current Feature
+# Current Feature: Item Drawer — Edit Mode
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+- Edit button (pencil) in the item drawer toggles the open drawer into inline edit mode (no new page/modal)
+- Action bar is replaced with Save and Cancel buttons in edit mode; Cancel discards local changes, Save persists and returns to view mode
+- Editable fields for all types: Title (required), Description, Tags (comma-separated → string[])
+- Type-specific editable fields: Content (snippet/prompt/command/note), Language (snippet/command), URL (link)
+- Non-editable in edit mode: item type, collections, created/updated dates
+- New `updateItem` server action in `src/actions/items.ts` returning `{ success, data, error }`, with `auth()` session check + ownership validation
+- Zod validation in the server action: trimmed non-empty `title`, optional `description`/`content`/`language`, valid `url`, `tags: string[]` of trimmed non-empty strings
+- New `updateItem` query in `src/lib/db/items.ts` — disconnect existing tags, connect-or-create new tags, return updated `ItemDetail` so the drawer refreshes without a second fetch
+- Toast on success and on error; `router.refresh()` after save so card lists reflect changes
+- Client-side Save disabled when title is empty (basic UX guard); Zod is the source of truth server-side
+- Vitest unit tests for the new `updateItem` server action and the `updateItem` db query (mock Prisma + `@/auth`)
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+- Spec: `context/features/item-drawer-edit-spec.md`
+- Edit happens inline inside the existing right-side Sheet drawer — keep the drawer open, swap the body/action bar
+- No form library — controlled inputs with local state
+- Content textarea is plain `<textarea>` for now (code editor comes later)
+- Return updated `ItemDetail` from `updateItem` so we avoid a second GET round-trip after save
+- Tag handling on update: disconnect all existing `TagsOnItems`, then connect-or-create from the submitted comma-separated list (trim, drop empties, dedupe)
+- Return Zod errors in the action's `error` field so the client can surface inline field errors
+- Route handler unit tests are intentionally skipped (existing next-auth + Vitest module-resolution issue documented in prior history); test the server action + db function instead
 
 ## History
 
