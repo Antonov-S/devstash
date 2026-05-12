@@ -1,33 +1,16 @@
-# Current Feature: Item Drawer — Edit Mode
+# Current Feature
 
 ## Status
 
-In Progress
+Not Started
 
 ## Goals
 
-- Edit button (pencil) in the item drawer toggles the open drawer into inline edit mode (no new page/modal)
-- Action bar is replaced with Save and Cancel buttons in edit mode; Cancel discards local changes, Save persists and returns to view mode
-- Editable fields for all types: Title (required), Description, Tags (comma-separated → string[])
-- Type-specific editable fields: Content (snippet/prompt/command/note), Language (snippet/command), URL (link)
-- Non-editable in edit mode: item type, collections, created/updated dates
-- New `updateItem` server action in `src/actions/items.ts` returning `{ success, data, error }`, with `auth()` session check + ownership validation
-- Zod validation in the server action: trimmed non-empty `title`, optional `description`/`content`/`language`, valid `url`, `tags: string[]` of trimmed non-empty strings
-- New `updateItem` query in `src/lib/db/items.ts` — disconnect existing tags, connect-or-create new tags, return updated `ItemDetail` so the drawer refreshes without a second fetch
-- Toast on success and on error; `router.refresh()` after save so card lists reflect changes
-- Client-side Save disabled when title is empty (basic UX guard); Zod is the source of truth server-side
-- Vitest unit tests for the new `updateItem` server action and the `updateItem` db query (mock Prisma + `@/auth`)
+<!-- Bullet points of what success looks like -->
 
 ## Notes
 
-- Spec: `context/features/item-drawer-edit-spec.md`
-- Edit happens inline inside the existing right-side Sheet drawer — keep the drawer open, swap the body/action bar
-- No form library — controlled inputs with local state
-- Content textarea is plain `<textarea>` for now (code editor comes later)
-- Return updated `ItemDetail` from `updateItem` so we avoid a second GET round-trip after save
-- Tag handling on update: disconnect all existing `TagsOnItems`, then connect-or-create from the submitted comma-separated list (trim, drop empties, dedupe)
-- Return Zod errors in the action's `error` field so the client can surface inline field errors
-- Route handler unit tests are intentionally skipped (existing next-auth + Vitest module-resolution issue documented in prior history); test the server action + db function instead
+<!-- Additional context, constraints, or details from spec -->
 
 ## History
 
@@ -58,3 +41,4 @@ In Progress
 - Vitest setup — Vitest 4 with Node env, native tsconfig paths (`@/* → src/*`), and a `vitest.setup.ts` that stubs `"server-only"`; scope limited to server actions (`src/actions/**`) and utilities (`src/lib/**`) — components excluded; Prisma + NextAuth mocked via `vi.mock` so tests are pure and fast; sample tests cover `system-types`, `utils.cn`, pure `rate-limit` helpers (`extractIp`/`formatRetryAfter`/`rateLimitMessage`), and `deleteAccountAction` (demonstrating the mocking pattern for `@/auth` + `@/lib/prisma`); `npm test` (watch) + `npm run test:run` (one-shot) added; `ai-interaction.md` workflow updated to require tests in step 4 alongside the build, and `coding-standards.md` gained a Testing section — Completed
 - Items list 3-column grid — `/items/[type]` page grid bumped from `grid-cols-1 md:grid-cols-2` to `grid-cols-1 md:grid-cols-2 lg:grid-cols-3` so wider viewports see more items per row (mobile 1 col / tablet 2 col unchanged); bundled fix to `vitest.config.ts` adding `fileParallelism: false` to work around Vitest 4 cross-worker module-resolution cache poisoning caused by `next-auth/lib/env.js` failing to resolve `next/server` under Node ESM, which broke the whole suite even though every test file passed in isolation — Completed
 - Item detail drawer — right-side shadcn Sheet drawer opens on `ItemCard` click across `/dashboard` and `/items/[type]`; new `ClickableItemCard` client wrapper turns the existing `ItemCard` into a `<button>` and owns drawer state so pages stay server components; card data continues to come from server components while the full detail (content, file/url, language, collections, createdAt) is fetched on click via new `auth()`-gated `GET /api/items/[id]` returning the new `ItemDetail` from `getItemDetailForUser` in `src/lib/db/items.ts` (scoped by `userId`, flattens tags + collections); drawer header shows type icon + title + Type/language badges, action bar has Favorite (yellow star when active), Pin, Copy (wired to `navigator.clipboard`), Edit, Delete (right-aligned trash) — Favorite/Pin/Edit/Delete stubbed per spec; body renders Description, Content (`<pre>` for TEXT, external link for URL, file row with `formatBytes` for FILE), Tags, Collections, and Created/Updated/Last used in a dl grid; skeleton + error states while the fetch is in flight; AbortController cancels in-flight requests on close; `formatDate` coerces ISO strings since the API serializes Dates to JSON; new unit tests in `src/lib/db/__tests__/items.test.ts` cover `getItemDetailForUser` (null on miss, full field mapping, user scoping) — route handler not unit-tested because importing it pulls next-auth's `next/server` resolution into Vitest and poisons the suite (the same issue the existing fileParallelism workaround can't fully escape) — Completed
+- Item drawer edit mode — pencil Edit toggles the open drawer into inline edit mode, swapping the action bar to Save (primary, left) + Cancel and the body to a controlled form with Title (required), Description, Tags (comma-separated), and type-aware Content (snippet/prompt/command/note), Language (snippet/command), URL (link); new `updateItemAction` in `src/actions/items.ts` returns `{ success, data | error }`, validates with Zod 4 (trimmed required `title`, optional trimmed string fields, `new URL()`-checked optional `url`, deduped trimmed `tags`), checks `auth()` session, and delegates to new `updateItemForUser` in `src/lib/db/items.ts` which verifies ownership and runs `tagsOnItems.deleteMany` + `item.update` (with `tags.create` + `connectOrCreate`) inside a `$transaction`, returning the refreshed `ItemDetail` so the drawer skips a second fetch; client uses `useTransition` for pending state, toasts on success/error, calls `router.refresh()` to sync the underlying card lists, and disables Save when title is empty; manual `useCallback`/`useMemo` dropped throughout the drawer since `reactCompiler: true` is on in `next.config.ts`; `zod` added as a direct dependency; new Vitest tests in `src/actions/__tests__/items.test.ts` (7 cases: no session, empty id, empty title, invalid URL, not-found, normalization, generic-error) and three more in `src/lib/db/__tests__/items.test.ts` covering `updateItemForUser` (ownership miss, tag dedup + connect-or-create shape, refreshed-detail return) — Completed
