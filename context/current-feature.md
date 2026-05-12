@@ -2,24 +2,15 @@
 
 ## Status
 
-In Progress — Vitest setup for server actions and utilities
+Not Started
 
 ## Goals
 
-- Install and configure Vitest for unit testing
-- Scope: server actions (`src/actions/**`) and utilities (`src/lib/**`) — NOT components
-- Mock Prisma via `vi.mock` so tests stay pure/fast and don't touch the database
-- Provide a small set of sample tests to validate the setup and demonstrate patterns
-- Add `npm test` / `npm run test:run` scripts
-- Update `context/ai-interaction.md` workflow so the "test later" caveat is removed and unit tests are part of the standard flow
-- Update `context/coding-standards.md` with a brief Testing section
+<!-- Bullet points of what success looks like -->
 
 ## Notes
 
-- TypeScript path alias `@/* → ./src/*` must resolve in tests (use `vite-tsconfig-paths`)
-- Test environment: `node` (no jsdom — we are not testing components)
-- Sample tests cover: `system-types.ts`, `rate-limit.ts` pure helpers, `utils.cn`, and one server action (`deleteAccountAction`) demonstrating the `vi.mock` pattern for `@/auth` and `@/lib/prisma`
-- Vitest must coexist with the existing Next.js / Prisma / NextAuth setup without breaking `npm run build`
+<!-- Additional context, constraints, or details from spec -->
 
 ## History
 
@@ -47,3 +38,4 @@ In Progress — Vitest setup for server actions and utilities
 - Profile page — moved `/dashboard` and `/profile` into a shared `(dashboard)` route group so profile renders inside the sidebar/topbar shell; rebuilt `/profile` with two cards (Account Information: avatar + name/email/member-since + Change Password / Delete Account actions; Usage Statistics: total items + collections + per-system-type breakdown grid); `getUserProfileById` helper exposes `hasPassword` without leaking the hash; `POST /api/account/change-password` bcrypt-validates current password and rejects identical reuse; `deleteAccountAction` server action cascades the user delete via Prisma and signs out to `/`; reusable base-ui `Dialog` primitive (matches existing Sheet pattern) backs the confirmation dialogs (`KeyRound` / `Trash2` triggers, type-`DELETE`-to-confirm gate) — Completed
 - Rate limiting for auth — reusable `src/lib/rate-limit.ts` on Upstash Redis + `@upstash/ratelimit` sliding-window (lazy-initialized client, per-name limiter cache, fail-open on missing env or thrown errors); wired into `/api/auth/register` (3/1h, IP), `/api/auth/forgot-password` (3/1h, IP), `/api/auth/reset-password` (5/15m, IP), `/api/auth/resend-verification` (3/15m, IP+email, applied after email validation), and login via `credentialsSignInAction` (5/15m, IP+email, using `await headers()` instead of intercepting NextAuth's callback route); 429 responses include JSON error + `Retry-After`; IP extracted from `x-forwarded-for` with `x-real-ip` fallback; sign-in/register/forgot/reset forms now toast on 429 alongside their existing inline error (resend-verification button already toasts) — Completed
 - Items list view — dynamic `/items/[type]` route inside `(dashboard)` shell rendering type-filtered items in a `grid-cols-1 md:grid-cols-2` grid of `ItemCard`s with left border colored by `itemType.color`; `src/lib/system-types.ts` maps plural slugs ↔ singular `ItemType.name` for the 7 system types (snippets/prompts/commands/notes/files/images/links); `getSystemItemTypeByName` + `getItemsForUserByTypeId` added to `src/lib/db/items.ts`; page is `auth()`-gated with redirect-to-sign-in, `notFound()` on unknown slugs, header (type icon + capitalized label + item count), empty state on zero items, and `generateMetadata` for per-type page titles — Completed
+- Vitest setup — Vitest 4 with Node env, native tsconfig paths (`@/* → src/*`), and a `vitest.setup.ts` that stubs `"server-only"`; scope limited to server actions (`src/actions/**`) and utilities (`src/lib/**`) — components excluded; Prisma + NextAuth mocked via `vi.mock` so tests are pure and fast; sample tests cover `system-types`, `utils.cn`, pure `rate-limit` helpers (`extractIp`/`formatRetryAfter`/`rateLimitMessage`), and `deleteAccountAction` (demonstrating the mocking pattern for `@/auth` + `@/lib/prisma`); `npm test` (watch) + `npm run test:run` (one-shot) added; `ai-interaction.md` workflow updated to require tests in step 4 alongside the build, and `coding-standards.md` gained a Testing section — Completed
