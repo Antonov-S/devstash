@@ -1,26 +1,16 @@
-# Current Feature: Items List View
+# Current Feature
 
 ## Status
 
-In Progress
+Not Started
 
 ## Goals
 
-- Create dynamic route `/items/[type]` (e.g., `/items/snippets`, `/items/notes`) that renders inside the `(dashboard)` shell
-- Fetch items filtered by the URL type (system types: snippet, prompt, command, note, file, image, link) using Prisma
-- Render a responsive grid of `ItemCard` components — two columns on `md` and up
-- Each card has a left border colored by its item type (`itemType.color`)
-- Follow existing codebase patterns (server components, Prisma fetch in lib, auth-gated, dashboard route group)
+<!-- Bullet points of what success looks like -->
 
 ## Notes
 
-- Spec source: `context/features/item-list-view-spec.md`
-- Page must live inside `src/app/(dashboard)/items/[type]/page.tsx` so sidebar/topbar render
-- Type param is the singular system-type name (matches `ItemType.name`); pluralize for display via existing sidebar `pluralize` helper if needed
-- Use the authenticated session (`auth()`) like `/dashboard` and `/profile` do — no demo user fallback
-- Reuse existing card styling conventions; left border color comes from `itemType.color` (hex)
-- Unknown type slugs should 404 via `notFound()`
-- Sidebar already links to `/items/[type]` routes — wire these pages to those existing links
+<!-- Additional context, constraints, or details from spec -->
 
 ## History
 
@@ -47,3 +37,4 @@ In Progress
 - Sign-in/register UI redesign — centered `max-w-md` rounded-2xl auth card with subtle border, dark elevated bg, and ambient radial-gradient backdrop; reordered sign-in flow (Email → Password w/ inline "Forgot password?" → primary CTA → "OR CONTINUE WITH" divider → GitHub → Register link); new reusable `EmailField`/`PasswordField`/`IconField` with leading Mail/Lock/User icons + Eye/EyeOff visibility toggle; `LoaderCircle` spinner inside CTAs replaces label-swap; reserved-height field error slots on register prevent layout jump; card entrance fade/slide animation — Completed
 - Profile page — moved `/dashboard` and `/profile` into a shared `(dashboard)` route group so profile renders inside the sidebar/topbar shell; rebuilt `/profile` with two cards (Account Information: avatar + name/email/member-since + Change Password / Delete Account actions; Usage Statistics: total items + collections + per-system-type breakdown grid); `getUserProfileById` helper exposes `hasPassword` without leaking the hash; `POST /api/account/change-password` bcrypt-validates current password and rejects identical reuse; `deleteAccountAction` server action cascades the user delete via Prisma and signs out to `/`; reusable base-ui `Dialog` primitive (matches existing Sheet pattern) backs the confirmation dialogs (`KeyRound` / `Trash2` triggers, type-`DELETE`-to-confirm gate) — Completed
 - Rate limiting for auth — reusable `src/lib/rate-limit.ts` on Upstash Redis + `@upstash/ratelimit` sliding-window (lazy-initialized client, per-name limiter cache, fail-open on missing env or thrown errors); wired into `/api/auth/register` (3/1h, IP), `/api/auth/forgot-password` (3/1h, IP), `/api/auth/reset-password` (5/15m, IP), `/api/auth/resend-verification` (3/15m, IP+email, applied after email validation), and login via `credentialsSignInAction` (5/15m, IP+email, using `await headers()` instead of intercepting NextAuth's callback route); 429 responses include JSON error + `Retry-After`; IP extracted from `x-forwarded-for` with `x-real-ip` fallback; sign-in/register/forgot/reset forms now toast on 429 alongside their existing inline error (resend-verification button already toasts) — Completed
+- Items list view — dynamic `/items/[type]` route inside `(dashboard)` shell rendering type-filtered items in a `grid-cols-1 md:grid-cols-2` grid of `ItemCard`s with left border colored by `itemType.color`; `src/lib/system-types.ts` maps plural slugs ↔ singular `ItemType.name` for the 7 system types (snippets/prompts/commands/notes/files/images/links); `getSystemItemTypeByName` + `getItemsForUserByTypeId` added to `src/lib/db/items.ts`; page is `auth()`-gated with redirect-to-sign-in, `notFound()` on unknown slugs, header (type icon + capitalized label + item count), empty state on zero items, and `generateMetadata` for per-type page titles — Completed
