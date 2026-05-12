@@ -4,7 +4,8 @@ vi.mock("@/lib/prisma", () => ({
   prisma: {
     item: {
       findFirst: vi.fn(),
-      update: vi.fn()
+      update: vi.fn(),
+      deleteMany: vi.fn()
     },
     tagsOnItems: {
       deleteMany: vi.fn()
@@ -14,7 +15,11 @@ vi.mock("@/lib/prisma", () => ({
 }));
 
 import { prisma } from "@/lib/prisma";
-import { getItemDetailForUser, updateItemForUser } from "@/lib/db/items";
+import {
+  deleteItemForUser,
+  getItemDetailForUser,
+  updateItemForUser
+} from "@/lib/db/items";
 
 const mockedFindFirst = prisma.item.findFirst as unknown as ReturnType<
   typeof vi.fn
@@ -197,5 +202,41 @@ describe("updateItemForUser", () => {
       { id: "coll_1", name: "React Patterns" },
       { id: "coll_2", name: "Hooks" }
     ]);
+  });
+});
+
+describe("deleteItemForUser", () => {
+  const mockedDeleteMany = prisma.item.deleteMany as unknown as ReturnType<
+    typeof vi.fn
+  >;
+
+  beforeEach(() => {
+    mockedDeleteMany.mockReset();
+  });
+
+  it("scopes the delete to the requesting user and item id", async () => {
+    mockedDeleteMany.mockResolvedValue({ count: 1 });
+
+    await deleteItemForUser("user_1", "item_1");
+
+    expect(mockedDeleteMany).toHaveBeenCalledWith({
+      where: { id: "item_1", userId: "user_1" }
+    });
+  });
+
+  it("returns true when a row was deleted", async () => {
+    mockedDeleteMany.mockResolvedValue({ count: 1 });
+
+    const result = await deleteItemForUser("user_1", "item_1");
+
+    expect(result).toBe(true);
+  });
+
+  it("returns false when no row matched (wrong owner or missing id)", async () => {
+    mockedDeleteMany.mockResolvedValue({ count: 0 });
+
+    const result = await deleteItemForUser("user_1", "item_missing");
+
+    expect(result).toBe(false);
   });
 });

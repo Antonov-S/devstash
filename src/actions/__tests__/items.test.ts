@@ -5,15 +5,17 @@ vi.mock("@/auth", () => ({
 }));
 
 vi.mock("@/lib/db/items", () => ({
-  updateItemForUser: vi.fn()
+  updateItemForUser: vi.fn(),
+  deleteItemForUser: vi.fn()
 }));
 
 import { auth } from "@/auth";
-import { updateItemForUser } from "@/lib/db/items";
-import { updateItemAction } from "@/actions/items";
+import { deleteItemForUser, updateItemForUser } from "@/lib/db/items";
+import { deleteItemAction, updateItemAction } from "@/actions/items";
 
 const mockedAuth = auth as unknown as ReturnType<typeof vi.fn>;
 const mockedUpdate = updateItemForUser as unknown as ReturnType<typeof vi.fn>;
+const mockedDelete = deleteItemForUser as unknown as ReturnType<typeof vi.fn>;
 
 const signedIn = { user: { id: "user_1", email: "u@example.com" } };
 
@@ -146,6 +148,66 @@ describe("updateItemAction", () => {
     expect(result).toEqual({
       success: false,
       error: "Could not update item. Please try again."
+    });
+
+    errSpy.mockRestore();
+  });
+});
+
+describe("deleteItemAction", () => {
+  beforeEach(() => {
+    mockedAuth.mockReset();
+    mockedDelete.mockReset();
+  });
+
+  it("rejects when there is no session", async () => {
+    mockedAuth.mockResolvedValue(null);
+
+    const result = await deleteItemAction("item_1");
+
+    expect(result).toEqual({ success: false, error: "You are not signed in." });
+    expect(mockedDelete).not.toHaveBeenCalled();
+  });
+
+  it("rejects when itemId is empty", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+
+    const result = await deleteItemAction("");
+
+    expect(result).toEqual({ success: false, error: "Invalid item id" });
+    expect(mockedDelete).not.toHaveBeenCalled();
+  });
+
+  it("returns 'Item not found' when the db reports nothing was deleted", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+    mockedDelete.mockResolvedValue(false);
+
+    const result = await deleteItemAction("item_missing");
+
+    expect(result).toEqual({ success: false, error: "Item not found" });
+    expect(mockedDelete).toHaveBeenCalledWith("user_1", "item_missing");
+  });
+
+  it("returns success when the delete succeeds", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+    mockedDelete.mockResolvedValue(true);
+
+    const result = await deleteItemAction("item_1");
+
+    expect(result).toEqual({ success: true });
+    expect(mockedDelete).toHaveBeenCalledWith("user_1", "item_1");
+  });
+
+  it("returns a generic error when the db function throws", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+    mockedDelete.mockRejectedValue(new Error("db down"));
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const result = await deleteItemAction("item_1");
+
+    expect(result).toEqual({
+      success: false,
+      error: "Could not delete item. Please try again."
     });
 
     errSpy.mockRestore();
