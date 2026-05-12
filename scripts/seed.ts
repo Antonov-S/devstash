@@ -27,6 +27,7 @@ type ItemSeed = {
   language?: string;
   content?: string;
   url?: string;
+  isPinned?: boolean;
 };
 
 type CollectionSeed = {
@@ -47,6 +48,7 @@ const collections: CollectionSeed[] = [
         type: "snippet",
         language: "typescript",
         description: "Debounce a fast-changing value with a configurable delay.",
+        isPinned: true,
         content: `import { useEffect, useState } from "react";
 
 export function useDebounce<T>(value: T, delay = 300): T {
@@ -113,6 +115,7 @@ export function cn(...inputs: ClassValue[]) {
         title: "Code review prompt",
         type: "prompt",
         description: "Structured code review with security, perf, and clarity checks.",
+        isPinned: true,
         content: `Act as a senior engineer reviewing the following code.
 
 Cover, in order:
@@ -246,6 +249,7 @@ CMD ["node", "server.js"]
         title: "Kill process on port",
         type: "command",
         description: "Find and kill the process holding a TCP port (Linux/macOS).",
+        isPinned: true,
         content: "lsof -ti:3000 | xargs kill -9"
       },
       {
@@ -270,6 +274,7 @@ CMD ["node", "server.js"]
         title: "shadcn/ui",
         type: "link",
         description: "Copy-paste accessible React components built on Radix + Tailwind.",
+        isPinned: true,
         url: "https://ui.shadcn.com/"
       },
       {
@@ -382,7 +387,8 @@ async function seedCollectionsAndItems(prisma: PrismaClient, userId: string) {
               ? ("FILE" as const)
               : ("TEXT" as const),
         content: item.url ? null : item.content ?? null,
-        url: item.url ?? null
+        url: item.url ?? null,
+        isPinned: item.isPinned ?? false
       };
     });
 
@@ -400,6 +406,21 @@ async function seedCollectionsAndItems(prisma: PrismaClient, userId: string) {
 
     for (const created of createdItems) {
       console.log(`    · item "${created.title}"`);
+    }
+  }
+
+  const pinnedTitles = collections
+    .flatMap((col) => col.items)
+    .filter((item) => item.isPinned)
+    .map((item) => item.title);
+
+  if (pinnedTitles.length > 0) {
+    const { count } = await prisma.item.updateMany({
+      where: { userId, title: { in: pinnedTitles }, isPinned: false },
+      data: { isPinned: true }
+    });
+    if (count > 0) {
+      console.log(`  ★ pinned ${count} existing item(s)`);
     }
   }
 }
