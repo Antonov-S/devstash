@@ -91,6 +91,28 @@ export async function getRecentItemsForUser(
   return rows.map(toItemWithMeta);
 }
 
+export async function getSystemItemTypeByName(
+  name: string
+): Promise<ItemTypeMeta | null> {
+  const type = await prisma.itemType.findFirst({
+    where: { name, isSystem: true, userId: null },
+    select: { id: true, name: true, icon: true, color: true }
+  });
+  return type;
+}
+
+export async function getItemsForUserByTypeId(
+  userId: string,
+  itemTypeId: string
+): Promise<ItemWithMeta[]> {
+  const rows = await prisma.item.findMany({
+    where: { userId, itemTypeId },
+    orderBy: [{ lastUsedAt: { sort: "desc", nulls: "last" } }, { updatedAt: "desc" }],
+    select: itemSelect
+  });
+  return rows.map(toItemWithMeta);
+}
+
 export type ItemStats = {
   total: number;
   favorites: number;
