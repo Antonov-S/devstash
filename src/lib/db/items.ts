@@ -1,5 +1,7 @@
 import "server-only";
 
+import type { ContentType } from "@/generated/prisma/enums";
+
 import { prisma } from "@/lib/prisma";
 
 export type ItemTypeMeta = {
@@ -111,6 +113,57 @@ export async function getItemsForUserByTypeId(
     select: itemSelect
   });
   return rows.map(toItemWithMeta);
+}
+
+export type ItemCollectionSummary = {
+  id: string;
+  name: string;
+};
+
+export type ItemDetail = ItemWithMeta & {
+  contentType: ContentType;
+  content: string | null;
+  fileUrl: string | null;
+  fileName: string | null;
+  fileSize: number | null;
+  url: string | null;
+  createdAt: Date;
+  collections: ItemCollectionSummary[];
+};
+
+export async function getItemDetailForUser(
+  userId: string,
+  itemId: string
+): Promise<ItemDetail | null> {
+  const row = await prisma.item.findFirst({
+    where: { id: itemId, userId },
+    select: {
+      ...itemSelect,
+      contentType: true,
+      content: true,
+      fileUrl: true,
+      fileName: true,
+      fileSize: true,
+      url: true,
+      createdAt: true,
+      collections: {
+        select: { collection: { select: { id: true, name: true } } },
+        orderBy: { addedAt: "desc" }
+      }
+    }
+  });
+  if (!row) return null;
+  return {
+    ...toItemWithMeta(row),
+    contentType: row.contentType,
+    content: row.content,
+    fileUrl: row.fileUrl,
+    fileName: row.fileName,
+    fileSize: row.fileSize,
+    url: row.url,
+    createdAt: row.createdAt,
+    collections: row.collections.map(({ collection }) => collection)
+  };
 }
 
 export type ItemStats = {

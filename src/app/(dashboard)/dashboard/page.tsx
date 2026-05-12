@@ -4,8 +4,8 @@ import { Clock, Pin } from "lucide-react";
 
 import { auth } from "@/auth";
 import { CollectionCard } from "@/components/dashboard/collection-card";
-import { ItemCard } from "@/components/dashboard/item-card";
 import { StatsCards } from "@/components/dashboard/stats-cards";
+import { ClickableItemCard } from "@/components/items/clickable-item-card";
 import {
   getCollectionStatsForUser,
   getRecentCollectionsForUser
@@ -77,7 +77,7 @@ export default async function DashboardPage() {
         {pinnedItems.length > 0 ? (
           <div className="flex flex-col gap-2">
             {pinnedItems.map((item) => (
-              <ItemCard key={item.id} item={item} />
+              <ClickableItemCard key={item.id} item={item} />
             ))}
           </div>
         ) : (
@@ -103,7 +103,7 @@ export default async function DashboardPage() {
         </h2>
         <div className="flex flex-col gap-2">
           {recentItems.map((item) => (
-            <ItemCard key={item.id} item={item} />
+            <ClickableItemCard key={item.id} item={item} />
           ))}
         </div>
       </section>
