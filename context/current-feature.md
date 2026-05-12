@@ -1,16 +1,26 @@
-# Current Feature
+# Current Feature: Items List View
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+- Create dynamic route `/items/[type]` (e.g., `/items/snippets`, `/items/notes`) that renders inside the `(dashboard)` shell
+- Fetch items filtered by the URL type (system types: snippet, prompt, command, note, file, image, link) using Prisma
+- Render a responsive grid of `ItemCard` components — two columns on `md` and up
+- Each card has a left border colored by its item type (`itemType.color`)
+- Follow existing codebase patterns (server components, Prisma fetch in lib, auth-gated, dashboard route group)
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+- Spec source: `context/features/item-list-view-spec.md`
+- Page must live inside `src/app/(dashboard)/items/[type]/page.tsx` so sidebar/topbar render
+- Type param is the singular system-type name (matches `ItemType.name`); pluralize for display via existing sidebar `pluralize` helper if needed
+- Use the authenticated session (`auth()`) like `/dashboard` and `/profile` do — no demo user fallback
+- Reuse existing card styling conventions; left border color comes from `itemType.color` (hex)
+- Unknown type slugs should 404 via `notFound()`
+- Sidebar already links to `/items/[type]` routes — wire these pages to those existing links
 
 ## History
 
