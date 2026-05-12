@@ -1,26 +1,16 @@
-# Current Feature: Item Drawer
+# Current Feature
 
 ## Status
 
-In Progress
+Not Started
 
 ## Goals
 
-- Right-side slide-in drawer (shadcn Sheet) opens when clicking an `ItemCard`
-- Works on both dashboard and `/items/[type]` list pages (no separate item page)
-- Action bar: Favorite (star, yellow when active), Pin, Copy, Edit (pencil), Delete (trash, right-aligned)
-- Drawer displays full item details (card data + fields fetched on click)
-- Client wrapper manages drawer open/close state (pages stay server components)
-- Card data continues to come from server components; full detail fetched on click via `GET /api/items/[id]`
-- Skeleton/loading state while fetching full detail
-- Snappy feel: fetch on click, no page navigation
+<!-- Bullet points of what success looks like -->
 
 ## Notes
 
-- Reference: `context/screenshots/dashboard-ui-drawer.png`
-- New query function for full item detail lives in `src/lib/db/items.ts`; API route at `/api/items/[id]` wraps it with `auth()` check
-- Scope is the drawer details display only — code editor and item-type-specific UI (e.g. file preview, link unfurl) are out of scope and come later
-- Action bar handlers can be wired in this pass or stubbed depending on size; defer if it grows the scope
+<!-- Additional context, constraints, or details from spec -->
 
 ## History
 
@@ -50,3 +40,4 @@ In Progress
 - Items list view — dynamic `/items/[type]` route inside `(dashboard)` shell rendering type-filtered items in a `grid-cols-1 md:grid-cols-2` grid of `ItemCard`s with left border colored by `itemType.color`; `src/lib/system-types.ts` maps plural slugs ↔ singular `ItemType.name` for the 7 system types (snippets/prompts/commands/notes/files/images/links); `getSystemItemTypeByName` + `getItemsForUserByTypeId` added to `src/lib/db/items.ts`; page is `auth()`-gated with redirect-to-sign-in, `notFound()` on unknown slugs, header (type icon + capitalized label + item count), empty state on zero items, and `generateMetadata` for per-type page titles — Completed
 - Vitest setup — Vitest 4 with Node env, native tsconfig paths (`@/* → src/*`), and a `vitest.setup.ts` that stubs `"server-only"`; scope limited to server actions (`src/actions/**`) and utilities (`src/lib/**`) — components excluded; Prisma + NextAuth mocked via `vi.mock` so tests are pure and fast; sample tests cover `system-types`, `utils.cn`, pure `rate-limit` helpers (`extractIp`/`formatRetryAfter`/`rateLimitMessage`), and `deleteAccountAction` (demonstrating the mocking pattern for `@/auth` + `@/lib/prisma`); `npm test` (watch) + `npm run test:run` (one-shot) added; `ai-interaction.md` workflow updated to require tests in step 4 alongside the build, and `coding-standards.md` gained a Testing section — Completed
 - Items list 3-column grid — `/items/[type]` page grid bumped from `grid-cols-1 md:grid-cols-2` to `grid-cols-1 md:grid-cols-2 lg:grid-cols-3` so wider viewports see more items per row (mobile 1 col / tablet 2 col unchanged); bundled fix to `vitest.config.ts` adding `fileParallelism: false` to work around Vitest 4 cross-worker module-resolution cache poisoning caused by `next-auth/lib/env.js` failing to resolve `next/server` under Node ESM, which broke the whole suite even though every test file passed in isolation — Completed
+- Item detail drawer — right-side shadcn Sheet drawer opens on `ItemCard` click across `/dashboard` and `/items/[type]`; new `ClickableItemCard` client wrapper turns the existing `ItemCard` into a `<button>` and owns drawer state so pages stay server components; card data continues to come from server components while the full detail (content, file/url, language, collections, createdAt) is fetched on click via new `auth()`-gated `GET /api/items/[id]` returning the new `ItemDetail` from `getItemDetailForUser` in `src/lib/db/items.ts` (scoped by `userId`, flattens tags + collections); drawer header shows type icon + title + Type/language badges, action bar has Favorite (yellow star when active), Pin, Copy (wired to `navigator.clipboard`), Edit, Delete (right-aligned trash) — Favorite/Pin/Edit/Delete stubbed per spec; body renders Description, Content (`<pre>` for TEXT, external link for URL, file row with `formatBytes` for FILE), Tags, Collections, and Created/Updated/Last used in a dl grid; skeleton + error states while the fetch is in flight; AbortController cancels in-flight requests on close; `formatDate` coerces ISO strings since the API serializes Dates to JSON; new unit tests in `src/lib/db/__tests__/items.test.ts` cover `getItemDetailForUser` (null on miss, full field mapping, user scoping) — route handler not unit-tested because importing it pulls next-auth's `next/server` resolution into Vitest and poisons the suite (the same issue the existing fileParallelism workaround can't fully escape) — Completed
