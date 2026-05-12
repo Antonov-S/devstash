@@ -1,7 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import {
+  Check,
   Copy,
   ExternalLink,
   FileIcon,
@@ -9,12 +11,16 @@ import {
   Pencil,
   Pin,
   Star,
-  Trash2
+  Trash2,
+  X
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { updateItemAction } from "@/actions/items";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Sheet,
   SheetContent,
@@ -23,9 +29,9 @@ import {
   SheetTitle
 } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { ItemDetail } from "@/lib/db/items";
-import type { ItemWithMeta } from "@/lib/db/items";
+import type { ItemDetail, ItemWithMeta } from "@/lib/db/items";
 import { iconMap } from "@/lib/icons";
+import { cn } from "@/lib/utils";
 
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
   month: "long",
@@ -43,6 +49,41 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+const TYPES_WITH_CONTENT = new Set(["snippet", "prompt", "command", "note"]);
+const TYPES_WITH_LANGUAGE = new Set(["snippet", "command"]);
+
+type EditState = {
+  title: string;
+  description: string;
+  content: string;
+  url: string;
+  language: string;
+  tags: string;
+};
+
+function detailToEditState(detail: ItemDetail): EditState {
+  return {
+    title: detail.title,
+    description: detail.description ?? "",
+    content: detail.content ?? "",
+    url: detail.url ?? "",
+    language: detail.language ?? "",
+    tags: detail.tags.join(", ")
+  };
+}
+
+function parseTags(input: string): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const part of input.split(",")) {
+    const trimmed = part.trim();
+    if (!trimmed || seen.has(trimmed)) continue;
+    seen.add(trimmed);
+    result.push(trimmed);
+  }
+  return result;
+}
+
 type Props = {
   cardItem: ItemWithMeta;
   open: boolean;
@@ -50,9 +91,13 @@ type Props = {
 };
 
 export function ItemDrawer({ cardItem, open, onOpenChange }: Props) {
+  const router = useRouter();
   const [detail, setDetail] = useState<ItemDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [mode, setMode] = useState<"view" | "edit">("view");
+  const [edit, setEdit] = useState<EditState | null>(null);
+  const [saving, startSaving] = useTransition();
 
   useEffect(() => {
     if (!open || detail) return;
@@ -81,9 +126,20 @@ export function ItemDrawer({ cardItem, open, onOpenChange }: Props) {
     return () => controller.abort();
   }, [open, detail, cardItem.id]);
 
-  const Icon = iconMap[cardItem.itemType.icon] ?? null;
+  useEffect(() => {
+    if (!open) {
+      setMode("view");
+      setEdit(null);
+    }
+  }, [open]);
 
-  const handleCopy = useCallback(async () => {
+  const Icon = iconMap[cardItem.itemType.icon] ?? null;
+  const typeName = (detail?.itemType.name ?? cardItem.itemType.name).toLowerCase();
+  const showsContent = TYPES_WITH_CONTENT.has(typeName);
+  const showsLanguage = TYPES_WITH_LANGUAGE.has(typeName);
+  const showsUrl = typeName === "link";
+
+  async function handleCopy() {
     const text =
       detail?.content ?? detail?.url ?? detail?.fileUrl ?? cardItem.title;
     try {
@@ -92,7 +148,46 @@ export function ItemDrawer({ cardItem, open, onOpenChange }: Props) {
     } catch {
       toast.error("Could not copy to clipboard");
     }
-  }, [detail, cardItem.title]);
+  }
+
+  function handleStartEdit() {
+    if (!detail) return;
+    setEdit(detailToEditState(detail));
+    setMode("edit");
+  }
+
+  function handleCancelEdit() {
+    setMode("view");
+    setEdit(null);
+  }
+
+  function handleSave() {
+    if (!detail || !edit) return;
+    const payload = {
+      title: edit.title,
+      description: edit.description,
+      content: showsContent ? edit.content : null,
+      url: showsUrl ? edit.url : null,
+      language: showsLanguage ? edit.language : null,
+      tags: parseTags(edit.tags)
+    };
+
+    startSaving(async () => {
+      const result = await updateItemAction(detail.id, payload);
+      if (!result.success) {
+        toast.error(result.error);
+        return;
+      }
+      setDetail(result.data);
+      setMode("view");
+      setEdit(null);
+      toast.success("Item updated");
+      router.refresh();
+    });
+  }
+
+  const editTitleEmpty =
+    mode === "edit" && edit !== null && edit.title.trim() === "";
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -112,7 +207,7 @@ export function ItemDrawer({ cardItem, open, onOpenChange }: Props) {
             )}
             <div className="min-w-0 flex-1">
               <SheetTitle className="truncate text-base">
-                {cardItem.title}
+                {detail?.title ?? cardItem.title}
               </SheetTitle>
               <SheetDescription className="sr-only">
                 Item details
@@ -137,60 +232,21 @@ export function ItemDrawer({ cardItem, open, onOpenChange }: Props) {
             </div>
           </div>
 
-          <div className="flex items-center gap-0.5">
-            <Button
-              variant="ghost"
-              size="sm"
-              aria-pressed={cardItem.isFavorite}
+          {mode === "view" ? (
+            <ViewActionBar
+              cardItem={cardItem}
               disabled={loading || !detail}
-            >
-              <Star
-                className={
-                  cardItem.isFavorite
-                    ? "fill-yellow-400 text-yellow-400"
-                    : undefined
-                }
-                aria-hidden
-              />
-              Favorite
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              aria-pressed={cardItem.isPinned}
-              disabled={loading || !detail}
-            >
-              <Pin aria-hidden />
-              Pin
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleCopy}
-              disabled={loading || !detail}
-            >
-              <Copy aria-hidden />
-              Copy
-            </Button>
-            <span className="flex-1" />
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              aria-label="Edit"
-              disabled={loading || !detail}
-            >
-              <Pencil aria-hidden />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              aria-label="Delete"
-              disabled={loading || !detail}
-              className="text-destructive hover:text-destructive"
-            >
-              <Trash2 aria-hidden />
-            </Button>
-          </div>
+              onCopy={handleCopy}
+              onEdit={handleStartEdit}
+            />
+          ) : (
+            <EditActionBar
+              saving={saving}
+              saveDisabled={editTitleEmpty || saving}
+              onCancel={handleCancelEdit}
+              onSave={handleSave}
+            />
+          )}
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto px-5 py-5">
@@ -203,12 +259,245 @@ export function ItemDrawer({ cardItem, open, onOpenChange }: Props) {
             >
               {error}
             </p>
+          ) : detail && mode === "edit" && edit ? (
+            <ItemEditForm
+              edit={edit}
+              onChange={setEdit}
+              disabled={saving}
+              showsContent={showsContent}
+              showsLanguage={showsLanguage}
+              showsUrl={showsUrl}
+            />
           ) : detail ? (
             <ItemDrawerBody detail={detail} />
           ) : null}
         </div>
       </SheetContent>
     </Sheet>
+  );
+}
+
+function ViewActionBar({
+  cardItem,
+  disabled,
+  onCopy,
+  onEdit
+}: {
+  cardItem: ItemWithMeta;
+  disabled: boolean;
+  onCopy: () => void;
+  onEdit: () => void;
+}) {
+  return (
+    <div className="flex items-center gap-0.5">
+      <Button
+        variant="ghost"
+        size="sm"
+        aria-pressed={cardItem.isFavorite}
+        disabled={disabled}
+      >
+        <Star
+          className={
+            cardItem.isFavorite ? "fill-yellow-400 text-yellow-400" : undefined
+          }
+          aria-hidden
+        />
+        Favorite
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
+        aria-pressed={cardItem.isPinned}
+        disabled={disabled}
+      >
+        <Pin aria-hidden />
+        Pin
+      </Button>
+      <Button variant="ghost" size="sm" onClick={onCopy} disabled={disabled}>
+        <Copy aria-hidden />
+        Copy
+      </Button>
+      <span className="flex-1" />
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        aria-label="Edit"
+        onClick={onEdit}
+        disabled={disabled}
+      >
+        <Pencil aria-hidden />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        aria-label="Delete"
+        disabled={disabled}
+        className="text-destructive hover:text-destructive"
+      >
+        <Trash2 aria-hidden />
+      </Button>
+    </div>
+  );
+}
+
+function EditActionBar({
+  saving,
+  saveDisabled,
+  onCancel,
+  onSave
+}: {
+  saving: boolean;
+  saveDisabled: boolean;
+  onCancel: () => void;
+  onSave: () => void;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <Button size="sm" onClick={onSave} disabled={saveDisabled}>
+        {saving ? (
+          <LoaderCircle className="animate-spin" aria-hidden />
+        ) : (
+          <Check aria-hidden />
+        )}
+        Save
+      </Button>
+      <Button variant="ghost" size="sm" onClick={onCancel} disabled={saving}>
+        <X aria-hidden />
+        Cancel
+      </Button>
+    </div>
+  );
+}
+
+function ItemEditForm({
+  edit,
+  onChange,
+  disabled,
+  showsContent,
+  showsLanguage,
+  showsUrl
+}: {
+  edit: EditState;
+  onChange: (next: EditState) => void;
+  disabled: boolean;
+  showsContent: boolean;
+  showsLanguage: boolean;
+  showsUrl: boolean;
+}) {
+  function update<K extends keyof EditState>(key: K, value: EditState[K]) {
+    onChange({ ...edit, [key]: value });
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <Field label="Title" htmlFor="edit-title" required>
+        <Input
+          id="edit-title"
+          value={edit.title}
+          onChange={(e) => update("title", e.target.value)}
+          disabled={disabled}
+          aria-invalid={edit.title.trim() === "" ? true : undefined}
+          required
+        />
+      </Field>
+
+      <Field label="Description" htmlFor="edit-description">
+        <Textarea
+          id="edit-description"
+          value={edit.description}
+          onChange={(e) => update("description", e.target.value)}
+          disabled={disabled}
+          rows={3}
+        />
+      </Field>
+
+      {showsContent && (
+        <Field label="Content" htmlFor="edit-content">
+          <Textarea
+            id="edit-content"
+            value={edit.content}
+            onChange={(e) => update("content", e.target.value)}
+            disabled={disabled}
+            rows={10}
+            className="font-mono text-xs"
+          />
+        </Field>
+      )}
+
+      {showsLanguage && (
+        <Field label="Language" htmlFor="edit-language">
+          <Input
+            id="edit-language"
+            value={edit.language}
+            onChange={(e) => update("language", e.target.value)}
+            disabled={disabled}
+            placeholder="e.g. typescript"
+          />
+        </Field>
+      )}
+
+      {showsUrl && (
+        <Field label="URL" htmlFor="edit-url">
+          <Input
+            id="edit-url"
+            type="url"
+            value={edit.url}
+            onChange={(e) => update("url", e.target.value)}
+            disabled={disabled}
+            placeholder="https://example.com"
+          />
+        </Field>
+      )}
+
+      <Field label="Tags" htmlFor="edit-tags" hint="Comma-separated">
+        <Input
+          id="edit-tags"
+          value={edit.tags}
+          onChange={(e) => update("tags", e.target.value)}
+          disabled={disabled}
+          placeholder="react, hooks, auth"
+        />
+      </Field>
+    </div>
+  );
+}
+
+function Field({
+  label,
+  htmlFor,
+  required,
+  hint,
+  children
+}: {
+  label: string;
+  htmlFor: string;
+  required?: boolean;
+  hint?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-center justify-between">
+        <Label htmlFor={htmlFor}>
+          {label}
+          {required && <span className="text-destructive"> *</span>}
+        </Label>
+        {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function Textarea({ className, ...props }: React.ComponentProps<"textarea">) {
+  return (
+    <textarea
+      className={cn(
+        "min-h-16 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1.5 text-sm transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:bg-input/30 dark:disabled:bg-input/80 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40",
+        className
+      )}
+      {...props}
+    />
   );
 }
 
