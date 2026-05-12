@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 
 import { auth } from "@/auth";
-import { ItemCard } from "@/components/dashboard/item-card";
+import { ClickableItemCard } from "@/components/items/clickable-item-card";
 import {
   getItemsForUserByTypeId,
   getSystemItemTypeByName
@@ -68,7 +68,7 @@ export default async function ItemsByTypePage({
       {items.length > 0 ? (
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
           {items.map((item) => (
-            <ItemCard key={item.id} item={item} />
+            <ClickableItemCard key={item.id} item={item} />
           ))}
         </div>
       ) : (
