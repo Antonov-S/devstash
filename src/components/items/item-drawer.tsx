@@ -16,9 +16,18 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { updateItemAction } from "@/actions/items";
+import { deleteItemAction, updateItemAction } from "@/actions/items";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -98,6 +107,8 @@ export function ItemDrawer({ cardItem, open, onOpenChange }: Props) {
   const [mode, setMode] = useState<"view" | "edit">("view");
   const [edit, setEdit] = useState<EditState | null>(null);
   const [saving, startSaving] = useTransition();
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, startDeleting] = useTransition();
 
   useEffect(() => {
     if (!open || detail) return;
@@ -186,6 +197,21 @@ export function ItemDrawer({ cardItem, open, onOpenChange }: Props) {
     });
   }
 
+  function handleDelete() {
+    if (!detail) return;
+    startDeleting(async () => {
+      const result = await deleteItemAction(detail.id);
+      if (!result.success) {
+        toast.error(result.error);
+        return;
+      }
+      setDeleteOpen(false);
+      onOpenChange(false);
+      toast.success("Item deleted");
+      router.refresh();
+    });
+  }
+
   const editTitleEmpty =
     mode === "edit" && edit !== null && edit.title.trim() === "";
 
@@ -238,6 +264,7 @@ export function ItemDrawer({ cardItem, open, onOpenChange }: Props) {
               disabled={loading || !detail}
               onCopy={handleCopy}
               onEdit={handleStartEdit}
+              onDelete={() => setDeleteOpen(true)}
             />
           ) : (
             <EditActionBar
@@ -272,6 +299,17 @@ export function ItemDrawer({ cardItem, open, onOpenChange }: Props) {
             <ItemDrawerBody detail={detail} />
           ) : null}
         </div>
+
+        <DeleteItemDialog
+          open={deleteOpen}
+          onOpenChange={(next) => {
+            if (deleting) return;
+            setDeleteOpen(next);
+          }}
+          title={detail?.title ?? cardItem.title}
+          deleting={deleting}
+          onConfirm={handleDelete}
+        />
       </SheetContent>
     </Sheet>
   );
@@ -281,12 +319,14 @@ function ViewActionBar({
   cardItem,
   disabled,
   onCopy,
-  onEdit
+  onEdit,
+  onDelete
 }: {
   cardItem: ItemWithMeta;
   disabled: boolean;
   onCopy: () => void;
   onEdit: () => void;
+  onDelete: () => void;
 }) {
   return (
     <div className="flex items-center gap-0.5">
@@ -332,11 +372,62 @@ function ViewActionBar({
         size="icon-sm"
         aria-label="Delete"
         disabled={disabled}
+        onClick={onDelete}
         className="text-destructive hover:text-destructive"
       >
         <Trash2 aria-hidden />
       </Button>
     </div>
+  );
+}
+
+function DeleteItemDialog({
+  open,
+  onOpenChange,
+  title,
+  deleting,
+  onConfirm
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  title: string;
+  deleting: boolean;
+  onConfirm: () => void;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Delete &ldquo;{title}&rdquo;?</DialogTitle>
+          <DialogDescription>
+            This permanently deletes the item and removes it from any
+            collections. This action cannot be undone.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="pt-2">
+          <DialogClose
+            render={
+              <Button type="button" variant="outline" disabled={deleting}>
+                Cancel
+              </Button>
+            }
+          />
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={onConfirm}
+            disabled={deleting}
+          >
+            {deleting ? (
+              <LoaderCircle className="size-4 animate-spin" aria-hidden />
+            ) : (
+              <Trash2 aria-hidden />
+            )}
+            Delete
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

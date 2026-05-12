@@ -220,6 +220,16 @@ export async function updateItemForUser(
   return getItemDetailForUser(userId, itemId);
 }
 
+export async function deleteItemForUser(
+  userId: string,
+  itemId: string
+): Promise<boolean> {
+  const result = await prisma.item.deleteMany({
+    where: { id: itemId, userId }
+  });
+  return result.count > 0;
+}
+
 export async function getItemStatsForUser(userId: string): Promise<ItemStats> {
   const [total, favorites] = await Promise.all([
     prisma.item.count({ where: { userId } }),

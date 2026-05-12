@@ -3,7 +3,11 @@
 import { z } from "zod";
 
 import { auth } from "@/auth";
-import { updateItemForUser, type ItemDetail } from "@/lib/db/items";
+import {
+  deleteItemForUser,
+  updateItemForUser,
+  type ItemDetail
+} from "@/lib/db/items";
 
 function normalizeOptional(value: string | null | undefined): string | null {
   if (value == null) return null;
@@ -90,5 +94,33 @@ export async function updateItemAction(
   } catch (error) {
     console.error("updateItemAction failed", error);
     return { success: false, error: "Could not update item. Please try again." };
+  }
+}
+
+export type DeleteItemResult =
+  | { success: true }
+  | { success: false; error: string };
+
+export async function deleteItemAction(
+  itemId: string
+): Promise<DeleteItemResult> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, error: "You are not signed in." };
+  }
+
+  if (typeof itemId !== "string" || !itemId) {
+    return { success: false, error: "Invalid item id" };
+  }
+
+  try {
+    const deleted = await deleteItemForUser(session.user.id, itemId);
+    if (!deleted) {
+      return { success: false, error: "Item not found" };
+    }
+    return { success: true };
+  } catch (error) {
+    console.error("deleteItemAction failed", error);
+    return { success: false, error: "Could not delete item. Please try again." };
   }
 }
