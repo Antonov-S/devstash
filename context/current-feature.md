@@ -1,57 +1,16 @@
-# Current Feature: Dashboard UI Typography & Spacing Refresh
+# Current Feature
 
 ## Status
 
-In Progress
+Not Started
 
 ## Goals
 
-- Improve readability on large displays by normalizing the typography scale across the dashboard
-- Unify typography rhythm (size, weight, line-height) between sidebar, dashboard, drawer, dialog, forms, and cards — use sidebar as the visual baseline
-- Bump dashboard section titles (h2) from `text-base` to `text-lg font-semibold` with slightly improved vertical spacing
-- Increase `ItemCard` typography (title/metadata/description/tags) from `text-xs` baseline toward `text-sm` for body, with improved line-height for multi-line content; bump internal padding only if needed
-- Make the item detail drawer (title, labels, content, metadata) feel less dense — better spacing between blocks, comfortable reading width and line-height
-- Make the New Item dialog more readable on desktop — labels `text-sm font-medium`, inputs `text-sm`, form group spacing `space-y-4` or equivalent
-- Make the dashboard search bar align with sidebar input styling — larger input text (`text-sm` or `text-base`), slightly larger horizontal padding, readable placeholder
-- Keep dashboard title (h1, `text-2xl`) and status bar (`text-sm`) sizes as-is — use the status bar as readable-body-text reference
-- Eliminate small unreadable text sizes, keep dark/light theme + responsive behavior intact, no functional/behavioral regressions
+<!-- Bullet points of what success looks like -->
 
 ## Notes
 
-Spec: `context/features/ui-typography-update-spec.md`
-
-Scope:
-
-- Purely visual / UI polish. Prefer Tailwind utility tweaks over structural rewrites; reuse existing tokens/classes.
-- Use the sidebar's typography and spacing as the primary design reference for the rest of the dashboard.
-
-Constraints (do not change):
-
-- No functionality, state, API, server action, or routing changes
-- No component behavior changes
-- No new design language — keep current visual style and component architecture
-- Preserve dark/light theme compatibility and responsive behavior
-
-Suggested surfaces to audit/adjust:
-
-- Dashboard top bar (status bar baseline + search input)
-- Section headings (`h2`) across the dashboard
-- `ItemCard` (titles, descriptions, metadata, tags) + empty states
-- Item detail drawer (header, action bar, body content blocks, dl metadata grid, tags/collections sections, edit-mode form)
-- `NewItemDialog` form (labels, inputs, placeholders, helper text, type selector, group spacing)
-- Shared form controls / labels used across the dashboard
-
-Implementation notes:
-
-- Compare typography scale usage across components and normalize inconsistencies before bumping individual sizes
-- Avoid overly large typography that adds visual noise — the goal is comfortable reading, not big text
-- Reference screenshots: `context/screenshots/dashboard-ui-main.png`, `context/screenshots/dashboard-ui-drawer.png`
-
-Acceptance:
-
-- Dashboard typography feels visually consistent and unified with the sidebar
-- Cards, drawers, dialogs, and forms are easier to scan on large displays
-- No functionality regressions, no layout breaking changes
+<!-- Additional context, constraints, or details from spec -->
 
 ## History
 
@@ -85,3 +44,4 @@ Acceptance:
 - Item drawer edit mode — pencil Edit toggles the open drawer into inline edit mode, swapping the action bar to Save (primary, left) + Cancel and the body to a controlled form with Title (required), Description, Tags (comma-separated), and type-aware Content (snippet/prompt/command/note), Language (snippet/command), URL (link); new `updateItemAction` in `src/actions/items.ts` returns `{ success, data | error }`, validates with Zod 4 (trimmed required `title`, optional trimmed string fields, `new URL()`-checked optional `url`, deduped trimmed `tags`), checks `auth()` session, and delegates to new `updateItemForUser` in `src/lib/db/items.ts` which verifies ownership and runs `tagsOnItems.deleteMany` + `item.update` (with `tags.create` + `connectOrCreate`) inside a `$transaction`, returning the refreshed `ItemDetail` so the drawer skips a second fetch; client uses `useTransition` for pending state, toasts on success/error, calls `router.refresh()` to sync the underlying card lists, and disables Save when title is empty; manual `useCallback`/`useMemo` dropped throughout the drawer since `reactCompiler: true` is on in `next.config.ts`; `zod` added as a direct dependency; new Vitest tests in `src/actions/__tests__/items.test.ts` (7 cases: no session, empty id, empty title, invalid URL, not-found, normalization, generic-error) and three more in `src/lib/db/__tests__/items.test.ts` covering `updateItemForUser` (ownership miss, tag dedup + connect-or-create shape, refreshed-detail return) — Completed
 - Item delete — trash icon in the drawer action bar now opens a base-ui `Dialog` confirmation ("Delete \"<title>\"?" + "cannot be undone" warning, dismiss locked while pending) that calls new `deleteItemAction` in `src/actions/items.ts`; action validates `auth()` session + non-empty id, delegates to new `deleteItemForUser` in `src/lib/db/items.ts` which uses ownership-scoped `prisma.item.deleteMany({ where: { id, userId } })` so wrong-owner and missing-id collapse to `count === 0` (no enumeration oracle) and Prisma's `onDelete: Cascade` cleans up `TagsOnItems` + `ItemCollection`; on success the drawer closes via `onOpenChange(false)`, toasts `"Item deleted"`, and calls `router.refresh()` so dashboard pinned/recent + items-by-type grids re-fetch; new Vitest cases in `src/actions/__tests__/items.test.ts` (no session, empty id, not-found, success, generic-error) and `src/lib/db/__tests__/items.test.ts` (scoping shape, deleted, no-match) — Completed
 - Item create — new `NewItemDialog` client component wired to the top-bar "New Item" button: shadcn `Dialog` with a radio-style 5-type selector (snippet/prompt/command/note/link, colored Lucide icons) and type-aware fields (title required for all, content for snippet/prompt/command/note, language for snippet/command, URL required for link, comma-separated tags for all); new `createItemAction` in `src/actions/items.ts` returns `{ success, data | error }`, validates with Zod 4 (trimmed required title, optional trimmed strings, `new URL()`-checked URL, `superRefine` requiring URL for link, deduped trimmed tags), checks `auth()` session, then strips fields irrelevant to the chosen type before delegating to new `createItemForUser` in `src/lib/db/items.ts`; the db helper looks up the system `ItemType` by name (returns null when missing so the action surfaces "Item type not found"), derives `contentType` (`TEXT` for snippet/prompt/command/note, `URL` for link) from a per-type lookup table, dedupes tags inside the helper via `Array.from(new Set(...))` (matches the `updateItemForUser` pattern), runs `prisma.item.create` with `tags.connectOrCreate`, then re-reads via `getItemDetailForUser` so the action returns the refreshed `ItemDetail`; client uses `useTransition`, toasts on success/error, resets all state on close (locked while pending), and calls `router.refresh()` so sidebar counts + dashboard lists pick up the new row; new Vitest tests in `src/actions/__tests__/items.test.ts` (8 cases: no session, empty title, missing URL for link, invalid URL, normalization with type-irrelevant field stripping, link keeps URL drops content/language, snippet keeps language, type-not-found, generic-error) and `src/lib/db/__tests__/items.test.ts` (4 cases: type not found, snippet creates TEXT with deduped connect-or-create tags, link creates URL contentType, refreshed-detail return) — Completed
+- Dashboard UI typography & spacing refresh — purely visual polish normalizing the typography scale across the dashboard against the sidebar baseline; dashboard section `h2`s bumped from `text-base` to `text-lg font-semibold` with section gap `gap-3 → gap-4`, "View all" + pinned/items-by-type empty-state helpers from `text-xs → text-sm`; `ItemCard` retitled to `text-[15px] leading-snug` (matches sidebar's `text-[15px]` menu items), description `text-xs → text-sm leading-snug`, badges `text-[10px] → text-[11px]` with gap `1 → 1.5`, date `text-xs → text-sm`, pin/star icons `size-3 → size-3.5`; item detail drawer reflows to `px-6 py-5` header (gap-4) + `px-6 py-6` body (gap-6), `SheetTitle` `text-base → text-lg`, header badges `text-[10px] → text-[11px]`, content `<pre>` `text-xs → text-sm` with `p-4 leading-relaxed`, tag/collection badges `text-[11px] → text-xs`, dl `gap-y-1.5 → gap-y-2`, file row + EmptyContent + Open link `text-xs → text-sm`, Field gap `1.5 → 2`, edit-mode content textarea `text-xs → text-sm`; `NewItemDialog` type selector buttons `text-[11px] → text-xs` (gap `1 → 1.5`, py `2 → 2.5`), Field/Type group gap `1.5 → 2`, content textarea `text-xs → text-sm`; top-bar search input `h-9 → h-10` with explicit `text-sm` + `pl-10` (icon shifted to `left-3.5`), ⌘K kbd `text-[10px] → text-[11px]`; no functionality/state/API/routing changes, all 53 Vitest tests + `next build` pass — Completed
