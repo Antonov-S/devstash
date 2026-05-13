@@ -84,7 +84,7 @@ export default async function ItemsByTypePage({
           <p className="mt-1 text-sm font-medium">
             No {label.toLowerCase()} yet
           </p>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             Create your first {typeName} to get started.
           </p>
         </div>

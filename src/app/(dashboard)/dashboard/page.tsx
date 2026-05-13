@@ -52,12 +52,12 @@ export default async function DashboardPage() {
         favoriteCollectionCount={collectionStats.favorites}
       />
 
-      <section className="flex flex-col gap-3">
+      <section className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold">Collections</h2>
+          <h2 className="text-lg font-semibold">Collections</h2>
           <Link
             href="/collections"
-            className="text-xs text-muted-foreground hover:text-foreground"
+            className="text-sm text-muted-foreground hover:text-foreground"
           >
             View all
           </Link>
@@ -69,8 +69,8 @@ export default async function DashboardPage() {
         </div>
       </section>
 
-      <section className="flex flex-col gap-3">
-        <h2 className="flex items-center gap-2 text-base font-semibold">
+      <section className="flex flex-col gap-4">
+        <h2 className="flex items-center gap-2 text-lg font-semibold">
           <Pin className="size-4" />
           Pinned
         </h2>
@@ -89,15 +89,15 @@ export default async function DashboardPage() {
               <Pin className="size-4 text-muted-foreground" />
             </span>
             <p className="mt-1 text-sm font-medium">No pinned items</p>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               Pin an item to keep it at the top of your dashboard.
             </p>
           </div>
         )}
       </section>
 
-      <section className="flex flex-col gap-3">
-        <h2 className="flex items-center gap-2 text-base font-semibold">
+      <section className="flex flex-col gap-4">
+        <h2 className="flex items-center gap-2 text-lg font-semibold">
           <Clock className="size-4" />
           Recent
         </h2>

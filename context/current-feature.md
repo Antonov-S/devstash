@@ -1,16 +1,57 @@
-# Current Feature
+# Current Feature: Dashboard UI Typography & Spacing Refresh
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+- Improve readability on large displays by normalizing the typography scale across the dashboard
+- Unify typography rhythm (size, weight, line-height) between sidebar, dashboard, drawer, dialog, forms, and cards — use sidebar as the visual baseline
+- Bump dashboard section titles (h2) from `text-base` to `text-lg font-semibold` with slightly improved vertical spacing
+- Increase `ItemCard` typography (title/metadata/description/tags) from `text-xs` baseline toward `text-sm` for body, with improved line-height for multi-line content; bump internal padding only if needed
+- Make the item detail drawer (title, labels, content, metadata) feel less dense — better spacing between blocks, comfortable reading width and line-height
+- Make the New Item dialog more readable on desktop — labels `text-sm font-medium`, inputs `text-sm`, form group spacing `space-y-4` or equivalent
+- Make the dashboard search bar align with sidebar input styling — larger input text (`text-sm` or `text-base`), slightly larger horizontal padding, readable placeholder
+- Keep dashboard title (h1, `text-2xl`) and status bar (`text-sm`) sizes as-is — use the status bar as readable-body-text reference
+- Eliminate small unreadable text sizes, keep dark/light theme + responsive behavior intact, no functional/behavioral regressions
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+Spec: `context/features/ui-typography-update-spec.md`
+
+Scope:
+
+- Purely visual / UI polish. Prefer Tailwind utility tweaks over structural rewrites; reuse existing tokens/classes.
+- Use the sidebar's typography and spacing as the primary design reference for the rest of the dashboard.
+
+Constraints (do not change):
+
+- No functionality, state, API, server action, or routing changes
+- No component behavior changes
+- No new design language — keep current visual style and component architecture
+- Preserve dark/light theme compatibility and responsive behavior
+
+Suggested surfaces to audit/adjust:
+
+- Dashboard top bar (status bar baseline + search input)
+- Section headings (`h2`) across the dashboard
+- `ItemCard` (titles, descriptions, metadata, tags) + empty states
+- Item detail drawer (header, action bar, body content blocks, dl metadata grid, tags/collections sections, edit-mode form)
+- `NewItemDialog` form (labels, inputs, placeholders, helper text, type selector, group spacing)
+- Shared form controls / labels used across the dashboard
+
+Implementation notes:
+
+- Compare typography scale usage across components and normalize inconsistencies before bumping individual sizes
+- Avoid overly large typography that adds visual noise — the goal is comfortable reading, not big text
+- Reference screenshots: `context/screenshots/dashboard-ui-main.png`, `context/screenshots/dashboard-ui-drawer.png`
+
+Acceptance:
+
+- Dashboard typography feels visually consistent and unified with the sidebar
+- Cards, drawers, dialogs, and forms are easier to scan on large displays
+- No functionality regressions, no layout breaking changes
 
 ## History
 
