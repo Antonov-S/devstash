@@ -32,34 +32,38 @@ export function ItemCard({ item }: { item: ItemWithMeta }) {
 
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
-          <h3 className="truncate text-sm font-medium">{item.title}</h3>
-          {item.isPinned && <Pin className="size-3 shrink-0 text-muted-foreground" />}
+          <h3 className="truncate text-[15px] font-medium leading-snug">
+            {item.title}
+          </h3>
+          {item.isPinned && (
+            <Pin className="size-3.5 shrink-0 text-muted-foreground" />
+          )}
           {item.isFavorite && (
-            <Star className="size-3 shrink-0 fill-yellow-400 text-yellow-400" />
+            <Star className="size-3.5 shrink-0 fill-yellow-400 text-yellow-400" />
           )}
         </div>
         {item.description && (
-          <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
+          <p className="mt-1 line-clamp-1 text-sm leading-snug text-muted-foreground">
             {item.description}
           </p>
         )}
-        <div className="mt-2 flex flex-wrap items-center gap-1">
+        <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
           <Badge
             variant="outline"
-            className="text-[10px] capitalize"
+            className="text-[11px] capitalize"
             style={{ borderColor: item.itemType.color, color: item.itemType.color }}
           >
             {item.itemType.name}
           </Badge>
           {item.tags.map((tag) => (
-            <Badge key={tag} variant="secondary" className="text-[10px]">
+            <Badge key={tag} variant="secondary" className="text-[11px]">
               {tag}
             </Badge>
           ))}
         </div>
       </div>
 
-      <span className="shrink-0 text-xs text-muted-foreground">
+      <span className="shrink-0 text-sm text-muted-foreground">
         {dateFormatter.format(date)}
       </span>
     </div>

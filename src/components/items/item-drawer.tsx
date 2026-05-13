@@ -218,7 +218,7 @@ export function ItemDrawer({ cardItem, open, onOpenChange }: Props) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="flex w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-lg">
-        <SheetHeader className="gap-3 border-b border-border/60 px-5 py-4">
+        <SheetHeader className="gap-4 border-b border-border/60 px-6 py-5">
           <div className="flex items-start gap-3 pr-8">
             {Icon && (
               <span
@@ -232,16 +232,16 @@ export function ItemDrawer({ cardItem, open, onOpenChange }: Props) {
               </span>
             )}
             <div className="min-w-0 flex-1">
-              <SheetTitle className="truncate text-base">
+              <SheetTitle className="truncate text-lg">
                 {detail?.title ?? cardItem.title}
               </SheetTitle>
               <SheetDescription className="sr-only">
                 Item details
               </SheetDescription>
-              <div className="mt-1.5 flex flex-wrap items-center gap-1">
+              <div className="mt-2 flex flex-wrap items-center gap-1.5">
                 <Badge
                   variant="outline"
-                  className="text-[10px] capitalize"
+                  className="text-[11px] capitalize"
                   style={{
                     borderColor: cardItem.itemType.color,
                     color: cardItem.itemType.color
@@ -250,7 +250,7 @@ export function ItemDrawer({ cardItem, open, onOpenChange }: Props) {
                   {cardItem.itemType.name}
                 </Badge>
                 {(detail?.language ?? cardItem.language) && (
-                  <Badge variant="secondary" className="text-[10px]">
+                  <Badge variant="secondary" className="text-[11px]">
                     {detail?.language ?? cardItem.language}
                   </Badge>
                 )}
@@ -276,7 +276,7 @@ export function ItemDrawer({ cardItem, open, onOpenChange }: Props) {
           )}
         </SheetHeader>
 
-        <div className="flex-1 overflow-y-auto px-5 py-5">
+        <div className="flex-1 overflow-y-auto px-6 py-6">
           {loading && !detail ? (
             <ItemDrawerSkeleton />
           ) : error ? (
@@ -510,7 +510,7 @@ function ItemEditForm({
             onChange={(e) => update("content", e.target.value)}
             disabled={disabled}
             rows={10}
-            className="font-mono text-xs"
+            className="font-mono text-sm"
           />
         </Field>
       )}
@@ -567,7 +567,7 @@ function Field({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between">
         <Label htmlFor={htmlFor}>
           {label}
@@ -594,10 +594,12 @@ function Textarea({ className, ...props }: React.ComponentProps<"textarea">) {
 
 function ItemDrawerBody({ detail }: { detail: ItemDetail }) {
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-6">
       {detail.description && (
         <Section title="Description">
-          <p className="text-sm text-foreground/90">{detail.description}</p>
+          <p className="text-sm leading-relaxed text-foreground/90">
+            {detail.description}
+          </p>
         </Section>
       )}
 
@@ -607,9 +609,9 @@ function ItemDrawerBody({ detail }: { detail: ItemDetail }) {
 
       {detail.tags.length > 0 && (
         <Section title="Tags">
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-wrap gap-1.5">
             {detail.tags.map((tag) => (
-              <Badge key={tag} variant="secondary" className="text-[11px]">
+              <Badge key={tag} variant="secondary" className="text-xs">
                 {tag}
               </Badge>
             ))}
@@ -619,12 +621,12 @@ function ItemDrawerBody({ detail }: { detail: ItemDetail }) {
 
       {detail.collections.length > 0 && (
         <Section title="Collections">
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-wrap gap-1.5">
             {detail.collections.map((collection) => (
               <Badge
                 key={collection.id}
                 variant="outline"
-                className="text-[11px]"
+                className="text-xs"
               >
                 {collection.name}
               </Badge>
@@ -634,7 +636,7 @@ function ItemDrawerBody({ detail }: { detail: ItemDetail }) {
       )}
 
       <Section title="Details">
-        <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-1.5 text-sm">
+        <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
           <dt className="text-muted-foreground">Created</dt>
           <dd className="text-foreground/90">{formatDate(detail.createdAt)}</dd>
           <dt className="text-muted-foreground">Updated</dt>
@@ -659,7 +661,7 @@ function ItemContent({ detail }: { detail: ItemDetail }) {
       return <EmptyContent label="No content" />;
     }
     return (
-      <pre className="overflow-x-auto rounded-md border border-border/60 bg-muted/40 p-3 text-xs leading-relaxed">
+      <pre className="overflow-x-auto rounded-md border border-border/60 bg-muted/40 p-4 text-sm leading-relaxed">
         <code>{detail.content}</code>
       </pre>
     );
@@ -699,7 +701,7 @@ function ItemContent({ detail }: { detail: ItemDetail }) {
           {detail.fileName ?? "File"}
         </p>
         {detail.fileSize !== null && (
-          <p className="text-xs text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             {formatBytes(detail.fileSize)}
           </p>
         )}
@@ -708,7 +710,7 @@ function ItemContent({ detail }: { detail: ItemDetail }) {
         href={detail.fileUrl}
         target="_blank"
         rel="noreferrer noopener"
-        className="text-xs text-primary hover:underline"
+        className="text-sm text-primary hover:underline"
       >
         Open
       </a>
@@ -718,7 +720,7 @@ function ItemContent({ detail }: { detail: ItemDetail }) {
 
 function EmptyContent({ label }: { label: string }) {
   return (
-    <p className="rounded-md border border-dashed border-border/60 bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
+    <p className="rounded-md border border-dashed border-border/60 bg-muted/20 px-3 py-2 text-sm text-muted-foreground">
       {label}
     </p>
   );

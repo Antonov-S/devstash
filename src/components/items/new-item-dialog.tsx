@@ -152,7 +152,7 @@ export function NewItemDialog() {
           className="flex flex-col gap-4"
           aria-busy={pending}
         >
-          <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-2">
             <Label>Type</Label>
             <div
               role="radiogroup"
@@ -170,7 +170,7 @@ export function NewItemDialog() {
                     onClick={() => setType(option.value)}
                     disabled={pending}
                     className={cn(
-                      "flex flex-col items-center justify-center gap-1 rounded-md px-2 py-2 text-[11px] font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-50",
+                      "flex flex-col items-center justify-center gap-1.5 rounded-md px-2 py-2.5 text-xs font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-50",
                       selected
                         ? "bg-background text-foreground shadow-sm"
                         : "text-muted-foreground hover:text-foreground"
@@ -218,7 +218,7 @@ export function NewItemDialog() {
                 onChange={(e) => setContent(e.target.value)}
                 disabled={pending}
                 rows={6}
-                className="font-mono text-xs"
+                className="font-mono text-sm"
               />
             </Field>
           )}
@@ -295,7 +295,7 @@ function Field({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between">
         <Label htmlFor={htmlFor}>
           {label}
