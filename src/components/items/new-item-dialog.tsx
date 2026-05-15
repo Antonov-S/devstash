@@ -14,6 +14,7 @@ import {
 import { toast } from "sonner";
 
 import { createItemAction, type CreateItemType } from "@/actions/items";
+import { CodeEditor } from "@/components/items/code-editor";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -52,7 +53,7 @@ const TYPES_WITH_CONTENT = new Set<CreateItemType>([
 ]);
 const TYPES_WITH_LANGUAGE = new Set<CreateItemType>(["snippet", "command"]);
 
-const INITIAL_TYPE: CreateItemType = "snippet";
+const DEFAULT_TYPE: CreateItemType = "snippet";
 
 function parseTags(input: string): string[] {
   const seen = new Set<string>();
@@ -66,10 +67,19 @@ function parseTags(input: string): string[] {
   return result;
 }
 
-export function NewItemDialog() {
+type NewItemDialogProps = {
+  initialType?: CreateItemType;
+  trigger?: React.ReactElement;
+};
+
+export function NewItemDialog({
+  initialType,
+  trigger
+}: NewItemDialogProps = {}) {
   const router = useRouter();
+  const baseType = initialType ?? DEFAULT_TYPE;
   const [open, setOpen] = useState(false);
-  const [type, setType] = useState<CreateItemType>(INITIAL_TYPE);
+  const [type, setType] = useState<CreateItemType>(baseType);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [content, setContent] = useState("");
@@ -87,7 +97,7 @@ export function NewItemDialog() {
   const submitDisabled = pending || titleEmpty || urlMissing;
 
   function resetForm() {
-    setType(INITIAL_TYPE);
+    setType(baseType);
     setTitle("");
     setDescription("");
     setContent("");
@@ -129,16 +139,16 @@ export function NewItemDialog() {
     });
   }
 
+  const triggerNode = trigger ?? (
+    <Button size="sm" aria-label="New Item" title="New Item">
+      <Plus className="size-4" />
+      <span className="hidden md:inline">New Item</span>
+    </Button>
+  );
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger
-        render={
-          <Button size="sm" aria-label="New Item" title="New Item">
-            <Plus className="size-4" />
-            <span className="hidden md:inline">New Item</span>
-          </Button>
-        }
-      />
+      <DialogTrigger render={triggerNode} />
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>New item</DialogTitle>
@@ -212,14 +222,23 @@ export function NewItemDialog() {
 
           {showsContent && (
             <Field label="Content" htmlFor="new-content">
-              <Textarea
-                id="new-content"
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                disabled={pending}
-                rows={6}
-                className="font-mono text-sm"
-              />
+              {showsLanguage ? (
+                <CodeEditor
+                  value={content}
+                  language={language}
+                  onChange={setContent}
+                  ariaLabel="New item content"
+                />
+              ) : (
+                <Textarea
+                  id="new-content"
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  disabled={pending}
+                  rows={6}
+                  className="font-mono text-sm"
+                />
+              )}
             </Field>
           )}
 

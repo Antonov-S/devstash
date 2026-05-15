@@ -1,16 +1,27 @@
-# Current Feature
+# Current Feature: Code Editor
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+- Add a `CodeEditor` component built on Monaco Editor with a dark theme matching the app
+- Replace the `Textarea` content input with `CodeEditor` for `snippet` and `command` types only (notes/prompts/other types keep the plain `Textarea`)
+- Render macOS-style window dots (red/yellow/green) at the top of the editor frame
+- Add a quick copy button in the editor header (wired to `navigator.clipboard`)
+- Show the language label in the editor header next to the copy button
+- Support both display (read-only) and edit modes — the drawer's view mode uses read-only, edit mode uses editable
+- Editor height should be fluid up to a max of 400px, with a themed scrollbar that matches the dark UI
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+- Spec: `context/features/code-editor-spec.md`
+- Affected surfaces: item detail drawer (`<pre>` content in view + content `<textarea>` in edit mode) and `NewItemDialog` (content `<textarea>`) — only for snippet/command types
+- Other text types (prompt, note) continue using the existing `Textarea` — no Monaco for them
+- Monaco needs a client component boundary and dynamic import (no SSR); investigate `@monaco-editor/react` vs raw `monaco-editor` + Next.js webpack config
+- Language label comes from the existing `item.language` field (and the language input in edit mode)
+- Read-only mode must still allow copy + scroll; cursor should be hidden or non-interactive
 
 ## History
 
