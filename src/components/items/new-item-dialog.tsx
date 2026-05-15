@@ -15,6 +15,7 @@ import { toast } from "sonner";
 
 import { createItemAction, type CreateItemType } from "@/actions/items";
 import { CodeEditor } from "@/components/items/code-editor";
+import { MarkdownEditor } from "@/components/items/markdown-editor";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -52,6 +53,7 @@ const TYPES_WITH_CONTENT = new Set<CreateItemType>([
   "note"
 ]);
 const TYPES_WITH_LANGUAGE = new Set<CreateItemType>(["snippet", "command"]);
+const TYPES_WITH_MARKDOWN = new Set<CreateItemType>(["note", "prompt"]);
 
 const DEFAULT_TYPE: CreateItemType = "snippet";
 
@@ -226,6 +228,12 @@ export function NewItemDialog({
                 <CodeEditor
                   value={content}
                   language={language}
+                  onChange={setContent}
+                  ariaLabel="New item content"
+                />
+              ) : TYPES_WITH_MARKDOWN.has(type) ? (
+                <MarkdownEditor
+                  value={content}
                   onChange={setContent}
                   ariaLabel="New item content"
                 />

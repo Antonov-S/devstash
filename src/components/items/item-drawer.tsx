@@ -18,6 +18,7 @@ import { toast } from "sonner";
 
 import { deleteItemAction, updateItemAction } from "@/actions/items";
 import { CodeEditor } from "@/components/items/code-editor";
+import { MarkdownEditor } from "@/components/items/markdown-editor";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -61,6 +62,7 @@ function formatBytes(bytes: number): string {
 
 const TYPES_WITH_CONTENT = new Set(["snippet", "prompt", "command", "note"]);
 const TYPES_WITH_LANGUAGE = new Set(["snippet", "command"]);
+const TYPES_WITH_MARKDOWN = new Set(["note", "prompt"]);
 
 type EditState = {
   title: string;
@@ -149,6 +151,7 @@ export function ItemDrawer({ cardItem, open, onOpenChange }: Props) {
   const typeName = (detail?.itemType.name ?? cardItem.itemType.name).toLowerCase();
   const showsContent = TYPES_WITH_CONTENT.has(typeName);
   const showsLanguage = TYPES_WITH_LANGUAGE.has(typeName);
+  const showsMarkdown = TYPES_WITH_MARKDOWN.has(typeName);
   const showsUrl = typeName === "link";
 
   async function handleCopy() {
@@ -294,6 +297,7 @@ export function ItemDrawer({ cardItem, open, onOpenChange }: Props) {
               disabled={saving}
               showsContent={showsContent}
               showsLanguage={showsLanguage}
+              showsMarkdown={showsMarkdown}
               showsUrl={showsUrl}
             />
           ) : detail ? (
@@ -467,6 +471,7 @@ function ItemEditForm({
   disabled,
   showsContent,
   showsLanguage,
+  showsMarkdown,
   showsUrl
 }: {
   edit: EditState;
@@ -474,6 +479,7 @@ function ItemEditForm({
   disabled: boolean;
   showsContent: boolean;
   showsLanguage: boolean;
+  showsMarkdown: boolean;
   showsUrl: boolean;
 }) {
   function update<K extends keyof EditState>(key: K, value: EditState[K]) {
@@ -509,6 +515,12 @@ function ItemEditForm({
             <CodeEditor
               value={edit.content}
               language={edit.language}
+              onChange={(next) => update("content", next)}
+              ariaLabel="Edit item content"
+            />
+          ) : showsMarkdown ? (
+            <MarkdownEditor
+              value={edit.content}
               onChange={(next) => update("content", next)}
               ariaLabel="Edit item content"
             />
@@ -676,6 +688,15 @@ function ItemContent({ detail }: { detail: ItemDetail }) {
         <CodeEditor
           value={detail.content}
           language={detail.language}
+          readOnly
+          ariaLabel="Item content"
+        />
+      );
+    }
+    if (TYPES_WITH_MARKDOWN.has(typeName)) {
+      return (
+        <MarkdownEditor
+          value={detail.content}
           readOnly
           ariaLabel="Item content"
         />
