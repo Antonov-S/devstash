@@ -17,6 +17,7 @@ import {
 import { toast } from "sonner";
 
 import { deleteItemAction, updateItemAction } from "@/actions/items";
+import { CodeEditor } from "@/components/items/code-editor";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -217,7 +218,7 @@ export function ItemDrawer({ cardItem, open, onOpenChange }: Props) {
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="flex w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-lg">
+      <SheetContent className="flex w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-[max(32rem,33vw)]">
         <SheetHeader className="gap-4 border-b border-border/60 px-6 py-5">
           <div className="flex items-start gap-3 pr-8">
             {Icon && (
@@ -504,14 +505,23 @@ function ItemEditForm({
 
       {showsContent && (
         <Field label="Content" htmlFor="edit-content">
-          <Textarea
-            id="edit-content"
-            value={edit.content}
-            onChange={(e) => update("content", e.target.value)}
-            disabled={disabled}
-            rows={10}
-            className="font-mono text-sm"
-          />
+          {showsLanguage ? (
+            <CodeEditor
+              value={edit.content}
+              language={edit.language}
+              onChange={(next) => update("content", next)}
+              ariaLabel="Edit item content"
+            />
+          ) : (
+            <Textarea
+              id="edit-content"
+              value={edit.content}
+              onChange={(e) => update("content", e.target.value)}
+              disabled={disabled}
+              rows={10}
+              className="font-mono text-sm"
+            />
+          )}
         </Field>
       )}
 
@@ -659,6 +669,17 @@ function ItemContent({ detail }: { detail: ItemDetail }) {
   if (detail.contentType === "TEXT") {
     if (!detail.content) {
       return <EmptyContent label="No content" />;
+    }
+    const typeName = detail.itemType.name.toLowerCase();
+    if (TYPES_WITH_LANGUAGE.has(typeName)) {
+      return (
+        <CodeEditor
+          value={detail.content}
+          language={detail.language}
+          readOnly
+          ariaLabel="Item content"
+        />
+      );
     }
     return (
       <pre className="overflow-x-auto rounded-md border border-border/60 bg-muted/40 p-4 text-sm leading-relaxed">

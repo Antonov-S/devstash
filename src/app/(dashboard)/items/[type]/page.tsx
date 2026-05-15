@@ -1,13 +1,32 @@
+import { Plus } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
 
 import { auth } from "@/auth";
+import type { CreateItemType } from "@/actions/items";
 import { ClickableItemCard } from "@/components/items/clickable-item-card";
+import { NewItemDialog } from "@/components/items/new-item-dialog";
+import { Button } from "@/components/ui/button";
 import {
   getItemsForUserByTypeId,
   getSystemItemTypeByName
 } from "@/lib/db/items";
 import { iconMap } from "@/lib/icons";
-import { systemTypeNameFromSlug } from "@/lib/system-types";
+import {
+  type SystemTypeName,
+  systemTypeNameFromSlug
+} from "@/lib/system-types";
+
+const CREATABLE_TYPES: ReadonlySet<SystemTypeName> = new Set([
+  "snippet",
+  "prompt",
+  "command",
+  "note",
+  "link"
+]);
+
+function isCreatable(name: SystemTypeName): name is CreateItemType {
+  return CREATABLE_TYPES.has(name);
+}
 
 export const dynamic = "force-dynamic";
 
@@ -46,23 +65,43 @@ export default async function ItemsByTypePage({
   const Icon = iconMap[itemType.icon] ?? null;
   const label = capitalize(slug);
 
+  const singularLabel = capitalize(typeName);
+  const creatable = isCreatable(typeName);
+
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6">
-      <div className="flex items-center gap-3">
-        {Icon && (
-          <span
-            className="flex size-10 items-center justify-center rounded-lg bg-muted/50"
-            aria-hidden
-          >
-            <Icon className="size-5" style={{ color: itemType.color }} />
-          </span>
-        )}
-        <div>
-          <h1 className="text-2xl font-semibold">{label}</h1>
-          <p className="text-sm text-muted-foreground">
-            {items.length} {items.length === 1 ? "item" : "items"}
-          </p>
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          {Icon && (
+            <span
+              className="flex size-10 items-center justify-center rounded-lg bg-muted/50"
+              aria-hidden
+            >
+              <Icon className="size-5" style={{ color: itemType.color }} />
+            </span>
+          )}
+          <div>
+            <h1 className="text-2xl font-semibold">{label}</h1>
+            <p className="text-sm text-muted-foreground">
+              {items.length} {items.length === 1 ? "item" : "items"}
+            </p>
+          </div>
         </div>
+        {creatable && (
+          <NewItemDialog
+            initialType={typeName}
+            trigger={
+              <Button
+                size="sm"
+                aria-label={`New ${singularLabel}`}
+                title={`New ${singularLabel}`}
+              >
+                <Plus className="size-4" />
+                <span className="hidden md:inline">New {singularLabel}</span>
+              </Button>
+            }
+          />
+        )}
       </div>
 
       {items.length > 0 ? (
