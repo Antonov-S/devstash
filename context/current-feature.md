@@ -1,16 +1,26 @@
-# Current Feature
+# Current Feature: Markdown Editor
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+- New `MarkdownEditor` client component with Write/Preview tabs (default Write in edit mode; Preview-only in readonly mode)
+- Built on `react-markdown` + `remark-gfm` for GitHub Flavored Markdown
+- Visual parity with `CodeEditor`: `bg-[#1e1e1e]` container, `bg-[#2d2d2d]` header, copy button in header, fluid height clamped to a 400px max
+- Custom `.markdown-preview` class providing reliable dark-mode styles for headings (h1–h6), code blocks, inline code, lists, blockquotes, links, tables
+- Replace `Textarea` with `MarkdownEditor` for `note` and `prompt` content fields in `NewItemDialog` and `ItemDrawer` edit mode
+- Use `MarkdownEditor` in readonly mode for `note` and `prompt` content in `ItemDrawer` view mode
+- `CodeEditor` continues to handle `snippet` and `command` — no changes there
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+- Editor surfaces affected: `NewItemDialog`, `ItemDrawer` (view + edit modes)
+- Readonly mode should only expose the Preview tab; edit mode should default to Write with Preview accessible
+- Copy button styling should match the existing `CodeEditor` header treatment
+- Height behavior should mirror `CodeEditor`'s fluid-with-max-400px pattern
+- No new server actions or DB helpers expected — purely a presentational swap, so Vitest additions are unlikely (still run `npm run test:run` + `npm run build` per workflow)
 
 ## History
 

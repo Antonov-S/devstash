@@ -12,7 +12,8 @@ function Dialog({ ...props }: DialogPrimitive.Root.Props) {
 }
 
 function DialogTrigger({ ...props }: DialogPrimitive.Trigger.Props) {
-  return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />
+  // `data-slot` omitted: collides with Button's via base-ui slot merge, mismatching across SSR/CSR.
+  return <DialogPrimitive.Trigger {...props} />
 }
 
 function DialogClose({ ...props }: DialogPrimitive.Close.Props) {
