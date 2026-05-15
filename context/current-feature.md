@@ -1,27 +1,16 @@
-# Current Feature: Code Editor
+# Current Feature
 
 ## Status
 
-In Progress
+Not Started
 
 ## Goals
 
-- Add a `CodeEditor` component built on Monaco Editor with a dark theme matching the app
-- Replace the `Textarea` content input with `CodeEditor` for `snippet` and `command` types only (notes/prompts/other types keep the plain `Textarea`)
-- Render macOS-style window dots (red/yellow/green) at the top of the editor frame
-- Add a quick copy button in the editor header (wired to `navigator.clipboard`)
-- Show the language label in the editor header next to the copy button
-- Support both display (read-only) and edit modes — the drawer's view mode uses read-only, edit mode uses editable
-- Editor height should be fluid up to a max of 400px, with a themed scrollbar that matches the dark UI
+<!-- Bullet points of what success looks like -->
 
 ## Notes
 
-- Spec: `context/features/code-editor-spec.md`
-- Affected surfaces: item detail drawer (`<pre>` content in view + content `<textarea>` in edit mode) and `NewItemDialog` (content `<textarea>`) — only for snippet/command types
-- Other text types (prompt, note) continue using the existing `Textarea` — no Monaco for them
-- Monaco needs a client component boundary and dynamic import (no SSR); investigate `@monaco-editor/react` vs raw `monaco-editor` + Next.js webpack config
-- Language label comes from the existing `item.language` field (and the language input in edit mode)
-- Read-only mode must still allow copy + scroll; cursor should be hidden or non-interactive
+<!-- Additional context, constraints, or details from spec -->
 
 ## History
 
@@ -56,3 +45,4 @@ In Progress
 - Item delete — trash icon in the drawer action bar now opens a base-ui `Dialog` confirmation ("Delete \"<title>\"?" + "cannot be undone" warning, dismiss locked while pending) that calls new `deleteItemAction` in `src/actions/items.ts`; action validates `auth()` session + non-empty id, delegates to new `deleteItemForUser` in `src/lib/db/items.ts` which uses ownership-scoped `prisma.item.deleteMany({ where: { id, userId } })` so wrong-owner and missing-id collapse to `count === 0` (no enumeration oracle) and Prisma's `onDelete: Cascade` cleans up `TagsOnItems` + `ItemCollection`; on success the drawer closes via `onOpenChange(false)`, toasts `"Item deleted"`, and calls `router.refresh()` so dashboard pinned/recent + items-by-type grids re-fetch; new Vitest cases in `src/actions/__tests__/items.test.ts` (no session, empty id, not-found, success, generic-error) and `src/lib/db/__tests__/items.test.ts` (scoping shape, deleted, no-match) — Completed
 - Item create — new `NewItemDialog` client component wired to the top-bar "New Item" button: shadcn `Dialog` with a radio-style 5-type selector (snippet/prompt/command/note/link, colored Lucide icons) and type-aware fields (title required for all, content for snippet/prompt/command/note, language for snippet/command, URL required for link, comma-separated tags for all); new `createItemAction` in `src/actions/items.ts` returns `{ success, data | error }`, validates with Zod 4 (trimmed required title, optional trimmed strings, `new URL()`-checked URL, `superRefine` requiring URL for link, deduped trimmed tags), checks `auth()` session, then strips fields irrelevant to the chosen type before delegating to new `createItemForUser` in `src/lib/db/items.ts`; the db helper looks up the system `ItemType` by name (returns null when missing so the action surfaces "Item type not found"), derives `contentType` (`TEXT` for snippet/prompt/command/note, `URL` for link) from a per-type lookup table, dedupes tags inside the helper via `Array.from(new Set(...))` (matches the `updateItemForUser` pattern), runs `prisma.item.create` with `tags.connectOrCreate`, then re-reads via `getItemDetailForUser` so the action returns the refreshed `ItemDetail`; client uses `useTransition`, toasts on success/error, resets all state on close (locked while pending), and calls `router.refresh()` so sidebar counts + dashboard lists pick up the new row; new Vitest tests in `src/actions/__tests__/items.test.ts` (8 cases: no session, empty title, missing URL for link, invalid URL, normalization with type-irrelevant field stripping, link keeps URL drops content/language, snippet keeps language, type-not-found, generic-error) and `src/lib/db/__tests__/items.test.ts` (4 cases: type not found, snippet creates TEXT with deduped connect-or-create tags, link creates URL contentType, refreshed-detail return) — Completed
 - Dashboard UI typography & spacing refresh — purely visual polish normalizing the typography scale across the dashboard against the sidebar baseline; dashboard section `h2`s bumped from `text-base` to `text-lg font-semibold` with section gap `gap-3 → gap-4`, "View all" + pinned/items-by-type empty-state helpers from `text-xs → text-sm`; `ItemCard` retitled to `text-[15px] leading-snug` (matches sidebar's `text-[15px]` menu items), description `text-xs → text-sm leading-snug`, badges `text-[10px] → text-[11px]` with gap `1 → 1.5`, date `text-xs → text-sm`, pin/star icons `size-3 → size-3.5`; item detail drawer reflows to `px-6 py-5` header (gap-4) + `px-6 py-6` body (gap-6), `SheetTitle` `text-base → text-lg`, header badges `text-[10px] → text-[11px]`, content `<pre>` `text-xs → text-sm` with `p-4 leading-relaxed`, tag/collection badges `text-[11px] → text-xs`, dl `gap-y-1.5 → gap-y-2`, file row + EmptyContent + Open link `text-xs → text-sm`, Field gap `1.5 → 2`, edit-mode content textarea `text-xs → text-sm`; `NewItemDialog` type selector buttons `text-[11px] → text-xs` (gap `1 → 1.5`, py `2 → 2.5`), Field/Type group gap `1.5 → 2`, content textarea `text-xs → text-sm`; top-bar search input `h-9 → h-10` with explicit `text-sm` + `pl-10` (icon shifted to `left-3.5`), ⌘K kbd `text-[10px] → text-[11px]`; no functionality/state/API/routing changes, all 53 Vitest tests + `next build` pass — Completed
+- Code editor — new `CodeEditor` client component on `@monaco-editor/react` (`devstash-dark` theme defined in `beforeMount`, macOS dots + language label + copy button in the header, themed scrollbar slider, fluid height clamped 80–400px via `onDidContentSizeChange`, language alias map e.g. `ts → typescript`); item detail drawer view mode renders read-only `CodeEditor` (hidden cursor + no line highlight) for snippet/command, edit mode renders editable `CodeEditor` — prompt/note still use `<pre>` / `<Textarea>`; `NewItemDialog` Content field swaps to `CodeEditor` for snippet/command and now accepts `initialType?: CreateItemType` + `trigger?: React.ReactElement` props, with `baseType` seeded from `initialType` so reopening keeps the preselection; `/items/[type]` page header is now a `justify-between` flex with a `New <Singular>` button on the right for the 5 creatable types (snippet/prompt/command/note/link; `file`/`image` excluded) that opens the dialog pre-selected; drawer max-width bumped from `sm:max-w-lg` to `sm:max-w-[max(32rem,33vw)]` so it scales to ~1/3 of the viewport on large monitors while keeping the 32rem floor on laptops and `w-full` on mobile; no new server actions/utilities so no Vitest additions — all 53 tests + `next build` still pass — Completed
