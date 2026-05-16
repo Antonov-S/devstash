@@ -3,6 +3,7 @@ import "server-only";
 import type { ContentType } from "@/generated/prisma/enums";
 
 import { prisma } from "@/lib/prisma";
+import { deleteObjectFromR2, keyFromPublicUrl } from "@/lib/r2";
 import type { SystemTypeName } from "@/lib/system-types";
 
 const CREATE_CONTENT_TYPE: Record<SystemTypeName, ContentType> = {
@@ -235,10 +236,30 @@ export async function deleteItemForUser(
   userId: string,
   itemId: string
 ): Promise<boolean> {
+  const existing = await prisma.item.findFirst({
+    where: { id: itemId, userId },
+    select: { fileUrl: true }
+  });
+  if (!existing) return false;
+
   const result = await prisma.item.deleteMany({
     where: { id: itemId, userId }
   });
-  return result.count > 0;
+  if (result.count === 0) return false;
+
+  if (existing.fileUrl) {
+    const key = keyFromPublicUrl(existing.fileUrl);
+    if (key) {
+      try {
+        await deleteObjectFromR2(key);
+      } catch (error) {
+        // Object is orphaned in R2 but the DB row is gone — log and move on.
+        console.error("Failed to delete R2 object for item", itemId, error);
+      }
+    }
+  }
+
+  return true;
 }
 
 export type CreateItemInput = {
@@ -248,6 +269,9 @@ export type CreateItemInput = {
   content: string | null;
   url: string | null;
   language: string | null;
+  fileUrl: string | null;
+  fileName: string | null;
+  fileSize: number | null;
   tags: string[];
 };
 
@@ -270,6 +294,9 @@ export async function createItemForUser(
       content: data.content,
       url: data.url,
       language: data.language,
+      fileUrl: data.fileUrl,
+      fileName: data.fileName,
+      fileSize: data.fileSize,
       contentType: CREATE_CONTENT_TYPE[data.typeName],
       userId,
       itemTypeId: itemType.id,

@@ -21,7 +21,9 @@ const CREATABLE_TYPES: ReadonlySet<SystemTypeName> = new Set([
   "prompt",
   "command",
   "note",
-  "link"
+  "link",
+  "file",
+  "image"
 ]);
 
 function isCreatable(name: SystemTypeName): name is CreateItemType {

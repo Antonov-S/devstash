@@ -4,6 +4,8 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   Code,
+  FileIcon,
+  Image as ImageIcon,
   LoaderCircle,
   Link as LinkIcon,
   Plus,
@@ -15,6 +17,7 @@ import { toast } from "sonner";
 
 import { createItemAction, type CreateItemType } from "@/actions/items";
 import { CodeEditor } from "@/components/items/code-editor";
+import { FileUpload, type UploadedFile } from "@/components/items/file-upload";
 import { MarkdownEditor } from "@/components/items/markdown-editor";
 import { Button } from "@/components/ui/button";
 import {
@@ -43,6 +46,8 @@ const TYPE_OPTIONS: TypeOption[] = [
   { value: "prompt", label: "Prompt", Icon: Sparkles, color: "#8b5cf6" },
   { value: "command", label: "Command", Icon: Terminal, color: "#f97316" },
   { value: "note", label: "Note", Icon: StickyNote, color: "#fde047" },
+  { value: "file", label: "File", Icon: FileIcon, color: "#6b7280" },
+  { value: "image", label: "Image", Icon: ImageIcon, color: "#ec4899" },
   { value: "link", label: "Link", Icon: LinkIcon, color: "#10b981" }
 ];
 
@@ -54,6 +59,7 @@ const TYPES_WITH_CONTENT = new Set<CreateItemType>([
 ]);
 const TYPES_WITH_LANGUAGE = new Set<CreateItemType>(["snippet", "command"]);
 const TYPES_WITH_MARKDOWN = new Set<CreateItemType>(["note", "prompt"]);
+const TYPES_WITH_UPLOAD = new Set<CreateItemType>(["file", "image"]);
 
 const DEFAULT_TYPE: CreateItemType = "snippet";
 
@@ -88,15 +94,18 @@ export function NewItemDialog({
   const [url, setUrl] = useState("");
   const [language, setLanguage] = useState("");
   const [tags, setTags] = useState("");
+  const [uploaded, setUploaded] = useState<UploadedFile | null>(null);
   const [pending, startTransition] = useTransition();
 
   const showsContent = TYPES_WITH_CONTENT.has(type);
   const showsLanguage = TYPES_WITH_LANGUAGE.has(type);
   const showsUrl = type === "link";
+  const showsUpload = TYPES_WITH_UPLOAD.has(type);
 
   const titleEmpty = title.trim() === "";
   const urlMissing = showsUrl && url.trim() === "";
-  const submitDisabled = pending || titleEmpty || urlMissing;
+  const uploadMissing = showsUpload && uploaded === null;
+  const submitDisabled = pending || titleEmpty || urlMissing || uploadMissing;
 
   function resetForm() {
     setType(baseType);
@@ -106,6 +115,14 @@ export function NewItemDialog({
     setUrl("");
     setLanguage("");
     setTags("");
+    setUploaded(null);
+  }
+
+  function handleTypeChange(next: CreateItemType) {
+    setType(next);
+    if (!TYPES_WITH_UPLOAD.has(next)) {
+      setUploaded(null);
+    }
   }
 
   function handleOpenChange(next: boolean) {
@@ -125,6 +142,9 @@ export function NewItemDialog({
       content: showsContent ? content : null,
       url: showsUrl ? url : null,
       language: showsLanguage ? language : null,
+      fileUrl: showsUpload ? uploaded?.fileUrl ?? null : null,
+      fileName: showsUpload ? uploaded?.fileName ?? null : null,
+      fileSize: showsUpload ? uploaded?.fileSize ?? null : null,
       tags: parseTags(tags)
     };
 
@@ -155,7 +175,8 @@ export function NewItemDialog({
         <DialogHeader>
           <DialogTitle>New item</DialogTitle>
           <DialogDescription>
-            Add a snippet, prompt, command, note, or link to your stash.
+            Add a snippet, prompt, command, note, file, image, or link to your
+            stash.
           </DialogDescription>
         </DialogHeader>
 
@@ -169,7 +190,7 @@ export function NewItemDialog({
             <div
               role="radiogroup"
               aria-label="Item type"
-              className="grid grid-cols-5 gap-1 rounded-lg border border-border/60 bg-muted/30 p-1"
+              className="grid grid-cols-7 gap-1 rounded-lg border border-border/60 bg-muted/30 p-1"
             >
               {TYPE_OPTIONS.map((option) => {
                 const selected = type === option.value;
@@ -179,7 +200,7 @@ export function NewItemDialog({
                     type="button"
                     role="radio"
                     aria-checked={selected}
-                    onClick={() => setType(option.value)}
+                    onClick={() => handleTypeChange(option.value)}
                     disabled={pending}
                     className={cn(
                       "flex flex-col items-center justify-center gap-1.5 rounded-md px-2 py-2.5 text-xs font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-50",
@@ -277,6 +298,17 @@ export function NewItemDialog({
             </Field>
           )}
 
+          {showsUpload && (
+            <Field label={type === "image" ? "Image" : "File"} required>
+              <FileUpload
+                kind={type === "image" ? "image" : "file"}
+                value={uploaded}
+                onChange={setUploaded}
+                disabled={pending}
+              />
+            </Field>
+          )}
+
           <Field label="Tags" htmlFor="new-tags" hint="Comma-separated">
             <Input
               id="new-tags"
@@ -316,7 +348,7 @@ function Field({
   children
 }: {
   label: string;
-  htmlFor: string;
+  htmlFor?: string;
   required?: boolean;
   hint?: string;
   children: React.ReactNode;

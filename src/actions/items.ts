@@ -9,6 +9,7 @@ import {
   updateItemForUser,
   type ItemDetail
 } from "@/lib/db/items";
+import { keyFromPublicUrl } from "@/lib/r2";
 
 function normalizeOptional(value: string | null | undefined): string | null {
   if (value == null) return null;
@@ -103,10 +104,14 @@ const CREATE_TYPES = [
   "prompt",
   "command",
   "note",
-  "link"
+  "link",
+  "file",
+  "image"
 ] as const;
 
 export type CreateItemType = (typeof CREATE_TYPES)[number];
+
+const FILE_TYPES = new Set<CreateItemType>(["file", "image"]);
 
 const createItemSchema = z
   .object({
@@ -119,6 +124,12 @@ const createItemSchema = z
     content: optionalTrimmedString,
     url: urlField,
     language: optionalTrimmedString,
+    fileUrl: optionalTrimmedString,
+    fileName: optionalTrimmedString,
+    fileSize: z
+      .union([z.number().int().nonnegative(), z.null()])
+      .optional()
+      .transform((value) => (value == null ? null : value)),
     tags: z
       .array(z.string())
       .transform((tags) =>
@@ -132,6 +143,15 @@ const createItemSchema = z
         message: "URL is required",
         path: ["url"]
       });
+    }
+    if (FILE_TYPES.has(data.type)) {
+      if (!data.fileUrl || !data.fileName || data.fileSize === null) {
+        ctx.addIssue({
+          code: "custom",
+          message: "File upload is required",
+          path: ["fileUrl"]
+        });
+      }
     }
   });
 
@@ -159,15 +179,30 @@ export async function createItemAction(
   }
 
   const { type, ...fields } = parsed.data;
+  const isFileType = FILE_TYPES.has(type);
+
+  if (isFileType && fields.fileUrl) {
+    // Make sure the client didn't supply a URL pointing at another user's R2
+    // object. Uploads always land under `uploads/<userId>/...` so a key that
+    // doesn't match the session user is either tampered or not from our bucket.
+    const key = keyFromPublicUrl(fields.fileUrl);
+    const expectedPrefix = `uploads/${session.user.id}/`;
+    if (!key || !key.startsWith(expectedPrefix)) {
+      return { success: false, error: "Invalid file upload" };
+    }
+  }
 
   try {
     const created = await createItemForUser(session.user.id, {
       typeName: type,
       title: fields.title,
       description: fields.description,
-      content: type === "link" ? null : fields.content,
+      content: type === "link" || isFileType ? null : fields.content,
       url: type === "link" ? fields.url : null,
       language: type === "snippet" || type === "command" ? fields.language : null,
+      fileUrl: isFileType ? fields.fileUrl : null,
+      fileName: isFileType ? fields.fileName : null,
+      fileSize: isFileType ? fields.fileSize : null,
       tags: fields.tags
     });
     if (!created) {

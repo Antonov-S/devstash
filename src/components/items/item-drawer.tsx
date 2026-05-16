@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   Check,
   Copy,
+  Download,
   ExternalLink,
   FileIcon,
   LoaderCircle,
@@ -730,6 +731,36 @@ function ItemContent({ detail }: { detail: ItemDetail }) {
   if (!detail.fileUrl) {
     return <EmptyContent label="No file" />;
   }
+
+  const isImage = detail.itemType.name.toLowerCase() === "image";
+  const downloadHref = `/api/files/${detail.id}`;
+
+  if (isImage) {
+    return (
+      <div className="flex flex-col gap-3">
+        <div className="overflow-hidden rounded-md border border-border/60 bg-muted/30">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={detail.fileUrl}
+            alt={detail.fileName ?? detail.title}
+            className="max-h-96 w-full object-contain"
+          />
+        </div>
+        <FileMetaRow detail={detail} downloadHref={downloadHref} />
+      </div>
+    );
+  }
+
+  return <FileMetaRow detail={detail} downloadHref={downloadHref} />;
+}
+
+function FileMetaRow({
+  detail,
+  downloadHref
+}: {
+  detail: ItemDetail;
+  downloadHref: string;
+}) {
   return (
     <div className="flex items-center gap-3 rounded-md border border-border/60 bg-muted/40 p-3">
       <span
@@ -749,12 +780,12 @@ function ItemContent({ detail }: { detail: ItemDetail }) {
         )}
       </div>
       <a
-        href={detail.fileUrl}
-        target="_blank"
-        rel="noreferrer noopener"
-        className="text-sm text-primary hover:underline"
+        href={downloadHref}
+        download={detail.fileName ?? undefined}
+        className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
       >
-        Open
+        <Download className="size-3.5" aria-hidden />
+        Download
       </a>
     </div>
   );
