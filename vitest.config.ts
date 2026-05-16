@@ -18,9 +18,11 @@ export default defineConfig({
     // Vitest 4's parallel workers share a module-resolution cache, and
     // next-auth's `next/server` bare-specifier import fails under Node ESM
     // resolution. The failure in one worker poisons sibling workers. Running
-    // files sequentially keeps each test file's resolution isolated. The
-    // suite is small enough that the perf cost is negligible.
+    // files sequentially keeps each test file's resolution isolated, and
+    // `isolate: true` forces a fresh module graph per file so the next-auth
+    // failure can't leak across files in the same worker either.
     fileParallelism: false,
+    isolate: true,
     clearMocks: true,
     restoreMocks: true
   }

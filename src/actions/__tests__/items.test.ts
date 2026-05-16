@@ -10,12 +10,17 @@ vi.mock("@/lib/db/items", () => ({
   deleteItemForUser: vi.fn()
 }));
 
+vi.mock("@/lib/r2", () => ({
+  keyFromPublicUrl: vi.fn()
+}));
+
 import { auth } from "@/auth";
 import {
   createItemForUser,
   deleteItemForUser,
   updateItemForUser
 } from "@/lib/db/items";
+import { keyFromPublicUrl } from "@/lib/r2";
 import {
   createItemAction,
   deleteItemAction,
@@ -26,6 +31,9 @@ const mockedAuth = auth as unknown as ReturnType<typeof vi.fn>;
 const mockedCreate = createItemForUser as unknown as ReturnType<typeof vi.fn>;
 const mockedUpdate = updateItemForUser as unknown as ReturnType<typeof vi.fn>;
 const mockedDelete = deleteItemForUser as unknown as ReturnType<typeof vi.fn>;
+const mockedKeyFromPublicUrl = keyFromPublicUrl as unknown as ReturnType<
+  typeof vi.fn
+>;
 
 const signedIn = { user: { id: "user_1", email: "u@example.com" } };
 
@@ -168,6 +176,7 @@ describe("createItemAction", () => {
   beforeEach(() => {
     mockedAuth.mockReset();
     mockedCreate.mockReset();
+    mockedKeyFromPublicUrl.mockReset();
   });
 
   it("rejects when there is no session", async () => {
@@ -295,6 +304,119 @@ describe("createItemAction", () => {
     const [, input] = mockedCreate.mock.calls[0];
     expect(input.language).toBe("typescript");
     expect(input.content).toBe("const x = 1");
+  });
+
+  it("rejects file/image without uploaded metadata", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+
+    const result = await createItemAction({
+      type: "file",
+      title: "Report",
+      tags: []
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toBe("File upload is required");
+    }
+    expect(mockedCreate).not.toHaveBeenCalled();
+  });
+
+  it("rejects file/image uploads with a negative or non-integer fileSize", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+
+    const result = await createItemAction({
+      type: "file",
+      title: "Report",
+      fileUrl: "https://files.example.com/uploads/user_1/abc.pdf",
+      fileName: "report.pdf",
+      fileSize: -1,
+      tags: []
+    });
+
+    expect(result.success).toBe(false);
+    expect(mockedCreate).not.toHaveBeenCalled();
+  });
+
+  it("keeps fileUrl/fileName/fileSize for file/image and drops irrelevant fields", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+    mockedCreate.mockResolvedValue(sampleDetail);
+    mockedKeyFromPublicUrl.mockReturnValue("uploads/user_1/abc.png");
+
+    await createItemAction({
+      type: "image",
+      title: "Logo",
+      content: "ignored",
+      url: "https://example.com",
+      language: "ignored",
+      fileUrl: "https://files.example.com/uploads/user_1/abc.png",
+      fileName: "logo.png",
+      fileSize: 2048,
+      tags: []
+    });
+
+    const [, input] = mockedCreate.mock.calls[0];
+    expect(input.typeName).toBe("image");
+    expect(input.fileUrl).toBe(
+      "https://files.example.com/uploads/user_1/abc.png"
+    );
+    expect(input.fileName).toBe("logo.png");
+    expect(input.fileSize).toBe(2048);
+    expect(input.content).toBeNull();
+    expect(input.url).toBeNull();
+    expect(input.language).toBeNull();
+  });
+
+  it("rejects file/image whose fileUrl belongs to another user", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+    mockedKeyFromPublicUrl.mockReturnValue("uploads/user_other/abc.png");
+
+    const result = await createItemAction({
+      type: "image",
+      title: "Stolen",
+      fileUrl: "https://files.example.com/uploads/user_other/abc.png",
+      fileName: "stolen.png",
+      fileSize: 1024,
+      tags: []
+    });
+
+    expect(result).toEqual({ success: false, error: "Invalid file upload" });
+    expect(mockedCreate).not.toHaveBeenCalled();
+  });
+
+  it("rejects file/image whose fileUrl is not in our bucket", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+    mockedKeyFromPublicUrl.mockReturnValue(null);
+
+    const result = await createItemAction({
+      type: "file",
+      title: "External",
+      fileUrl: "https://attacker.example.com/uploads/user_1/abc.pdf",
+      fileName: "evil.pdf",
+      fileSize: 1024,
+      tags: []
+    });
+
+    expect(result).toEqual({ success: false, error: "Invalid file upload" });
+    expect(mockedCreate).not.toHaveBeenCalled();
+  });
+
+  it("rejects file/image whose key is a prefix-confusion variant of the user id", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+    // userId is "user_1" — make sure "user_1foo" doesn't slip through.
+    mockedKeyFromPublicUrl.mockReturnValue("uploads/user_1foo/abc.png");
+
+    const result = await createItemAction({
+      type: "image",
+      title: "Tricky",
+      fileUrl: "https://files.example.com/uploads/user_1foo/abc.png",
+      fileName: "tricky.png",
+      fileSize: 1024,
+      tags: []
+    });
+
+    expect(result).toEqual({ success: false, error: "Invalid file upload" });
+    expect(mockedCreate).not.toHaveBeenCalled();
   });
 
   it("returns 'Item type not found' when the db reports no matching system type", async () => {

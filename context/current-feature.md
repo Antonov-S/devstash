@@ -1,16 +1,43 @@
-# Current Feature
+# Current Feature: File & Image Upload with Cloudflare R2
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+- Add file and image upload functionality backed by Cloudflare R2 storage
+- Create upload API route that handles uploads to R2
+- Keep all Prisma/DB functions in `src/lib/db/items.ts`
+- Build a reusable `FileUpload` component with drag-and-drop support
+- Wire `FileUpload` into the create item modal (`NewItemDialog`) for `file` and `image` types
+- Delete files from R2 when their item is deleted (cleanup on item delete path)
+- Create a download proxy API route to avoid CORS issues
+- Add a download button in `ItemDrawer` for file-type items
+- Show upload progress indicator during upload
+- Display image preview for images and file info row for files
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+### File Constraints
+
+- **Images** — max 5 MB, extensions: `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.svg`
+- **Files** — max 10 MB, extensions: `.pdf`, `.txt`, `.md`, `.json`, `.yaml`, `.yml`, `.xml`, `.csv`, `.toml`, `.ini`
+
+### Allowed MIME Types
+
+**Images:** `image/png`, `image/jpeg`, `image/gif`, `image/webp`, `image/svg+xml`
+
+**Files:** `application/pdf`, `text/plain`, `text/markdown`, `application/json`, `application/x-yaml`, `text/yaml`, `application/xml`, `text/xml`, `text/csv`, `application/toml` (and `text/plain` for `.ini`)
+
+### Implementation Reminders
+
+- New R2 env vars already documented in `project-overview.md`: `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`, `R2_PUBLIC_URL`
+- `Item` schema already has `fileUrl`, `fileName`, `fileSize`, and `ContentType.FILE` — use them
+- Per spec, file/image are Pro-only types — currently all users have access (`isPro` gating is deferred), so don't add Pro gating now
+- Use an API route (not a server action) per `coding-standards.md` because uploads need progress tracking
+- Validate upload size + MIME type both client- and server-side
+- Add Vitest unit tests for any new server actions/utilities in `src/actions/**` and `src/lib/**`
 
 ## History
 
