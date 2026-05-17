@@ -1,65 +1,16 @@
-# Audit Quick Wins 2
+# Current Feature
 
 ## Status
 
-In Progress
+Not Started
 
 ## Goals
 
-- Centralize the bcrypt cost factor so every password hash in the app uses the same strength.
-- Remove duplicated utility functions (`formatBytes`, `capitalize`, `parseTags`) so each lives in exactly one place.
-- Bound the pinned-items query so the dashboard payload can't grow unbounded with a heavily-pinned account.
+<!-- Bullet points of what success looks like -->
 
 ## Notes
 
-Scope: four low-risk fixes pulled from the code-scanner audit. Pure refactors and a single trivial query change — no behavior change for end users, no UI work, no migrations.
-
-### #2 — Centralize bcrypt cost factor
-
-- Today, `SALT_ROUNDS` is declared three times with two different values:
-  - `src/app/api/auth/register/route.ts` → `12`
-  - `src/app/api/auth/reset-password/route.ts` → `10`
-  - `src/app/api/account/change-password/route.ts` → `10`
-- This means a user who registers (cost 12) then resets or changes their password silently downgrades to a cost-10 hash.
-- Add `export const BCRYPT_ROUNDS = 12;` to a shared module (suggested: `src/lib/auth-constants.ts`, new file). Import it in all three routes; delete the local declarations.
-- bcrypt verifies against the cost embedded in each stored hash, so existing cost-10 hashes continue to validate — no migration / forced re-hash needed. New hashes (register / reset / change) will all be cost 12 going forward.
-
-### #7 — Dedup `formatBytes`
-
-- `src/lib/upload-constraints.ts` exports the canonical `formatBytes` (already covered by Vitest).
-- `src/components/items/item-drawer.tsx` lines 58-62 redeclares an identical local copy.
-- Delete the local declaration in `item-drawer.tsx` and `import { formatBytes } from "@/lib/upload-constraints"` at the top. No other consumers to touch.
-
-### #8 — Dedup `capitalize` + `parseTags`
-
-- `capitalize` is independently declared across at least these files:
-  - `src/components/items/item-drawer.tsx`
-  - `src/components/items/new-item-dialog.tsx`
-  - `src/app/(dashboard)/items/[type]/page.tsx`
-  - `src/app/(dashboard)/profile/page.tsx`
-  - `src/components/dashboard/sidebar.tsx`
-- `parseTags` is independently declared in both `src/components/items/item-drawer.tsx` and `src/components/items/new-item-dialog.tsx`.
-- Add both to `src/lib/utils.ts` (alongside the existing `cn`). Replace every local declaration with an import.
-- Before writing, grep each file to verify the local implementation matches the canonical one — if any local version handles an edge case differently (e.g. empty string, Unicode), pick the safest behavior and standardize on it.
-- Add Vitest cases in `src/lib/__tests__/utils.test.ts` for both functions: empty string, single character, already-capitalized, leading whitespace (capitalize); empty input, single tag, comma-only, duplicates, whitespace-only entries (parseTags).
-
-### #9 — Bound `getPinnedItemsForUser`
-
-- `src/lib/db/items.ts` lines 111-116 — `getPinnedItemsForUser` has no `take` limit.
-- Add an optional `limit` parameter defaulting to `50` and pass it as `take` on the `findMany`. Match the signature pattern already used elsewhere in the file (e.g. `getRecentItemsForUser` if it takes a limit — verify first).
-- All current callers can keep calling without arguments; 50 is well above realistic pin counts and matches the dashboard's intent of a curated short list.
-- Update or add a Vitest case in `src/lib/db/__tests__/items.test.ts` confirming the default `take: 50` is passed to Prisma and that an explicit `limit` overrides it.
-
-### Out of scope
-
-- The Critical (#1 open redirect) and High (#3 N+1 collections aggregation, #4 image R2 URL exposure) findings — each needs its own focused PR.
-- The other Medium/Low findings from the audit (callbackUrl page sanitization, `updateItemForUser` round-trip merge, `consumeVerificationToken` reorder, CSP headers, `getDemoUser` guard, item-drawer split, `token.id` cast).
-
-### Verification
-
-- `npm run test:run` must pass (existing 80 tests + the new utils cases).
-- `npm run build` must pass.
-- No live verification needed — purely internal refactors and a query-level cap, no user-visible change.
+<!-- Additional context, constraints, or details from spec -->
 
 ## History
 
@@ -100,3 +51,4 @@ Scope: four low-risk fixes pulled from the code-scanner audit. Pure refactors an
 - Image gallery view — `/items/images` swaps the standard `ItemCard` for a new image-thumbnail card; new `ImageThumbnailCard` (server) renders an `aspect-video` `object-cover` `<img>` from `item.fileUrl` inside an `overflow-hidden` frame with a 5% / 300ms `group-hover:scale-105` zoom (Tailwind v4 emits this via the `scale:` CSS property under `@media (hover: hover)`), a title strip below the thumbnail, a pinned/favorite badge overlay (top-right, backdrop-blur), and an `ImageIcon` fallback when `fileUrl` is null; new `ClickableImageCard` client wrapper mirrors `ClickableItemCard` and keeps the existing `ItemDrawer` open-on-click behavior unchanged; `/items/[type]/page.tsx` branches on `typeName === "image"` to render a `grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4` gallery — other types keep the existing `md:grid-cols-2 lg:grid-cols-3 gap-3` ItemCard grid; `ItemWithMeta` + `itemSelect` + `ItemRow` + `toItemWithMeta` in `src/lib/db/items.ts` gain `fileUrl: string | null` so the new card avoids a per-card fetch (existing `baseRow` fixture in `items.test.ts` already had `fileUrl: null` so all 80 tests + `next build` still pass without test changes); spec file checked in at `context/features/image-display-spec.md`; live-verified via Playwright MCP at three breakpoints (3 cols @ ≥lg, 2 cols @ sm–md, 1 col @ mobile), confirmed `scale: 1.05` mid-hover with `transition-duration: 0.3s` on `transition-property: transform, translate, scale, rotate`, and confirmed the drawer still opens on thumbnail click with no console errors — Completed
 - File list view — `/items/files` swaps the standard `ItemCard` grid for a Drive/Dropbox-style single-column list; new `ClickableFileRow` client component owns the row with an outer flex container (hover highlight) wrapping an inner `<button>` (icon + filename + size + date) plus a sibling `<a href="/api/files/[id]" download={fileName}>` that uses `e.stopPropagation()` so the download click can't bubble up — the `<a>` is intentionally a sibling, not a child, since nesting `<a>` inside `<button>` is invalid HTML; rows render an extension-aware Lucide icon via a `getExtension`-keyed map — `.pdf` → `FileText`, `.txt` → `FileType`, `.md` → `FileType2`, `.json` → `FileJson`, `.yaml`/`.yml`/`.toml`/`.ini` → `FileCode`, `.xml` → `FileCode2`, `.csv` → `FileSpreadsheet`, fallback → `File` — so the seven supported file types render distinctly; icon tint comes from `itemType.color` (`#6b7280` gray for the system `file` type); `formatBytes` from `upload-constraints.ts` formats the size, a "Mon DD, YYYY" `Intl.DateTimeFormat` formats `createdAt`; row clicks open the existing `ItemDrawer` with the row's `ItemWithMeta` payload; `/items/[type]/page.tsx` branches on `typeName === "file"` to render `<div className="flex flex-col gap-2">` of `ClickableFileRow`s — `image` and the default grid branches are unchanged; `ItemWithMeta` + `itemSelect` + `ItemRow` + `toItemWithMeta` in `src/lib/db/items.ts` gain `fileName: string | null`, `fileSize: number | null`, and `createdAt: Date` so the row renders without a second fetch, and the now-redundant `fileUrl`/`fileName`/`fileSize`/`createdAt` overrides were dropped from `ItemDetail` (still selected on detail since `itemSelect` spreads in); responsive: under `sm` the size · date pair stacks below the filename inside the button via `flex-col sm:flex-row`, with the download anchor staying right-aligned; existing `baseRow` fixture in `items.test.ts` already carried `fileName`/`fileSize`/`createdAt` so all 80 tests + `next build` pass with no test changes; spec file checked in at `context/features/file-display-spec.md`; live-verified via Playwright MCP at desktop (1440×900) and mobile (375×700) — drawer opens on row click, programmatic click on the download anchor returns `dialogsOpen: 0` (no drawer leak), `.md` file renders with `lucide-file-type-corner` (FileType2) distinct from `.pdf`'s `lucide-file-text`, and snippets/images pages still render unchanged with no console errors — Completed
 - Quick-copy icon on cards — new `QuickCopyButton` client component (`Copy` ↔ `Check` icon swap for 1.2s on success, sonner toast on success/failure, `stopPropagation` so the click doesn't bubble to the open-drawer wrapper, timer cleanup on unmount) rendered as an absolutely-positioned sibling of the open-drawer `<button>` in `ClickableItemCard` (`<div className="relative group">` wrapper, copy button at `absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100` so it reveals on hover/focus for pointer devices and stays visible on touch viewports); siblings — not nested — because nesting `<button>` inside `<button>` would be invalid HTML; `getCopyText` reads from `item.itemType.name` to pick `content` for snippet/prompt/command/note, `url` for link, and `null` (button skipped) for file/image per user decision (avoids exposing the bucket URL on cards); `ItemWithMeta` + `itemSelect` + `ItemRow` + `toItemWithMeta` in `src/lib/db/items.ts` extended with `content` + `url` so the copy is synchronous inside the user-gesture handler (avoids losing the gesture across an async fetch in Safari) and the now-redundant `content`/`url` overrides were dropped from `ItemDetail` (still selected via the `itemSelect` spread); existing `baseRow` fixture in `items.test.ts` already carried `content` + `url` so all 80 tests + `next build` pass with no test changes; live-verified via Playwright MCP — `Copy useDebounce hook` wrote the full snippet, `Copy shadcn/ui` wrote `https://ui.shadcn.com/`, both with `dialogs: 0` (drawer did NOT open), the main card click still opens the drawer (`dialogs: 1`), hover transitioned `opacity: 0 → 1` on `transition-property: opacity`, `/items/files` and `/items/images` had `copyCount: 0`, and 0 console errors across `/dashboard`, `/items/snippets`, `/items/files`, `/items/images` — Completed
+- Audit quick wins 2 — second batch of code-scanner audit fixes pulled from the 15-finding report (scope deliberately narrow: pure refactors + one query cap, no behavior change for end users); new `src/lib/auth-constants.ts` exports `BCRYPT_ROUNDS = 12` and is imported into `/api/auth/register` (was already 12), `/api/auth/reset-password` (was 10), and `/api/account/change-password` (was 10) — fixes a silent strength downgrade where a user who registered with cost-12 hashes would get re-hashed at cost 10 on reset / change (bcrypt verifies against the cost embedded in each stored hash, so existing cost-10 hashes still validate without a forced re-hash migration); local `formatBytes` in `item-drawer.tsx` (lines 58-62) deleted in favor of the canonical export from `@/lib/upload-constraints` (already Vitest-covered); `capitalize` + `parseTags` moved into `@/lib/utils.ts` and 3 local `capitalize` copies (sidebar, profile, items/[type] page) + 2 local `parseTags` copies (item-drawer, new-item-dialog) replaced with imports — the canonical `capitalize` adds an `if (!value) return value` empty-string guard the originals lacked (behavior preserved on `""` since `"".charAt(0).toUpperCase() + "".slice(1) === ""` already, but the guard makes intent clearer); the audit spec had also listed item-drawer and new-item-dialog as `capitalize` users, but those grep hits were actually the Tailwind `capitalize` CSS class — only 3 function copies existed; `getPinnedItemsForUser` in `src/lib/db/items.ts` gains an optional `limit = 50` parameter passed as `take` on the `findMany` (matches the existing `getRecentItemsForUser` signature), bounding the dashboard payload so a heavily-pinned account can't return an unbounded join; new Vitest coverage — `src/lib/__tests__/utils.test.ts` gains 5 `capitalize` cases (empty, single char, word, already-capitalized, leading-whitespace) and 5 `parseTags` cases (empty, commas-only, trim, dedupe with first-seen order, single tag); `src/lib/db/__tests__/items.test.ts` adds `findMany` to the prisma mock + 2 `getPinnedItemsForUser` cases (default `take: 50`, explicit override) — 92 tests + `next build` pass; out of scope and deferred to focused PRs: the Critical open-redirect on `callbackUrl` (#1), High N+1 in `fetchCollectionsWithMeta` (#3), High image R2 URL exposure (#4), and the remaining Medium/Low audit findings (callbackUrl page sanitization, `updateItemForUser` round-trip merge, `consumeVerificationToken` reorder, CSP headers, `getDemoUser` guard, item-drawer split, `token.id` cast) — Completed
