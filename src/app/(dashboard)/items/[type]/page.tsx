@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 
 import { auth } from "@/auth";
 import type { CreateItemType } from "@/actions/items";
+import { ClickableImageCard } from "@/components/items/clickable-image-card";
 import { ClickableItemCard } from "@/components/items/clickable-item-card";
 import { NewItemDialog } from "@/components/items/new-item-dialog";
 import { Button } from "@/components/ui/button";
@@ -107,11 +108,19 @@ export default async function ItemsByTypePage({
       </div>
 
       {items.length > 0 ? (
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
-          {items.map((item) => (
-            <ClickableItemCard key={item.id} item={item} />
-          ))}
-        </div>
+        typeName === "image" ? (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {items.map((item) => (
+              <ClickableImageCard key={item.id} item={item} />
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+            {items.map((item) => (
+              <ClickableItemCard key={item.id} item={item} />
+            ))}
+          </div>
+        )
       ) : (
         <div className="flex flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-border bg-card p-12 text-center">
           {Icon && (
