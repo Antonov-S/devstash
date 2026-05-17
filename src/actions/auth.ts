@@ -5,6 +5,7 @@ import { headers } from "next/headers";
 
 import { signIn, signOut } from "@/auth";
 import { extractIp, rateLimit, rateLimitMessage } from "@/lib/rate-limit";
+import { safeRedirectPath } from "@/lib/safe-redirect";
 
 export type AuthActionResult = {
   error?: string;
@@ -39,8 +40,7 @@ export async function credentialsSignInAction(
     await signIn("credentials", {
       email: normalizedEmail,
       password,
-      redirectTo:
-        typeof callbackUrl === "string" && callbackUrl ? callbackUrl : "/dashboard"
+      redirectTo: safeRedirectPath(callbackUrl)
     });
     return {};
   } catch (error) {
@@ -66,8 +66,7 @@ export async function credentialsSignInAction(
 export async function githubSignInAction(formData: FormData) {
   const callbackUrl = formData.get("callbackUrl");
   await signIn("github", {
-    redirectTo:
-      typeof callbackUrl === "string" && callbackUrl ? callbackUrl : "/dashboard"
+    redirectTo: safeRedirectPath(callbackUrl)
   });
 }
 

@@ -35,10 +35,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const { name, email, password, confirmPassword } = body as Record<
-    string,
-    unknown
-  >;
+  const { name, email, password } = body as Record<string, unknown>;
 
   if (typeof name !== "string" || !name.trim()) {
     return NextResponse.json({ error: "Name is required" }, { status: 400 });
@@ -52,12 +49,6 @@ export async function POST(request: Request) {
   if (typeof password !== "string" || password.length < MIN_PASSWORD_LENGTH) {
     return NextResponse.json(
       { error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters` },
-      { status: 400 }
-    );
-  }
-  if (password !== confirmPassword) {
-    return NextResponse.json(
-      { error: "Passwords do not match" },
       { status: 400 }
     );
   }

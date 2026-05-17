@@ -30,6 +30,7 @@ import {
   createItemForUser,
   deleteItemForUser,
   getItemDetailForUser,
+  getItemsForUserByTypeId,
   getPinnedItemsForUser,
   updateItemForUser
 } from "@/lib/db/items";
@@ -489,6 +490,32 @@ describe("getPinnedItemsForUser", () => {
 
     expect(mockedFindMany).toHaveBeenCalledWith(
       expect.objectContaining({ take: 5 })
+    );
+  });
+});
+
+describe("getItemsForUserByTypeId", () => {
+  beforeEach(() => {
+    mockedFindMany.mockReset();
+    mockedFindMany.mockResolvedValue([]);
+  });
+
+  it("scopes the query and applies a take: 200 default cap", async () => {
+    await getItemsForUserByTypeId("user_1", "type_1");
+
+    expect(mockedFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userId: "user_1", itemTypeId: "type_1" },
+        take: 200
+      })
+    );
+  });
+
+  it("uses an explicit limit when one is provided", async () => {
+    await getItemsForUserByTypeId("user_1", "type_1", 25);
+
+    expect(mockedFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({ take: 25 })
     );
   });
 });
