@@ -106,11 +106,13 @@ function toItemWithMeta(row: ItemRow): ItemWithMeta {
 }
 
 export async function getPinnedItemsForUser(
-  userId: string
+  userId: string,
+  limit = 50
 ): Promise<ItemWithMeta[]> {
   const rows = await prisma.item.findMany({
     where: { userId, isPinned: true },
     orderBy: [{ lastUsedAt: { sort: "desc", nulls: "last" } }, { updatedAt: "desc" }],
+    take: limit,
     select: itemSelect
   });
   return rows.map(toItemWithMeta);

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { hash } from "bcryptjs";
 
 import { prisma } from "@/lib/prisma";
+import { BCRYPT_ROUNDS } from "@/lib/auth-constants";
 import { EMAIL_VERIFICATION_ENABLED, sendVerificationEmail } from "@/lib/email";
 import { createVerificationToken } from "@/lib/verification-token";
 import { getBaseUrl } from "@/lib/base-url";
@@ -14,7 +15,6 @@ import {
 export const runtime = "nodejs";
 
 const MIN_PASSWORD_LENGTH = 8;
-const SALT_ROUNDS = 12;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(request: Request) {
@@ -75,7 +75,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const passwordHash = await hash(password, SALT_ROUNDS);
+  const passwordHash = await hash(password, BCRYPT_ROUNDS);
 
   const user = await prisma.user.create({
     data: {

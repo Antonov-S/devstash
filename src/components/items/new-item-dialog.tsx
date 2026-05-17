@@ -32,7 +32,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { cn } from "@/lib/utils";
+import { cn, parseTags } from "@/lib/utils";
 
 type TypeOption = {
   value: CreateItemType;
@@ -62,18 +62,6 @@ const TYPES_WITH_MARKDOWN = new Set<CreateItemType>(["note", "prompt"]);
 const TYPES_WITH_UPLOAD = new Set<CreateItemType>(["file", "image"]);
 
 const DEFAULT_TYPE: CreateItemType = "snippet";
-
-function parseTags(input: string): string[] {
-  const seen = new Set<string>();
-  const result: string[] = [];
-  for (const part of input.split(",")) {
-    const trimmed = part.trim();
-    if (!trimmed || seen.has(trimmed)) continue;
-    seen.add(trimmed);
-    result.push(trimmed);
-  }
-  return result;
-}
 
 type NewItemDialogProps = {
   initialType?: CreateItemType;

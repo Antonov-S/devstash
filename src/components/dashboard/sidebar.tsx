@@ -27,6 +27,7 @@ import {
 } from "@/lib/db/collections";
 import { getSystemItemTypesWithCountsForUser } from "@/lib/db/items";
 import { iconMap } from "@/lib/icons";
+import { capitalize } from "@/lib/utils";
 
 const groupClass = "px-3 py-2";
 const groupLabelClass = "h-9 px-3 text-sm";
@@ -37,10 +38,6 @@ const IRREGULAR_PLURALS: Record<string, string | undefined> = {};
 
 function pluralize(name: string) {
   return IRREGULAR_PLURALS[name] ?? `${name}s`;
-}
-
-function capitalize(name: string) {
-  return name.charAt(0).toUpperCase() + name.slice(1);
 }
 
 export async function DashboardSidebar() {

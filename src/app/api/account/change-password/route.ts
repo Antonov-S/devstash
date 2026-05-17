@@ -3,11 +3,11 @@ import { compare, hash } from "bcryptjs";
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { BCRYPT_ROUNDS } from "@/lib/auth-constants";
 
 export const runtime = "nodejs";
 
 const MIN_PASSWORD_LENGTH = 8;
-const SALT_ROUNDS = 10;
 
 export async function POST(request: Request) {
   const session = await auth();
@@ -77,7 +77,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const passwordHash = await hash(newPassword, SALT_ROUNDS);
+  const passwordHash = await hash(newPassword, BCRYPT_ROUNDS);
   await prisma.user.update({
     where: { id: user.id },
     data: { password: passwordHash }
