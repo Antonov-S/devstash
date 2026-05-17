@@ -17,6 +17,7 @@ import {
   type SystemTypeName,
   systemTypeNameFromSlug
 } from "@/lib/system-types";
+import { capitalize } from "@/lib/utils";
 
 const CREATABLE_TYPES: ReadonlySet<SystemTypeName> = new Set([
   "snippet",
@@ -33,10 +34,6 @@ function isCreatable(name: SystemTypeName): name is CreateItemType {
 }
 
 export const dynamic = "force-dynamic";
-
-function capitalize(s: string) {
-  return s.charAt(0).toUpperCase() + s.slice(1);
-}
 
 export async function generateMetadata({
   params

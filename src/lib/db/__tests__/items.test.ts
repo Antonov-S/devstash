@@ -4,6 +4,7 @@ vi.mock("@/lib/prisma", () => ({
   prisma: {
     item: {
       findFirst: vi.fn(),
+      findMany: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
       deleteMany: vi.fn()
@@ -29,10 +30,14 @@ import {
   createItemForUser,
   deleteItemForUser,
   getItemDetailForUser,
+  getPinnedItemsForUser,
   updateItemForUser
 } from "@/lib/db/items";
 
 const mockedFindFirst = prisma.item.findFirst as unknown as ReturnType<
+  typeof vi.fn
+>;
+const mockedFindMany = prisma.item.findMany as unknown as ReturnType<
   typeof vi.fn
 >;
 const mockedItemUpdate = prisma.item.update as unknown as ReturnType<
@@ -459,5 +464,31 @@ describe("deleteItemForUser", () => {
 
     expect(result).toBe(true);
     errSpy.mockRestore();
+  });
+});
+
+describe("getPinnedItemsForUser", () => {
+  beforeEach(() => {
+    mockedFindMany.mockReset();
+    mockedFindMany.mockResolvedValue([]);
+  });
+
+  it("passes take: 50 by default and filters to pinned items for the user", async () => {
+    await getPinnedItemsForUser("user_1");
+
+    expect(mockedFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userId: "user_1", isPinned: true },
+        take: 50
+      })
+    );
+  });
+
+  it("uses an explicit limit when one is provided", async () => {
+    await getPinnedItemsForUser("user_1", 5);
+
+    expect(mockedFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({ take: 5 })
+    );
   });
 });

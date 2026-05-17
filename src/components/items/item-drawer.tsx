@@ -43,7 +43,8 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import type { ItemDetail, ItemWithMeta } from "@/lib/db/items";
 import { iconMap } from "@/lib/icons";
-import { cn } from "@/lib/utils";
+import { formatBytes } from "@/lib/upload-constraints";
+import { cn, parseTags } from "@/lib/utils";
 
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
   month: "long",
@@ -53,12 +54,6 @@ const dateFormatter = new Intl.DateTimeFormat("en-US", {
 
 function formatDate(value: Date | string): string {
   return dateFormatter.format(value instanceof Date ? value : new Date(value));
-}
-
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 const TYPES_WITH_CONTENT = new Set(["snippet", "prompt", "command", "note"]);
@@ -83,18 +78,6 @@ function detailToEditState(detail: ItemDetail): EditState {
     language: detail.language ?? "",
     tags: detail.tags.join(", ")
   };
-}
-
-function parseTags(input: string): string[] {
-  const seen = new Set<string>();
-  const result: string[] = [];
-  for (const part of input.split(",")) {
-    const trimmed = part.trim();
-    if (!trimmed || seen.has(trimmed)) continue;
-    seen.add(trimmed);
-    result.push(trimmed);
-  }
-  return result;
 }
 
 type Props = {

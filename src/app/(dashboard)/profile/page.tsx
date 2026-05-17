@@ -13,6 +13,7 @@ import {
   getSystemItemTypesWithCountsForUser
 } from "@/lib/db/items";
 import { getUserProfileById } from "@/lib/db/users";
+import { capitalize } from "@/lib/utils";
 
 export const metadata = {
   title: "Profile · DevStash"
@@ -25,10 +26,6 @@ const dateFormatter = new Intl.DateTimeFormat("en-US", {
   month: "long",
   day: "numeric"
 });
-
-function capitalize(name: string) {
-  return name.charAt(0).toUpperCase() + name.slice(1);
-}
 
 export default async function ProfilePage() {
   const session = await auth();

@@ -1,16 +1,65 @@
-# Current Feature
+# Audit Quick Wins 2
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+- Centralize the bcrypt cost factor so every password hash in the app uses the same strength.
+- Remove duplicated utility functions (`formatBytes`, `capitalize`, `parseTags`) so each lives in exactly one place.
+- Bound the pinned-items query so the dashboard payload can't grow unbounded with a heavily-pinned account.
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+Scope: four low-risk fixes pulled from the code-scanner audit. Pure refactors and a single trivial query change — no behavior change for end users, no UI work, no migrations.
+
+### #2 — Centralize bcrypt cost factor
+
+- Today, `SALT_ROUNDS` is declared three times with two different values:
+  - `src/app/api/auth/register/route.ts` → `12`
+  - `src/app/api/auth/reset-password/route.ts` → `10`
+  - `src/app/api/account/change-password/route.ts` → `10`
+- This means a user who registers (cost 12) then resets or changes their password silently downgrades to a cost-10 hash.
+- Add `export const BCRYPT_ROUNDS = 12;` to a shared module (suggested: `src/lib/auth-constants.ts`, new file). Import it in all three routes; delete the local declarations.
+- bcrypt verifies against the cost embedded in each stored hash, so existing cost-10 hashes continue to validate — no migration / forced re-hash needed. New hashes (register / reset / change) will all be cost 12 going forward.
+
+### #7 — Dedup `formatBytes`
+
+- `src/lib/upload-constraints.ts` exports the canonical `formatBytes` (already covered by Vitest).
+- `src/components/items/item-drawer.tsx` lines 58-62 redeclares an identical local copy.
+- Delete the local declaration in `item-drawer.tsx` and `import { formatBytes } from "@/lib/upload-constraints"` at the top. No other consumers to touch.
+
+### #8 — Dedup `capitalize` + `parseTags`
+
+- `capitalize` is independently declared across at least these files:
+  - `src/components/items/item-drawer.tsx`
+  - `src/components/items/new-item-dialog.tsx`
+  - `src/app/(dashboard)/items/[type]/page.tsx`
+  - `src/app/(dashboard)/profile/page.tsx`
+  - `src/components/dashboard/sidebar.tsx`
+- `parseTags` is independently declared in both `src/components/items/item-drawer.tsx` and `src/components/items/new-item-dialog.tsx`.
+- Add both to `src/lib/utils.ts` (alongside the existing `cn`). Replace every local declaration with an import.
+- Before writing, grep each file to verify the local implementation matches the canonical one — if any local version handles an edge case differently (e.g. empty string, Unicode), pick the safest behavior and standardize on it.
+- Add Vitest cases in `src/lib/__tests__/utils.test.ts` for both functions: empty string, single character, already-capitalized, leading whitespace (capitalize); empty input, single tag, comma-only, duplicates, whitespace-only entries (parseTags).
+
+### #9 — Bound `getPinnedItemsForUser`
+
+- `src/lib/db/items.ts` lines 111-116 — `getPinnedItemsForUser` has no `take` limit.
+- Add an optional `limit` parameter defaulting to `50` and pass it as `take` on the `findMany`. Match the signature pattern already used elsewhere in the file (e.g. `getRecentItemsForUser` if it takes a limit — verify first).
+- All current callers can keep calling without arguments; 50 is well above realistic pin counts and matches the dashboard's intent of a curated short list.
+- Update or add a Vitest case in `src/lib/db/__tests__/items.test.ts` confirming the default `take: 50` is passed to Prisma and that an explicit `limit` overrides it.
+
+### Out of scope
+
+- The Critical (#1 open redirect) and High (#3 N+1 collections aggregation, #4 image R2 URL exposure) findings — each needs its own focused PR.
+- The other Medium/Low findings from the audit (callbackUrl page sanitization, `updateItemForUser` round-trip merge, `consumeVerificationToken` reorder, CSP headers, `getDemoUser` guard, item-drawer split, `token.id` cast).
+
+### Verification
+
+- `npm run test:run` must pass (existing 80 tests + the new utils cases).
+- `npm run build` must pass.
+- No live verification needed — purely internal refactors and a query-level cap, no user-visible change.
 
 ## History
 

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { hash } from "bcryptjs";
 
 import { prisma } from "@/lib/prisma";
+import { BCRYPT_ROUNDS } from "@/lib/auth-constants";
 import { consumePasswordResetToken } from "@/lib/verification-token";
 import {
   extractIp,
@@ -12,7 +13,6 @@ import {
 export const runtime = "nodejs";
 
 const MIN_PASSWORD_LENGTH = 8;
-const SALT_ROUNDS = 10;
 
 export async function POST(request: Request) {
   const limit = await rateLimit("resetPassword", extractIp(request.headers));
@@ -62,7 +62,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const passwordHash = await hash(password, SALT_ROUNDS);
+  const passwordHash = await hash(password, BCRYPT_ROUNDS);
 
   // updateMany so a missing user (e.g. deleted between issue and consume) is
   // a no-op rather than a 500.
