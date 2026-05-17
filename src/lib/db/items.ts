@@ -32,7 +32,10 @@ export type ItemWithMeta = {
   isPinned: boolean;
   lastUsedAt: Date | null;
   updatedAt: Date;
+  createdAt: Date;
   fileUrl: string | null;
+  fileName: string | null;
+  fileSize: number | null;
   itemType: ItemTypeMeta;
   tags: string[];
 };
@@ -46,7 +49,10 @@ const itemSelect = {
   isPinned: true,
   lastUsedAt: true,
   updatedAt: true,
+  createdAt: true,
   fileUrl: true,
+  fileName: true,
+  fileSize: true,
   itemType: {
     select: { id: true, name: true, icon: true, color: true }
   },
@@ -64,7 +70,10 @@ type ItemRow = {
   isPinned: boolean;
   lastUsedAt: Date | null;
   updatedAt: Date;
+  createdAt: Date;
   fileUrl: string | null;
+  fileName: string | null;
+  fileSize: number | null;
   itemType: ItemTypeMeta;
   tags: { tag: { name: string } }[];
 };
@@ -79,7 +88,10 @@ function toItemWithMeta(row: ItemRow): ItemWithMeta {
     isPinned: row.isPinned,
     lastUsedAt: row.lastUsedAt,
     updatedAt: row.updatedAt,
+    createdAt: row.createdAt,
     fileUrl: row.fileUrl,
+    fileName: row.fileName,
+    fileSize: row.fileSize,
     itemType: row.itemType,
     tags: row.tags.map(({ tag }) => tag.name)
   };
@@ -139,11 +151,7 @@ export type ItemCollectionSummary = {
 export type ItemDetail = ItemWithMeta & {
   contentType: ContentType;
   content: string | null;
-  fileUrl: string | null;
-  fileName: string | null;
-  fileSize: number | null;
   url: string | null;
-  createdAt: Date;
   collections: ItemCollectionSummary[];
 };
 
@@ -157,11 +165,7 @@ export async function getItemDetailForUser(
       ...itemSelect,
       contentType: true,
       content: true,
-      fileUrl: true,
-      fileName: true,
-      fileSize: true,
       url: true,
-      createdAt: true,
       collections: {
         select: { collection: { select: { id: true, name: true } } },
         orderBy: { addedAt: "desc" }
@@ -173,11 +177,7 @@ export async function getItemDetailForUser(
     ...toItemWithMeta(row),
     contentType: row.contentType,
     content: row.content,
-    fileUrl: row.fileUrl,
-    fileName: row.fileName,
-    fileSize: row.fileSize,
     url: row.url,
-    createdAt: row.createdAt,
     collections: row.collections.map(({ collection }) => collection)
   };
 }

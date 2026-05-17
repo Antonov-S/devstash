@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 
 import { auth } from "@/auth";
 import type { CreateItemType } from "@/actions/items";
+import { ClickableFileRow } from "@/components/items/clickable-file-row";
 import { ClickableImageCard } from "@/components/items/clickable-image-card";
 import { ClickableItemCard } from "@/components/items/clickable-item-card";
 import { NewItemDialog } from "@/components/items/new-item-dialog";
@@ -112,6 +113,12 @@ export default async function ItemsByTypePage({
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {items.map((item) => (
               <ClickableImageCard key={item.id} item={item} />
+            ))}
+          </div>
+        ) : typeName === "file" ? (
+          <div className="flex flex-col gap-2">
+            {items.map((item) => (
+              <ClickableFileRow key={item.id} item={item} />
             ))}
           </div>
         ) : (
