@@ -27,6 +27,8 @@ export type ItemWithMeta = {
   id: string;
   title: string;
   description: string | null;
+  content: string | null;
+  url: string | null;
   language: string | null;
   isFavorite: boolean;
   isPinned: boolean;
@@ -44,6 +46,8 @@ const itemSelect = {
   id: true,
   title: true,
   description: true,
+  content: true,
+  url: true,
   language: true,
   isFavorite: true,
   isPinned: true,
@@ -65,6 +69,8 @@ type ItemRow = {
   id: string;
   title: string;
   description: string | null;
+  content: string | null;
+  url: string | null;
   language: string | null;
   isFavorite: boolean;
   isPinned: boolean;
@@ -83,6 +89,8 @@ function toItemWithMeta(row: ItemRow): ItemWithMeta {
     id: row.id,
     title: row.title,
     description: row.description,
+    content: row.content,
+    url: row.url,
     language: row.language,
     isFavorite: row.isFavorite,
     isPinned: row.isPinned,
@@ -150,8 +158,6 @@ export type ItemCollectionSummary = {
 
 export type ItemDetail = ItemWithMeta & {
   contentType: ContentType;
-  content: string | null;
-  url: string | null;
   collections: ItemCollectionSummary[];
 };
 
@@ -164,8 +170,6 @@ export async function getItemDetailForUser(
     select: {
       ...itemSelect,
       contentType: true,
-      content: true,
-      url: true,
       collections: {
         select: { collection: { select: { id: true, name: true } } },
         orderBy: { addedAt: "desc" }
@@ -176,8 +180,6 @@ export async function getItemDetailForUser(
   return {
     ...toItemWithMeta(row),
     contentType: row.contentType,
-    content: row.content,
-    url: row.url,
     collections: row.collections.map(({ collection }) => collection)
   };
 }
