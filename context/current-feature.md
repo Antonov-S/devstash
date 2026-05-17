@@ -1,16 +1,22 @@
-# Current Feature
+# Current Feature: Image Gallery View
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+- Replace the standard `ItemCard` with an image-specific thumbnail card on the `/items/images` page
+- Render images in a 3-column grid/gallery layout
+- Thumbnails use a 16:9 aspect ratio (`aspect-video`) with `object-cover` fill (cropping edges as needed)
+- Add a subtle hover zoom (5% scale, 300ms transition)
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+- Spec: `context/features/image-display-spec.md`
+- Scope is the `image` system type only — other item types keep the existing `ItemCard`
+- Source for thumbnails is the existing `fileUrl` populated by the R2 upload flow
+- Click-to-open detail drawer behavior should be preserved (use `ClickableItemCard` pattern or equivalent)
 
 ## History
 

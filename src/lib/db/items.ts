@@ -32,6 +32,7 @@ export type ItemWithMeta = {
   isPinned: boolean;
   lastUsedAt: Date | null;
   updatedAt: Date;
+  fileUrl: string | null;
   itemType: ItemTypeMeta;
   tags: string[];
 };
@@ -45,6 +46,7 @@ const itemSelect = {
   isPinned: true,
   lastUsedAt: true,
   updatedAt: true,
+  fileUrl: true,
   itemType: {
     select: { id: true, name: true, icon: true, color: true }
   },
@@ -62,6 +64,7 @@ type ItemRow = {
   isPinned: boolean;
   lastUsedAt: Date | null;
   updatedAt: Date;
+  fileUrl: string | null;
   itemType: ItemTypeMeta;
   tags: { tag: { name: string } }[];
 };
@@ -76,6 +79,7 @@ function toItemWithMeta(row: ItemRow): ItemWithMeta {
     isPinned: row.isPinned,
     lastUsedAt: row.lastUsedAt,
     updatedAt: row.updatedAt,
+    fileUrl: row.fileUrl,
     itemType: row.itemType,
     tags: row.tags.map(({ tag }) => tag.name)
   };
