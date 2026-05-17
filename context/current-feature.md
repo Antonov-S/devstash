@@ -2,15 +2,29 @@
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+Audit quick wins #3 — third batch of low-risk fixes pulled from the latest code-scanner audit, re-checked against Auth.js v5 docs via context7 MCP. Scope is deliberately narrow: small, contained changes with clear scope, no architectural rework.
+
+Findings being addressed:
+
+- **#1 Critical — `callbackUrl` open redirect** ([src/actions/auth.ts:43](src/actions/auth.ts#L43), [src/actions/auth.ts:70](src/actions/auth.ts#L70)). NextAuth v5 does not auto-validate `redirectTo` (confirmed against `authjs.dev` v5 docs). Add a `safeRedirectPath()` helper and apply it to both `credentialsSignInAction` and `githubSignInAction`. Reject anything that doesn't `startsWith("/")` or starts with `//`, falling back to `/dashboard`.
+- **#2 High — `consumeVerificationToken` expiry-before-delete** ([src/lib/verification-token.ts:55-61](src/lib/verification-token.ts#L55-L61)). Currently deletes the row before checking `expires`, so expired tokens always surface as "invalid" after first use. Reorder to match the already-correct `peekPasswordResetToken` at line 94.
+- **#3 High — unbounded `getItemsForUserByTypeId`** ([src/lib/db/items.ts:144-153](src/lib/db/items.ts#L144-L153)). Add a defensive `take = 200` parameter (matching the `getPinnedItemsForUser`/`getRecentItemsForUser` signature). Real cursor-based pagination is a separate, larger feature.
+- **#8 Medium — `token.id as string` cast** ([src/auth.config.ts:35](src/auth.config.ts#L35)). JWT augmentation in [src/types/next-auth.d.ts](src/types/next-auth.d.ts) already types `JWT.id` as `string`, so the cast is redundant. Auth.js v5 docs confirm `session.user.id = token.id` is the correct pattern.
+- **#9 Medium — no HTTP security headers** ([next.config.ts](next.config.ts)). Add `headers()` export with `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`. CSP deferred — requires planning for Monaco + Markdown.
+- **#13 Low — `confirmPassword` sent to server** ([src/components/auth/register-form.tsx:87-91](src/components/auth/register-form.tsx#L87-L91)). Client already validates equality; omit from POST body. Server-side equality check in `/api/auth/register` becomes a no-op for client requests (still hardens against direct API hits — keep it).
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+- All findings from the audit report dated 2026-05-18.
+- Auth-related items (#1, #2, #8) verified against Auth.js v5 docs (`/websites/authjs_dev`) via context7 MCP — current package is `next-auth@5.x` so v5 guidance applies.
+- Out of scope for this batch (deferred to focused PRs): #4 R2 proxy (architectural), #5 collections `fetchCollectionsWithMeta` rework, #6 `AUTH_URL` startup assert (needs env-policy decision), #7 `updateItemForUser` round-trip merge, #10 `item-drawer.tsx` split, #12 middleware matcher expansion.
+- #11 (`getDemoUser` dead-code annotation) explicitly **dropped** by user — demo user is still used in production, not dev-only.
+- New Vitest coverage required for: `safeRedirectPath` helper (path validation), `consumeVerificationToken` (expired-then-deleted case), `getItemsForUserByTypeId` (default + override take).
+- No behavior change visible to end users except: (a) attacker-controlled `callbackUrl` now redirects to `/dashboard` instead of evil.com, (b) expired verification tokens surface as "expired" instead of "invalid" after first attempt.
 
 ## History
 

@@ -51,12 +51,11 @@ export async function consumeVerificationToken(
   // Tokens issued for another purpose (e.g. password reset) carry an
   // identifier prefix and must not be accepted here.
   if (record.identifier.includes(":")) return { ok: false, reason: "invalid" };
-
-  await prisma.verificationToken.delete({ where: { token: tokenHash } });
-
   if (record.expires.getTime() < Date.now()) {
     return { ok: false, reason: "expired" };
   }
+
+  await prisma.verificationToken.delete({ where: { token: tokenHash } });
 
   return { ok: true, email: record.identifier };
 }
@@ -112,12 +111,11 @@ export async function consumePasswordResetToken(
   if (!record.identifier.startsWith(RESET_PREFIX)) {
     return { ok: false, reason: "invalid" };
   }
-
-  await prisma.verificationToken.delete({ where: { token: tokenHash } });
-
   if (record.expires.getTime() < Date.now()) {
     return { ok: false, reason: "expired" };
   }
+
+  await prisma.verificationToken.delete({ where: { token: tokenHash } });
 
   return { ok: true, email: record.identifier.slice(RESET_PREFIX.length) };
 }

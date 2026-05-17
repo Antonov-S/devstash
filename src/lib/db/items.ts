@@ -143,11 +143,13 @@ export async function getSystemItemTypeByName(
 
 export async function getItemsForUserByTypeId(
   userId: string,
-  itemTypeId: string
+  itemTypeId: string,
+  limit = 200
 ): Promise<ItemWithMeta[]> {
   const rows = await prisma.item.findMany({
     where: { userId, itemTypeId },
     orderBy: [{ lastUsedAt: { sort: "desc", nulls: "last" } }, { updatedAt: "desc" }],
+    take: limit,
     select: itemSelect
   });
   return rows.map(toItemWithMeta);
