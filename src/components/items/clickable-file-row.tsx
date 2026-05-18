@@ -16,13 +16,8 @@ import { useState } from "react";
 
 import { ItemDrawer } from "@/components/items/item-drawer";
 import type { ItemWithMeta } from "@/lib/db/items";
+import { formatDateMedium } from "@/lib/format-date";
 import { formatBytes, getExtension } from "@/lib/upload-constraints";
-
-const dateFormatter = new Intl.DateTimeFormat("en-US", {
-  month: "short",
-  day: "numeric",
-  year: "numeric"
-});
 
 const EXTENSION_ICON: Record<string, LucideIcon> = {
   ".pdf": FileText,
@@ -74,7 +69,7 @@ export function ClickableFileRow({ item }: { item: ItemWithMeta }) {
               )}
               {item.fileSize !== null && <span aria-hidden>·</span>}
               <span className="tabular-nums">
-                {dateFormatter.format(item.createdAt)}
+                {formatDateMedium(item.createdAt)}
               </span>
             </div>
           </div>

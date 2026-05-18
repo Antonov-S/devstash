@@ -2,12 +2,8 @@ import { Pin, Star } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import type { ItemWithMeta } from "@/lib/db/items";
+import { formatDateShort } from "@/lib/format-date";
 import { iconMap } from "@/lib/icons";
-
-const dateFormatter = new Intl.DateTimeFormat("en-US", {
-  month: "short",
-  day: "numeric"
-});
 
 export function ItemCard({ item }: { item: ItemWithMeta }) {
   const Icon = iconMap[item.itemType.icon] ?? null;
@@ -64,7 +60,7 @@ export function ItemCard({ item }: { item: ItemWithMeta }) {
       </div>
 
       <span className="shrink-0 text-sm text-muted-foreground">
-        {dateFormatter.format(date)}
+        {formatDateShort(date)}
       </span>
     </div>
   );

@@ -2,15 +2,39 @@
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+Refactor Phase B — split the 778-line [src/components/items/item-drawer.tsx](src/components/items/item-drawer.tsx) (audit finding #10) into focused sibling files. Goal: each child component lives in its own file, the orchestrator file shrinks to ~250-300 lines holding only state plumbing, effects, and layout. Pure code move; no behavior change for end users.
+
+Top-level functions in the current file (after Phase A cleanup, line numbers from the post-PhaseA state):
+- `ItemDrawer` (orchestrator, 81-297)
+- `ViewActionBar` (299-363) + `EditActionBar` (411-439)
+- `DeleteItemDialog` (365-409)
+- `ItemEditForm` (441-549) + the `EditState` type (55-62) + `detailToEditState` helper (64-73)
+- `ItemDrawerBody` (551-612) + `ItemContent` (614-688) + `FileMetaRow` (690-725) + `EmptyContent` (727-733) + `Section` (735-750)
+- `ItemDrawerSkeleton` (752-778)
+
+New files (5):
+
+- **`src/components/items/item-edit-form.tsx`** — exports `ItemEditForm`, type `EditState`, helper `detailToEditState`. Owns the controlled-form rendering for Title/Description/Tags + type-aware Content/Language/URL fields. Receives `showsContent`/`showsLanguage`/`showsMarkdown`/`showsUrl` booleans from the orchestrator.
+- **`src/components/items/item-drawer-body.tsx`** — exports `ItemDrawerBody`. Internally houses `ItemContent`, `FileMetaRow`, `EmptyContent`, `Section`. Receives `showsLanguage` + `showsMarkdown` booleans as props (currently looked up from `detail.itemType.name` inside `ItemContent` via local `TYPES_WITH_LANGUAGE`/`TYPES_WITH_MARKDOWN` sets — moving the lookup to the orchestrator centralizes the source of truth and lets the body stay dumb).
+- **`src/components/items/delete-item-dialog.tsx`** — exports `DeleteItemDialog`.
+- **`src/components/items/item-drawer-skeleton.tsx`** — exports `ItemDrawerSkeleton`.
+- **`src/components/items/item-drawer-action-bars.tsx`** — exports `ViewActionBar` and `EditActionBar` together (small, conceptually paired — one file rather than two avoids over-fragmentation).
+
+Files modified:
+
+- **`src/components/items/item-drawer.tsx`** — slimmed down to: imports, the three `TYPES_WITH_*` constants (orchestrator owns the source of truth), `ItemDrawer` orchestrator (state, effects, handlers, header layout, scroll container), and the imports of the new children. Drops imports that move out: `Check`/`Copy`/`Download`/`ExternalLink`/`FileIcon`/`LoaderCircle`/`Pencil`/`Pin`/`Star`/`Trash2`/`X` from lucide; `Field`/`Textarea` from `_form-primitives`; `CodeEditor` + `MarkdownEditor` if no longer used in the orchestrator; `Skeleton`; `Dialog*` exports; `formatDateLong`; `formatBytes`; `parseTags` may stay if `handleSave` still uses it (it does — line 163).
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+- Audit finding #10 was tagged `[previously identified, still open]` across Audit Quick Wins 2 and 3 — deliberately deferred in those batches as the bigger structural change. Phase A landed first so Phase B can split a cleaner file.
+- Constants source-of-truth migration (`TYPES_WITH_LANGUAGE` / `TYPES_WITH_MARKDOWN` looked up in `ItemContent` → moved to the orchestrator and passed as `showsLanguage` / `showsMarkdown` props) is a small but intentional behavioral consolidation: today the orchestrator computes `showsLanguage` for the edit form and `ItemContent` independently re-derives it for the view body. After this PR, both paths read from the same orchestrator-side boolean. Drift impossible.
+- Children that are *not* extracted: `ItemDrawer` itself (the orchestrator stays in `item-drawer.tsx`), and the `Field`/`Textarea` form primitives (already extracted in Phase A to `_form-primitives.tsx`).
+- No new Vitest coverage: per [coding-standards.md](context/coding-standards.md) Testing section, components are explicitly out of scope. Existing tests on the underlying server actions (`updateItemAction`, `deleteItemAction`) and db helpers + the new formatDateLong tests continue to cover the logic these components consume.
+- Live verification: open the drawer on `/dashboard`, edit a snippet, save, delete, confirm `ItemContent` renders correctly for snippet (CodeEditor) / note (MarkdownEditor) / link (external link) / file (FileMetaRow) / image (inline `<img>` + FileMetaRow).
 
 ## History
 
