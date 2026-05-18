@@ -24,7 +24,7 @@ export function CollectionCard({
       className="group relative block rounded-xl transition-transform hover:-translate-y-0.5"
     >
       <Card
-        className="gap-5 py-6 transition-colors group-hover:bg-card/80"
+        className="h-full gap-5 py-6 transition-colors group-hover:bg-card/80"
         style={{ borderLeftWidth: "3px", borderLeftColor: borderColor }}
       >
         <CardHeader className="gap-2 px-6">

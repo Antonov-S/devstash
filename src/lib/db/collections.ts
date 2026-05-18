@@ -120,3 +120,39 @@ export async function getCollectionStatsForUser(
   ]);
   return { total, favorites };
 }
+
+export type CreateCollectionInput = {
+  name: string;
+  description: string | null;
+};
+
+export async function createCollectionForUser(
+  userId: string,
+  data: CreateCollectionInput
+): Promise<CollectionWithMeta> {
+  const created = await prisma.collection.create({
+    data: {
+      name: data.name,
+      description: data.description,
+      userId
+    },
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      isFavorite: true,
+      updatedAt: true
+    }
+  });
+
+  return {
+    id: created.id,
+    name: created.name,
+    description: created.description,
+    isFavorite: created.isFavorite,
+    updatedAt: created.updatedAt,
+    itemCount: 0,
+    dominantType: null,
+    types: []
+  };
+}
