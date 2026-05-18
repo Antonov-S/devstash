@@ -19,9 +19,11 @@ import { toast } from "sonner";
 
 import { deleteItemAction, updateItemAction } from "@/actions/items";
 import { CodeEditor } from "@/components/items/code-editor";
+import { Field, Textarea } from "@/components/items/_form-primitives";
 import { MarkdownEditor } from "@/components/items/markdown-editor";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { PendingButton } from "@/components/ui/pending-button";
 import {
   Dialog,
   DialogClose,
@@ -32,7 +34,6 @@ import {
   DialogTitle
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Sheet,
   SheetContent,
@@ -42,19 +43,10 @@ import {
 } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { ItemDetail, ItemWithMeta } from "@/lib/db/items";
+import { formatDateLong } from "@/lib/format-date";
 import { iconMap } from "@/lib/icons";
 import { formatBytes } from "@/lib/upload-constraints";
-import { cn, parseTags } from "@/lib/utils";
-
-const dateFormatter = new Intl.DateTimeFormat("en-US", {
-  month: "long",
-  day: "numeric",
-  year: "numeric"
-});
-
-function formatDate(value: Date | string): string {
-  return dateFormatter.format(value instanceof Date ? value : new Date(value));
-}
+import { parseTags } from "@/lib/utils";
 
 const TYPES_WITH_CONTENT = new Set(["snippet", "prompt", "command", "note"]);
 const TYPES_WITH_LANGUAGE = new Set(["snippet", "command"]);
@@ -401,19 +393,15 @@ function DeleteItemDialog({
               </Button>
             }
           />
-          <Button
+          <PendingButton
             type="button"
             variant="destructive"
             onClick={onConfirm}
-            disabled={deleting}
+            pending={deleting}
+            icon={<Trash2 aria-hidden />}
           >
-            {deleting ? (
-              <LoaderCircle className="size-4 animate-spin" aria-hidden />
-            ) : (
-              <Trash2 aria-hidden />
-            )}
             Delete
-          </Button>
+          </PendingButton>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -433,14 +421,15 @@ function EditActionBar({
 }) {
   return (
     <div className="flex items-center gap-2">
-      <Button size="sm" onClick={onSave} disabled={saveDisabled}>
-        {saving ? (
-          <LoaderCircle className="animate-spin" aria-hidden />
-        ) : (
-          <Check aria-hidden />
-        )}
+      <PendingButton
+        size="sm"
+        onClick={onSave}
+        pending={saving}
+        disabled={saveDisabled}
+        icon={<Check aria-hidden />}
+      >
         Save
-      </Button>
+      </PendingButton>
       <Button variant="ghost" size="sm" onClick={onCancel} disabled={saving}>
         <X aria-hidden />
         Cancel
@@ -559,45 +548,6 @@ function ItemEditForm({
   );
 }
 
-function Field({
-  label,
-  htmlFor,
-  required,
-  hint,
-  children
-}: {
-  label: string;
-  htmlFor: string;
-  required?: boolean;
-  hint?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center justify-between">
-        <Label htmlFor={htmlFor}>
-          {label}
-          {required && <span className="text-destructive"> *</span>}
-        </Label>
-        {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
-      </div>
-      {children}
-    </div>
-  );
-}
-
-function Textarea({ className, ...props }: React.ComponentProps<"textarea">) {
-  return (
-    <textarea
-      className={cn(
-        "min-h-16 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1.5 text-sm transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:bg-input/30 dark:disabled:bg-input/80 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40",
-        className
-      )}
-      {...props}
-    />
-  );
-}
-
 function ItemDrawerBody({ detail }: { detail: ItemDetail }) {
   return (
     <div className="flex flex-col gap-6">
@@ -644,14 +594,14 @@ function ItemDrawerBody({ detail }: { detail: ItemDetail }) {
       <Section title="Details">
         <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
           <dt className="text-muted-foreground">Created</dt>
-          <dd className="text-foreground/90">{formatDate(detail.createdAt)}</dd>
+          <dd className="text-foreground/90">{formatDateLong(detail.createdAt)}</dd>
           <dt className="text-muted-foreground">Updated</dt>
-          <dd className="text-foreground/90">{formatDate(detail.updatedAt)}</dd>
+          <dd className="text-foreground/90">{formatDateLong(detail.updatedAt)}</dd>
           {detail.lastUsedAt && (
             <>
               <dt className="text-muted-foreground">Last used</dt>
               <dd className="text-foreground/90">
-                {formatDate(detail.lastUsedAt)}
+                {formatDateLong(detail.lastUsedAt)}
               </dd>
             </>
           )}

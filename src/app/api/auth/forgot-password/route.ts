@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
+import { EMAIL_REGEX } from "@/lib/auth-constants";
 import { sendPasswordResetEmail } from "@/lib/email";
 import { createPasswordResetToken } from "@/lib/verification-token";
 import { getBaseUrl } from "@/lib/base-url";
@@ -11,8 +12,6 @@ import {
 } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
-
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const GENERIC_OK = NextResponse.json({ success: true }, { status: 200 });
 

@@ -6,7 +6,6 @@ import {
   Code,
   FileIcon,
   Image as ImageIcon,
-  LoaderCircle,
   Link as LinkIcon,
   Plus,
   Sparkles,
@@ -18,8 +17,10 @@ import { toast } from "sonner";
 import { createItemAction, type CreateItemType } from "@/actions/items";
 import { CodeEditor } from "@/components/items/code-editor";
 import { FileUpload, type UploadedFile } from "@/components/items/file-upload";
+import { Field, Textarea } from "@/components/items/_form-primitives";
 import { MarkdownEditor } from "@/components/items/markdown-editor";
 import { Button } from "@/components/ui/button";
+import { PendingButton } from "@/components/ui/pending-button";
 import {
   Dialog,
   DialogClose,
@@ -315,12 +316,13 @@ export function NewItemDialog({
                 </Button>
               }
             />
-            <Button type="submit" disabled={submitDisabled}>
-              {pending ? (
-                <LoaderCircle className="size-4 animate-spin" aria-hidden />
-              ) : null}
+            <PendingButton
+              type="submit"
+              pending={pending}
+              disabled={submitDisabled}
+            >
               Create
-            </Button>
+            </PendingButton>
           </DialogFooter>
         </form>
       </DialogContent>
@@ -328,41 +330,3 @@ export function NewItemDialog({
   );
 }
 
-function Field({
-  label,
-  htmlFor,
-  required,
-  hint,
-  children
-}: {
-  label: string;
-  htmlFor?: string;
-  required?: boolean;
-  hint?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center justify-between">
-        <Label htmlFor={htmlFor}>
-          {label}
-          {required && <span className="text-destructive"> *</span>}
-        </Label>
-        {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
-      </div>
-      {children}
-    </div>
-  );
-}
-
-function Textarea({ className, ...props }: React.ComponentProps<"textarea">) {
-  return (
-    <textarea
-      className={cn(
-        "min-h-16 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1.5 text-sm transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:bg-input/30 dark:disabled:bg-input/80 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40",
-        className
-      )}
-      {...props}
-    />
-  );
-}

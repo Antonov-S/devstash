@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { hash } from "bcryptjs";
 
 import { prisma } from "@/lib/prisma";
-import { BCRYPT_ROUNDS } from "@/lib/auth-constants";
+import { BCRYPT_ROUNDS, MIN_PASSWORD_LENGTH } from "@/lib/auth-constants";
 import { consumePasswordResetToken } from "@/lib/verification-token";
 import {
   extractIp,
@@ -11,8 +11,6 @@ import {
 } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
-
-const MIN_PASSWORD_LENGTH = 8;
 
 export async function POST(request: Request) {
   const limit = await rateLimit("resetPassword", extractIp(request.headers));

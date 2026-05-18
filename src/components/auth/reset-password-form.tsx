@@ -7,8 +7,7 @@ import { toast } from "sonner";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
-const MIN_PASSWORD_LENGTH = 8;
+import { MIN_PASSWORD_LENGTH } from "@/lib/auth-constants";
 
 type FieldErrors = Partial<
   Record<"password" | "confirmPassword" | "form", string>

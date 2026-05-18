@@ -2,15 +2,23 @@
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+Refactor Phase A — four small, zero-to-low-risk consolidation moves identified during a code-scanner-style audit for shared/duplicated code. Pure code moves, no behavior change for end users. Verified by Vitest + `next build`.
+
+- **#1 Centralize `EMAIL_REGEX` + `MIN_PASSWORD_LENGTH`** — both constants exist as byte-identical copies across 6 sites each. Move into `src/lib/auth-constants.ts` (already exports `BCRYPT_ROUNDS = 12`) and import. Files affected: [src/components/auth/register-form.tsx](src/components/auth/register-form.tsx), [src/components/auth/forgot-password-form.tsx](src/components/auth/forgot-password-form.tsx), [src/components/auth/reset-password-form.tsx](src/components/auth/reset-password-form.tsx), [src/components/auth/resend-verification-button.tsx](src/components/auth/resend-verification-button.tsx), [src/components/profile/change-password-dialog.tsx](src/components/profile/change-password-dialog.tsx), [src/app/api/auth/register/route.ts](src/app/api/auth/register/route.ts), [src/app/api/auth/forgot-password/route.ts](src/app/api/auth/forgot-password/route.ts), [src/app/api/auth/reset-password/route.ts](src/app/api/auth/reset-password/route.ts), [src/app/api/auth/resend-verification/route.ts](src/app/api/auth/resend-verification/route.ts), [src/app/api/account/change-password/route.ts](src/app/api/account/change-password/route.ts).
+- **#2 Extract `Field` + `Textarea` form primitives** — defined byte-identically (except `htmlFor` optionality) in both [src/components/items/item-drawer.tsx:562-599](src/components/items/item-drawer.tsx#L562-L599) and [src/components/items/new-item-dialog.tsx:331-368](src/components/items/new-item-dialog.tsx#L331-L368). Move to `src/components/items/_form-primitives.tsx`, keep new-item-dialog's superset `htmlFor?: string` signature.
+- **#3 `PendingButton` primitive** — `<Button>` + `<LoaderCircle className="size-4 animate-spin">` spinner pattern duplicated across 5+ sites ([sign-in-form](src/components/auth/sign-in-form.tsx), [register-form](src/components/auth/register-form.tsx), [change-password-dialog](src/components/profile/change-password-dialog.tsx), [delete-account-dialog](src/components/profile/delete-account-dialog.tsx)). Create `src/components/ui/pending-button.tsx` accepting `pending: boolean` + optional `icon` (for the GitHub-button case where a non-spinner icon shows when not pending).
+- **#4 `formatDateLong` helper** — `Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric" })` repeated in 2 places ([item-drawer:49](src/components/items/item-drawer.tsx#L49), [profile/page.tsx:24](src/app/(dashboard)/profile/page.tsx#L24)). Export from new `src/lib/format-date.ts`. Additionally — per user feedback during implementation — the helper returns `"Today"` / `"Yesterday"` for same-day / one-day-prior values in local time, falling back to the long date format. The `"short"` month variant in [clickable-file-row.tsx:21](src/components/items/clickable-file-row.tsx#L21) and [item-card.tsx:7](src/components/dashboard/item-card.tsx#L7) is a different format and out of scope for this batch.
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+- All four findings come from the inline refactor audit run after audit-quick-wins-3, ranked by payoff/risk.
+- Phase B (audit finding #10 — splitting `item-drawer.tsx` into `ItemEditForm` / `ItemDrawerBody` / `DeleteItemDialog` / `ItemDrawerSkeleton`) is deliberately deferred to a separate branch because it's bigger and touches state plumbing.
+- New Vitest coverage: tiny `format-date.test.ts` covering one happy-path date. `EMAIL_REGEX` + `MIN_PASSWORD_LENGTH` are constants; no new tests needed (existing form/route tests still exercise them). `Field`/`Textarea`/`PendingButton` are components and explicitly out of scope per `coding-standards.md` (components excluded from Vitest).
+- No new runtime behavior. The only visible change should be slightly fewer lines.
 
 ## History
 

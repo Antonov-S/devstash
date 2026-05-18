@@ -3,11 +3,9 @@ import { compare, hash } from "bcryptjs";
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { BCRYPT_ROUNDS } from "@/lib/auth-constants";
+import { BCRYPT_ROUNDS, MIN_PASSWORD_LENGTH } from "@/lib/auth-constants";
 
 export const runtime = "nodejs";
-
-const MIN_PASSWORD_LENGTH = 8;
 
 export async function POST(request: Request) {
   const session = await auth();

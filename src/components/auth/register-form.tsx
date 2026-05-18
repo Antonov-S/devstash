@@ -3,19 +3,17 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { LoaderCircle, User } from "lucide-react";
+import { User } from "lucide-react";
 import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { PendingButton } from "@/components/ui/pending-button";
 import {
   EmailField,
   IconField,
   PasswordField
 } from "@/components/auth/fields";
-
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const MIN_PASSWORD_LENGTH = 8;
+import { EMAIL_REGEX, MIN_PASSWORD_LENGTH } from "@/lib/auth-constants";
 
 type FieldErrors = Partial<
   Record<"name" | "email" | "password" | "confirmPassword" | "form", string>
@@ -184,17 +182,14 @@ export function RegisterForm() {
         </p>
       ) : null}
 
-      <Button
+      <PendingButton
+        pending={isPending}
         type="submit"
         size="lg"
         className="h-11 w-full text-sm font-medium"
-        disabled={isPending}
       >
-        {isPending ? (
-          <LoaderCircle className="size-4 animate-spin" aria-hidden />
-        ) : null}
         Create account
-      </Button>
+      </PendingButton>
 
       <p className="text-center text-sm text-muted-foreground">
         Already have an account?{" "}
