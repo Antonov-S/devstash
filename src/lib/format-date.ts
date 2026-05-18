@@ -4,6 +4,17 @@ const longFormatter = new Intl.DateTimeFormat("en-US", {
   year: "numeric"
 });
 
+const shortFormatter = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric"
+});
+
+const mediumFormatter = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric",
+  year: "numeric"
+});
+
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 function startOfLocalDay(date: Date): number {
@@ -12,6 +23,19 @@ function startOfLocalDay(date: Date): number {
     date.getMonth(),
     date.getDate()
   ).getTime();
+}
+
+function relativeLabel(date: Date, now: Date): "Today" | "Yesterday" | null {
+  const diffDays = Math.round(
+    (startOfLocalDay(date) - startOfLocalDay(now)) / MS_PER_DAY
+  );
+  if (diffDays === 0) return "Today";
+  if (diffDays === -1) return "Yesterday";
+  return null;
+}
+
+function coerce(value: Date | string): Date {
+  return value instanceof Date ? value : new Date(value);
 }
 
 /**
@@ -23,11 +47,30 @@ export function formatDateLong(
   value: Date | string,
   now: Date = new Date()
 ): string {
-  const date = value instanceof Date ? value : new Date(value);
-  const diffDays = Math.round(
-    (startOfLocalDay(date) - startOfLocalDay(now)) / MS_PER_DAY
-  );
-  if (diffDays === 0) return "Today";
-  if (diffDays === -1) return "Yesterday";
-  return longFormatter.format(date);
+  const date = coerce(value);
+  return relativeLabel(date, now) ?? longFormatter.format(date);
+}
+
+/**
+ * Same Today/Yesterday rule as {@link formatDateLong}, falling back to a
+ * compact "Mon D" form (no year) used on item cards.
+ */
+export function formatDateShort(
+  value: Date | string,
+  now: Date = new Date()
+): string {
+  const date = coerce(value);
+  return relativeLabel(date, now) ?? shortFormatter.format(date);
+}
+
+/**
+ * Same Today/Yesterday rule as {@link formatDateLong}, falling back to a
+ * "Mon D, YYYY" form (short month, with year) used on the file-row list.
+ */
+export function formatDateMedium(
+  value: Date | string,
+  now: Date = new Date()
+): string {
+  const date = coerce(value);
+  return relativeLabel(date, now) ?? mediumFormatter.format(date);
 }
