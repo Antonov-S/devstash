@@ -16,6 +16,7 @@ import { toast } from "sonner";
 
 import { createItemAction, type CreateItemType } from "@/actions/items";
 import { CodeEditor } from "@/components/items/code-editor";
+import { CollectionsPicker } from "@/components/items/collections-picker";
 import { FileUpload, type UploadedFile } from "@/components/items/file-upload";
 import { Field, Textarea } from "@/components/items/_form-primitives";
 import { MarkdownEditor } from "@/components/items/markdown-editor";
@@ -83,6 +84,7 @@ export function NewItemDialog({
   const [url, setUrl] = useState("");
   const [language, setLanguage] = useState("");
   const [tags, setTags] = useState("");
+  const [collectionIds, setCollectionIds] = useState<string[]>([]);
   const [uploaded, setUploaded] = useState<UploadedFile | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -104,6 +106,7 @@ export function NewItemDialog({
     setUrl("");
     setLanguage("");
     setTags("");
+    setCollectionIds([]);
     setUploaded(null);
   }
 
@@ -134,7 +137,8 @@ export function NewItemDialog({
       fileUrl: showsUpload ? uploaded?.fileUrl ?? null : null,
       fileName: showsUpload ? uploaded?.fileName ?? null : null,
       fileSize: showsUpload ? uploaded?.fileSize ?? null : null,
-      tags: parseTags(tags)
+      tags: parseTags(tags),
+      collectionIds
     };
 
     startTransition(async () => {
@@ -305,6 +309,14 @@ export function NewItemDialog({
               onChange={(e) => setTags(e.target.value)}
               disabled={pending}
               placeholder="react, hooks, auth"
+            />
+          </Field>
+
+          <Field label="Collections">
+            <CollectionsPicker
+              selectedIds={collectionIds}
+              onChange={setCollectionIds}
+              disabled={pending}
             />
           </Field>
 

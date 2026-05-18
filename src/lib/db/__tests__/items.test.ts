@@ -15,6 +15,9 @@ vi.mock("@/lib/prisma", () => ({
     tagsOnItems: {
       deleteMany: vi.fn()
     },
+    itemCollection: {
+      deleteMany: vi.fn()
+    },
     $transaction: vi.fn()
   }
 }));
@@ -47,6 +50,8 @@ const mockedItemUpdate = prisma.item.update as unknown as ReturnType<
 const mockedTagsDeleteMany = prisma.tagsOnItems.deleteMany as unknown as ReturnType<
   typeof vi.fn
 >;
+const mockedItemCollectionDeleteMany =
+  prisma.itemCollection.deleteMany as unknown as ReturnType<typeof vi.fn>;
 const mockedTransaction = prisma.$transaction as unknown as ReturnType<
   typeof vi.fn
 >;
@@ -136,6 +141,7 @@ describe("updateItemForUser", () => {
     mockedFindFirst.mockReset();
     mockedItemUpdate.mockReset();
     mockedTagsDeleteMany.mockReset();
+    mockedItemCollectionDeleteMany.mockReset();
     mockedTransaction.mockReset();
     mockedTransaction.mockResolvedValue([]);
   });
@@ -149,7 +155,8 @@ describe("updateItemForUser", () => {
       content: null,
       url: null,
       language: null,
-      tags: []
+      tags: [],
+      collectionIds: []
     });
 
     expect(result).toBeNull();
@@ -167,7 +174,8 @@ describe("updateItemForUser", () => {
       content: "code",
       url: null,
       language: "typescript",
-      tags: ["react", "react", "hooks"]
+      tags: ["react", "react", "hooks"],
+      collectionIds: []
     });
 
     expect(mockedTagsDeleteMany).toHaveBeenCalledWith({
@@ -198,6 +206,31 @@ describe("updateItemForUser", () => {
     ]);
   });
 
+  it("clears and reattaches collection links, deduping by id", async () => {
+    mockedFindFirst
+      .mockResolvedValueOnce({ id: "item_1" })
+      .mockResolvedValueOnce(baseRow);
+
+    await updateItemForUser("user_1", "item_1", {
+      title: "Updated",
+      description: null,
+      content: null,
+      url: null,
+      language: null,
+      tags: [],
+      collectionIds: ["coll_1", "coll_2", "coll_1"]
+    });
+
+    expect(mockedItemCollectionDeleteMany).toHaveBeenCalledWith({
+      where: { itemId: "item_1" }
+    });
+    const updateArg = mockedItemUpdate.mock.calls[0][0];
+    expect(updateArg.data.collections.create).toEqual([
+      { collection: { connect: { id: "coll_1" } } },
+      { collection: { connect: { id: "coll_2" } } }
+    ]);
+  });
+
   it("returns the refreshed ItemDetail after a successful update", async () => {
     mockedFindFirst
       .mockResolvedValueOnce({ id: "item_1" })
@@ -209,7 +242,8 @@ describe("updateItemForUser", () => {
       content: null,
       url: null,
       language: null,
-      tags: []
+      tags: [],
+      collectionIds: []
     });
 
     expect(result).not.toBeNull();
@@ -249,7 +283,8 @@ describe("createItemForUser", () => {
       fileUrl: null,
       fileName: null,
       fileSize: null,
-      tags: []
+      tags: [],
+      collectionIds: []
     });
 
     expect(result).toBeNull();
@@ -271,7 +306,8 @@ describe("createItemForUser", () => {
       fileUrl: null,
       fileName: null,
       fileSize: null,
-      tags: ["react", "react", "hooks"]
+      tags: ["react", "react", "hooks"],
+      collectionIds: []
     });
 
     expect(mockedItemTypeFindFirst).toHaveBeenCalledWith({
@@ -321,7 +357,8 @@ describe("createItemForUser", () => {
       fileUrl: null,
       fileName: null,
       fileSize: null,
-      tags: []
+      tags: [],
+      collectionIds: []
     });
 
     const createArg = mockedItemCreate.mock.calls[0][0];
@@ -344,7 +381,8 @@ describe("createItemForUser", () => {
       fileUrl: "https://files.example.com/uploads/user_1/abc.png",
       fileName: "logo.png",
       fileSize: 12345,
-      tags: []
+      tags: [],
+      collectionIds: []
     });
 
     const createArg = mockedItemCreate.mock.calls[0][0];
@@ -372,7 +410,8 @@ describe("createItemForUser", () => {
       fileUrl: null,
       fileName: null,
       fileSize: null,
-      tags: []
+      tags: [],
+      collectionIds: []
     });
 
     expect(result).not.toBeNull();
@@ -380,6 +419,32 @@ describe("createItemForUser", () => {
     expect(mockedFindFirst).toHaveBeenCalledWith(
       expect.objectContaining({ where: { id: "item_new", userId: "user_1" } })
     );
+  });
+
+  it("writes ItemCollection rows for each unique collectionId", async () => {
+    mockedItemTypeFindFirst.mockResolvedValue({ id: "type_1" });
+    mockedItemCreate.mockResolvedValue({ id: "item_new" });
+    mockedFindFirst.mockResolvedValue(baseRow);
+
+    await createItemForUser("user_1", {
+      typeName: "snippet",
+      title: "Hi",
+      description: null,
+      content: null,
+      url: null,
+      language: null,
+      fileUrl: null,
+      fileName: null,
+      fileSize: null,
+      tags: [],
+      collectionIds: ["coll_1", "coll_2", "coll_1"]
+    });
+
+    const createArg = mockedItemCreate.mock.calls[0][0];
+    expect(createArg.data.collections.create).toEqual([
+      { collection: { connect: { id: "coll_1" } } },
+      { collection: { connect: { id: "coll_2" } } }
+    ]);
   });
 });
 

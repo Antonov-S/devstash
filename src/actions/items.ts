@@ -3,6 +3,7 @@
 import { z } from "zod";
 
 import { auth } from "@/auth";
+import { verifyCollectionsOwnedByUser } from "@/lib/db/collections";
 import {
   createItemForUser,
   deleteItemForUser,
@@ -39,6 +40,13 @@ const urlField = z
     { message: "Invalid URL" }
   );
 
+const collectionIdsField = z
+  .array(z.string())
+  .optional()
+  .transform((ids) =>
+    (ids ?? []).map((id) => id.trim()).filter((id) => id.length > 0)
+  );
+
 const updateItemSchema = z.object({
   title: z
     .string()
@@ -52,7 +60,8 @@ const updateItemSchema = z.object({
     .array(z.string())
     .transform((tags) =>
       tags.map((tag) => tag.trim()).filter((tag) => tag.length > 0)
-    )
+    ),
+  collectionIds: collectionIdsField
 });
 
 export type UpdateItemPayload = z.input<typeof updateItemSchema>;
@@ -83,12 +92,22 @@ export async function updateItemAction(
     };
   }
 
-  try {
-    const updated = await updateItemForUser(
+  const uniqueCollectionIds = Array.from(new Set(parsed.data.collectionIds));
+  if (uniqueCollectionIds.length > 0) {
+    const ownsAll = await verifyCollectionsOwnedByUser(
       session.user.id,
-      itemId,
-      parsed.data
+      uniqueCollectionIds
     );
+    if (!ownsAll) {
+      return { success: false, error: "Invalid collection" };
+    }
+  }
+
+  try {
+    const updated = await updateItemForUser(session.user.id, itemId, {
+      ...parsed.data,
+      collectionIds: uniqueCollectionIds
+    });
     if (!updated) {
       return { success: false, error: "Item not found" };
     }
@@ -134,7 +153,8 @@ const createItemSchema = z
       .array(z.string())
       .transform((tags) =>
         tags.map((tag) => tag.trim()).filter((tag) => tag.length > 0)
-      )
+      ),
+    collectionIds: collectionIdsField
   })
   .superRefine((data, ctx) => {
     if (data.type === "link" && !data.url) {
@@ -192,6 +212,17 @@ export async function createItemAction(
     }
   }
 
+  const uniqueCollectionIds = Array.from(new Set(fields.collectionIds));
+  if (uniqueCollectionIds.length > 0) {
+    const ownsAll = await verifyCollectionsOwnedByUser(
+      session.user.id,
+      uniqueCollectionIds
+    );
+    if (!ownsAll) {
+      return { success: false, error: "Invalid collection" };
+    }
+  }
+
   try {
     const created = await createItemForUser(session.user.id, {
       typeName: type,
@@ -203,7 +234,8 @@ export async function createItemAction(
       fileUrl: isFileType ? fields.fileUrl : null,
       fileName: isFileType ? fields.fileName : null,
       fileSize: isFileType ? fields.fileSize : null,
-      tags: fields.tags
+      tags: fields.tags,
+      collectionIds: uniqueCollectionIds
     });
     if (!created) {
       return { success: false, error: "Item type not found" };

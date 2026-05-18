@@ -1,6 +1,7 @@
 "use client";
 
 import { CodeEditor } from "@/components/items/code-editor";
+import { CollectionsPicker } from "@/components/items/collections-picker";
 import { Field, Textarea } from "@/components/items/_form-primitives";
 import { MarkdownEditor } from "@/components/items/markdown-editor";
 import { Input } from "@/components/ui/input";
@@ -13,6 +14,7 @@ export type EditState = {
   url: string;
   language: string;
   tags: string;
+  collectionIds: string[];
 };
 
 export function detailToEditState(detail: ItemDetail): EditState {
@@ -22,7 +24,8 @@ export function detailToEditState(detail: ItemDetail): EditState {
     content: detail.content ?? "",
     url: detail.url ?? "",
     language: detail.language ?? "",
-    tags: detail.tags.join(", ")
+    tags: detail.tags.join(", "),
+    collectionIds: detail.collections.map((collection) => collection.id)
   };
 }
 
@@ -130,6 +133,14 @@ export function ItemEditForm({
           onChange={(e) => update("tags", e.target.value)}
           disabled={disabled}
           placeholder="react, hooks, auth"
+        />
+      </Field>
+
+      <Field label="Collections">
+        <CollectionsPicker
+          selectedIds={edit.collectionIds}
+          onChange={(next) => update("collectionIds", next)}
+          disabled={disabled}
         />
       </Field>
     </div>

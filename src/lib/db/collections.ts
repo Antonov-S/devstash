@@ -121,6 +121,33 @@ export async function getCollectionStatsForUser(
   return { total, favorites };
 }
 
+export type CollectionListEntry = {
+  id: string;
+  name: string;
+};
+
+export async function getUserCollectionsList(
+  userId: string
+): Promise<CollectionListEntry[]> {
+  return prisma.collection.findMany({
+    where: { userId },
+    orderBy: { name: "asc" },
+    select: { id: true, name: true }
+  });
+}
+
+export async function verifyCollectionsOwnedByUser(
+  userId: string,
+  collectionIds: string[]
+): Promise<boolean> {
+  if (collectionIds.length === 0) return true;
+  const owned = await prisma.collection.findMany({
+    where: { userId, id: { in: collectionIds } },
+    select: { id: true }
+  });
+  return owned.length === collectionIds.length;
+}
+
 export type CreateCollectionInput = {
   name: string;
   description: string | null;
