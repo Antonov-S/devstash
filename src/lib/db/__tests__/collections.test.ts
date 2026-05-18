@@ -3,15 +3,23 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     collection: {
-      create: vi.fn()
+      create: vi.fn(),
+      findMany: vi.fn()
     }
   }
 }));
 
 import { prisma } from "@/lib/prisma";
-import { createCollectionForUser } from "@/lib/db/collections";
+import {
+  createCollectionForUser,
+  getUserCollectionsList,
+  verifyCollectionsOwnedByUser
+} from "@/lib/db/collections";
 
 const mockedCreate = prisma.collection.create as unknown as ReturnType<
+  typeof vi.fn
+>;
+const mockedFindMany = prisma.collection.findMany as unknown as ReturnType<
   typeof vi.fn
 >;
 
@@ -83,5 +91,70 @@ describe("createCollectionForUser", () => {
     expect(result.itemCount).toBe(0);
     expect(result.dominantType).toBeNull();
     expect(result.types).toEqual([]);
+  });
+});
+
+describe("getUserCollectionsList", () => {
+  beforeEach(() => {
+    mockedFindMany.mockReset();
+  });
+
+  it("returns the user's collections as id+name pairs sorted by name", async () => {
+    mockedFindMany.mockResolvedValue([
+      { id: "coll_a", name: "Apple" },
+      { id: "coll_b", name: "Banana" }
+    ]);
+
+    const result = await getUserCollectionsList("user_1");
+
+    expect(mockedFindMany).toHaveBeenCalledWith({
+      where: { userId: "user_1" },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true }
+    });
+    expect(result).toEqual([
+      { id: "coll_a", name: "Apple" },
+      { id: "coll_b", name: "Banana" }
+    ]);
+  });
+});
+
+describe("verifyCollectionsOwnedByUser", () => {
+  beforeEach(() => {
+    mockedFindMany.mockReset();
+  });
+
+  it("returns true immediately for an empty id list without querying", async () => {
+    const result = await verifyCollectionsOwnedByUser("user_1", []);
+
+    expect(result).toBe(true);
+    expect(mockedFindMany).not.toHaveBeenCalled();
+  });
+
+  it("returns true when every supplied id belongs to the user", async () => {
+    mockedFindMany.mockResolvedValue([{ id: "coll_1" }, { id: "coll_2" }]);
+
+    const result = await verifyCollectionsOwnedByUser("user_1", [
+      "coll_1",
+      "coll_2"
+    ]);
+
+    expect(mockedFindMany).toHaveBeenCalledWith({
+      where: { userId: "user_1", id: { in: ["coll_1", "coll_2"] } },
+      select: { id: true }
+    });
+    expect(result).toBe(true);
+  });
+
+  it("returns false when at least one id is missing or not owned", async () => {
+    // Only one of the two ids matched — the other belongs to someone else.
+    mockedFindMany.mockResolvedValue([{ id: "coll_1" }]);
+
+    const result = await verifyCollectionsOwnedByUser("user_1", [
+      "coll_1",
+      "coll_other"
+    ]);
+
+    expect(result).toBe(false);
   });
 });

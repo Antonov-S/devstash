@@ -121,7 +121,8 @@ export function ItemDrawer({ cardItem, open, onOpenChange }: Props) {
       content: showsContent ? edit.content : null,
       url: showsUrl ? edit.url : null,
       language: showsLanguage ? edit.language : null,
-      tags: parseTags(edit.tags)
+      tags: parseTags(edit.tags),
+      collectionIds: edit.collectionIds
     };
 
     startSaving(async () => {

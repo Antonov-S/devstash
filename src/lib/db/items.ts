@@ -200,6 +200,7 @@ export type UpdateItemInput = {
   url: string | null;
   language: string | null;
   tags: string[];
+  collectionIds: string[];
 };
 
 export async function updateItemForUser(
@@ -214,9 +215,11 @@ export async function updateItemForUser(
   if (!existing) return null;
 
   const uniqueTags = Array.from(new Set(data.tags));
+  const uniqueCollectionIds = Array.from(new Set(data.collectionIds));
 
   await prisma.$transaction([
     prisma.tagsOnItems.deleteMany({ where: { itemId } }),
+    prisma.itemCollection.deleteMany({ where: { itemId } }),
     prisma.item.update({
       where: { id: itemId },
       data: {
@@ -233,6 +236,11 @@ export async function updateItemForUser(
                 create: { name }
               }
             }
+          }))
+        },
+        collections: {
+          create: uniqueCollectionIds.map((collectionId) => ({
+            collection: { connect: { id: collectionId } }
           }))
         }
       }
@@ -283,6 +291,7 @@ export type CreateItemInput = {
   fileName: string | null;
   fileSize: number | null;
   tags: string[];
+  collectionIds: string[];
 };
 
 export async function createItemForUser(
@@ -296,6 +305,7 @@ export async function createItemForUser(
   if (!itemType) return null;
 
   const uniqueTags = Array.from(new Set(data.tags));
+  const uniqueCollectionIds = Array.from(new Set(data.collectionIds));
 
   const created = await prisma.item.create({
     data: {
@@ -318,6 +328,11 @@ export async function createItemForUser(
               create: { name }
             }
           }
+        }))
+      },
+      collections: {
+        create: uniqueCollectionIds.map((collectionId) => ({
+          collection: { connect: { id: collectionId } }
         }))
       }
     },

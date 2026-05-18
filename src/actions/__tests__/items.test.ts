@@ -10,11 +10,16 @@ vi.mock("@/lib/db/items", () => ({
   deleteItemForUser: vi.fn()
 }));
 
+vi.mock("@/lib/db/collections", () => ({
+  verifyCollectionsOwnedByUser: vi.fn()
+}));
+
 vi.mock("@/lib/r2", () => ({
   keyFromPublicUrl: vi.fn()
 }));
 
 import { auth } from "@/auth";
+import { verifyCollectionsOwnedByUser } from "@/lib/db/collections";
 import {
   createItemForUser,
   deleteItemForUser,
@@ -31,6 +36,8 @@ const mockedAuth = auth as unknown as ReturnType<typeof vi.fn>;
 const mockedCreate = createItemForUser as unknown as ReturnType<typeof vi.fn>;
 const mockedUpdate = updateItemForUser as unknown as ReturnType<typeof vi.fn>;
 const mockedDelete = deleteItemForUser as unknown as ReturnType<typeof vi.fn>;
+const mockedVerifyCollections =
+  verifyCollectionsOwnedByUser as unknown as ReturnType<typeof vi.fn>;
 const mockedKeyFromPublicUrl = keyFromPublicUrl as unknown as ReturnType<
   typeof vi.fn
 >;
@@ -62,6 +69,7 @@ describe("updateItemAction", () => {
   beforeEach(() => {
     mockedAuth.mockReset();
     mockedUpdate.mockReset();
+    mockedVerifyCollections.mockReset();
   });
 
   it("rejects when there is no session", async () => {
@@ -151,6 +159,41 @@ describe("updateItemAction", () => {
     expect(data.content).toBe("code");
     expect(data.language).toBe("ts");
     expect(data.tags).toEqual(["react", "hooks", "react"]);
+    expect(data.collectionIds).toEqual([]);
+    expect(mockedVerifyCollections).not.toHaveBeenCalled();
+  });
+
+  it("dedupes collectionIds, verifies ownership, and forwards them", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+    mockedUpdate.mockResolvedValue(sampleDetail);
+    mockedVerifyCollections.mockResolvedValue(true);
+
+    await updateItemAction("item_1", {
+      title: "Hi",
+      tags: [],
+      collectionIds: ["coll_1", "coll_2", "coll_1"]
+    });
+
+    expect(mockedVerifyCollections).toHaveBeenCalledWith("user_1", [
+      "coll_1",
+      "coll_2"
+    ]);
+    const [, , data] = mockedUpdate.mock.calls[0];
+    expect(data.collectionIds).toEqual(["coll_1", "coll_2"]);
+  });
+
+  it("rejects when a collectionId is not owned by the user", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+    mockedVerifyCollections.mockResolvedValue(false);
+
+    const result = await updateItemAction("item_1", {
+      title: "Hi",
+      tags: [],
+      collectionIds: ["coll_other"]
+    });
+
+    expect(result).toEqual({ success: false, error: "Invalid collection" });
+    expect(mockedUpdate).not.toHaveBeenCalled();
   });
 
   it("returns a generic error when the db function throws", async () => {
@@ -177,6 +220,7 @@ describe("createItemAction", () => {
     mockedAuth.mockReset();
     mockedCreate.mockReset();
     mockedKeyFromPublicUrl.mockReset();
+    mockedVerifyCollections.mockReset();
   });
 
   it("rejects when there is no session", async () => {
@@ -430,6 +474,56 @@ describe("createItemAction", () => {
     });
 
     expect(result).toEqual({ success: false, error: "Item type not found" });
+  });
+
+  it("dedupes collectionIds, verifies ownership, and forwards them", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+    mockedCreate.mockResolvedValue(sampleDetail);
+    mockedVerifyCollections.mockResolvedValue(true);
+
+    await createItemAction({
+      type: "snippet",
+      title: "Hi",
+      tags: [],
+      collectionIds: ["coll_1", "coll_2", "coll_1"]
+    });
+
+    expect(mockedVerifyCollections).toHaveBeenCalledWith("user_1", [
+      "coll_1",
+      "coll_2"
+    ]);
+    const [, input] = mockedCreate.mock.calls[0];
+    expect(input.collectionIds).toEqual(["coll_1", "coll_2"]);
+  });
+
+  it("rejects when a collectionId is not owned by the user", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+    mockedVerifyCollections.mockResolvedValue(false);
+
+    const result = await createItemAction({
+      type: "snippet",
+      title: "Hi",
+      tags: [],
+      collectionIds: ["coll_other"]
+    });
+
+    expect(result).toEqual({ success: false, error: "Invalid collection" });
+    expect(mockedCreate).not.toHaveBeenCalled();
+  });
+
+  it("skips the ownership check when no collectionIds are supplied", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+    mockedCreate.mockResolvedValue(sampleDetail);
+
+    await createItemAction({
+      type: "snippet",
+      title: "Hi",
+      tags: []
+    });
+
+    expect(mockedVerifyCollections).not.toHaveBeenCalled();
+    const [, input] = mockedCreate.mock.calls[0];
+    expect(input.collectionIds).toEqual([]);
   });
 
   it("returns a generic error when the db function throws", async () => {
