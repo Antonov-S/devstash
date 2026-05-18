@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { LoaderCircle, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { PendingButton } from "@/components/ui/pending-button";
 import {
   Dialog,
   DialogClose,
@@ -110,16 +111,14 @@ export function DeleteAccountDialog({ email }: { email: string }) {
                 </Button>
               }
             />
-            <Button
+            <PendingButton
               type="submit"
               variant="destructive"
-              disabled={!isValid || isPending}
+              pending={isPending}
+              disabled={!isValid}
             >
-              {isPending ? (
-                <LoaderCircle className="size-4 animate-spin" aria-hidden />
-              ) : null}
               Delete account
-            </Button>
+            </PendingButton>
           </DialogFooter>
         </form>
       </DialogContent>

@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { KeyRound, LoaderCircle } from "lucide-react";
+import { KeyRound } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { PendingButton } from "@/components/ui/pending-button";
 import {
   Dialog,
   DialogClose,
@@ -17,8 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { PasswordField } from "@/components/auth/fields";
-
-const MIN_PASSWORD_LENGTH = 8;
+import { MIN_PASSWORD_LENGTH } from "@/lib/auth-constants";
 
 type FieldErrors = Partial<
   Record<"currentPassword" | "newPassword" | "confirmPassword" | "form", string>
@@ -180,12 +180,9 @@ export function ChangePasswordDialog() {
                 </Button>
               }
             />
-            <Button type="submit" disabled={isPending}>
-              {isPending ? (
-                <LoaderCircle className="size-4 animate-spin" aria-hidden />
-              ) : null}
+            <PendingButton type="submit" pending={isPending}>
               Update password
-            </Button>
+            </PendingButton>
           </DialogFooter>
         </form>
       </DialogContent>

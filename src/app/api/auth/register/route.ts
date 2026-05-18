@@ -2,7 +2,11 @@ import { NextResponse } from "next/server";
 import { hash } from "bcryptjs";
 
 import { prisma } from "@/lib/prisma";
-import { BCRYPT_ROUNDS } from "@/lib/auth-constants";
+import {
+  BCRYPT_ROUNDS,
+  EMAIL_REGEX,
+  MIN_PASSWORD_LENGTH
+} from "@/lib/auth-constants";
 import { EMAIL_VERIFICATION_ENABLED, sendVerificationEmail } from "@/lib/email";
 import { createVerificationToken } from "@/lib/verification-token";
 import { getBaseUrl } from "@/lib/base-url";
@@ -13,9 +17,6 @@ import {
 } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
-
-const MIN_PASSWORD_LENGTH = 8;
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(request: Request) {
   const limit = await rateLimit("register", extractIp(request.headers));

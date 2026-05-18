@@ -8,6 +8,7 @@ import { ChangePasswordDialog } from "@/components/profile/change-password-dialo
 import { DeleteAccountDialog } from "@/components/profile/delete-account-dialog";
 import { iconMap } from "@/lib/icons";
 import { getCollectionStatsForUser } from "@/lib/db/collections";
+import { formatDateLong } from "@/lib/format-date";
 import {
   getItemStatsForUser,
   getSystemItemTypesWithCountsForUser
@@ -20,12 +21,6 @@ export const metadata = {
 };
 
 export const dynamic = "force-dynamic";
-
-const dateFormatter = new Intl.DateTimeFormat("en-US", {
-  year: "numeric",
-  month: "long",
-  day: "numeric"
-});
 
 export default async function ProfilePage() {
   const session = await auth();
@@ -81,7 +76,7 @@ export default async function ProfilePage() {
             />
             <span className="text-muted-foreground">Member since:</span>
             <span className="text-foreground">
-              {dateFormatter.format(profile.createdAt)}
+              {formatDateLong(profile.createdAt)}
             </span>
           </div>
         </div>

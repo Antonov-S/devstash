@@ -3,11 +3,10 @@
 import { useActionState, useEffect, useRef } from "react";
 import { useFormStatus } from "react-dom";
 import Link from "next/link";
-import { LoaderCircle } from "lucide-react";
 import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { PendingButton } from "@/components/ui/pending-button";
 import { credentialsSignInAction, githubSignInAction } from "@/actions/auth";
 import { ResendVerificationButton } from "@/components/auth/resend-verification-button";
 import { EmailField, PasswordField } from "@/components/auth/fields";
@@ -28,37 +27,30 @@ function GithubIcon({ className }: { className?: string }) {
 function SubmitButton() {
   const { pending } = useFormStatus();
   return (
-    <Button
+    <PendingButton
+      pending={pending}
       type="submit"
       size="lg"
       className="h-11 w-full text-sm font-medium"
-      disabled={pending}
     >
-      {pending ? (
-        <LoaderCircle className="size-4 animate-spin" aria-hidden />
-      ) : null}
       Sign in
-    </Button>
+    </PendingButton>
   );
 }
 
 function GithubButton() {
   const { pending } = useFormStatus();
   return (
-    <Button
+    <PendingButton
+      pending={pending}
       type="submit"
       size="lg"
       variant="outline"
       className="h-11 w-full gap-2 text-sm font-medium"
-      disabled={pending}
+      icon={<GithubIcon className="size-4" />}
     >
-      {pending ? (
-        <LoaderCircle className="size-4 animate-spin" aria-hidden />
-      ) : (
-        <GithubIcon className="size-4" />
-      )}
       GitHub
-    </Button>
+    </PendingButton>
   );
 }
 
