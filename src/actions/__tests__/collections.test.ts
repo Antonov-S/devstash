@@ -5,15 +5,31 @@ vi.mock("@/auth", () => ({
 }));
 
 vi.mock("@/lib/db/collections", () => ({
-  createCollectionForUser: vi.fn()
+  createCollectionForUser: vi.fn(),
+  deleteCollectionForUser: vi.fn(),
+  updateCollectionForUser: vi.fn()
 }));
 
 import { auth } from "@/auth";
-import { createCollectionForUser } from "@/lib/db/collections";
-import { createCollectionAction } from "@/actions/collections";
+import {
+  createCollectionForUser,
+  deleteCollectionForUser,
+  updateCollectionForUser
+} from "@/lib/db/collections";
+import {
+  createCollectionAction,
+  deleteCollectionAction,
+  updateCollectionAction
+} from "@/actions/collections";
 
 const mockedAuth = auth as unknown as ReturnType<typeof vi.fn>;
 const mockedCreate = createCollectionForUser as unknown as ReturnType<
+  typeof vi.fn
+>;
+const mockedDelete = deleteCollectionForUser as unknown as ReturnType<
+  typeof vi.fn
+>;
+const mockedUpdate = updateCollectionForUser as unknown as ReturnType<
   typeof vi.fn
 >;
 
@@ -98,6 +114,146 @@ describe("createCollectionAction", () => {
     expect(result).toEqual({
       success: false,
       error: "Could not create collection. Please try again."
+    });
+
+    errSpy.mockRestore();
+  });
+});
+
+describe("updateCollectionAction", () => {
+  beforeEach(() => {
+    mockedAuth.mockReset();
+    mockedUpdate.mockReset();
+  });
+
+  it("rejects when there is no session", async () => {
+    mockedAuth.mockResolvedValue(null);
+
+    const result = await updateCollectionAction("coll_1", { name: "New" });
+
+    expect(result).toEqual({ success: false, error: "You are not signed in." });
+    expect(mockedUpdate).not.toHaveBeenCalled();
+  });
+
+  it("rejects when the collection id is empty", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+
+    const result = await updateCollectionAction("", { name: "New" });
+
+    expect(result).toEqual({ success: false, error: "Invalid collection id" });
+    expect(mockedUpdate).not.toHaveBeenCalled();
+  });
+
+  it("rejects when the name is empty/whitespace", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+
+    const result = await updateCollectionAction("coll_1", { name: "   " });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toBe("Name is required");
+    }
+    expect(mockedUpdate).not.toHaveBeenCalled();
+  });
+
+  it("normalizes input and forwards to updateCollectionForUser on success", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+    mockedUpdate.mockResolvedValue(true);
+
+    const result = await updateCollectionAction("coll_1", {
+      name: "  React Patterns  ",
+      description: "   "
+    });
+
+    expect(result).toEqual({ success: true });
+    expect(mockedUpdate).toHaveBeenCalledOnce();
+    const [userId, id, input] = mockedUpdate.mock.calls[0];
+    expect(userId).toBe("user_1");
+    expect(id).toBe("coll_1");
+    expect(input.name).toBe("React Patterns");
+    expect(input.description).toBeNull();
+  });
+
+  it("returns not-found when the db reports no row updated", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+    mockedUpdate.mockResolvedValue(false);
+
+    const result = await updateCollectionAction("coll_other", {
+      name: "New name"
+    });
+
+    expect(result).toEqual({ success: false, error: "Collection not found" });
+  });
+
+  it("returns a generic error when the db function throws", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+    mockedUpdate.mockRejectedValue(new Error("db down"));
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const result = await updateCollectionAction("coll_1", { name: "New" });
+
+    expect(result).toEqual({
+      success: false,
+      error: "Could not update collection. Please try again."
+    });
+
+    errSpy.mockRestore();
+  });
+});
+
+describe("deleteCollectionAction", () => {
+  beforeEach(() => {
+    mockedAuth.mockReset();
+    mockedDelete.mockReset();
+  });
+
+  it("rejects when there is no session", async () => {
+    mockedAuth.mockResolvedValue(null);
+
+    const result = await deleteCollectionAction("coll_1");
+
+    expect(result).toEqual({ success: false, error: "You are not signed in." });
+    expect(mockedDelete).not.toHaveBeenCalled();
+  });
+
+  it("rejects when the collection id is empty", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+
+    const result = await deleteCollectionAction("");
+
+    expect(result).toEqual({ success: false, error: "Invalid collection id" });
+    expect(mockedDelete).not.toHaveBeenCalled();
+  });
+
+  it("returns not-found when the db reports no row deleted", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+    mockedDelete.mockResolvedValue(false);
+
+    const result = await deleteCollectionAction("coll_missing");
+
+    expect(result).toEqual({ success: false, error: "Collection not found" });
+  });
+
+  it("returns success when the row was deleted", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+    mockedDelete.mockResolvedValue(true);
+
+    const result = await deleteCollectionAction("coll_1");
+
+    expect(result).toEqual({ success: true });
+    expect(mockedDelete).toHaveBeenCalledWith("user_1", "coll_1");
+  });
+
+  it("returns a generic error when the db function throws", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+    mockedDelete.mockRejectedValue(new Error("db down"));
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const result = await deleteCollectionAction("coll_1");
+
+    expect(result).toEqual({
+      success: false,
+      error: "Could not delete collection. Please try again."
     });
 
     errSpy.mockRestore();

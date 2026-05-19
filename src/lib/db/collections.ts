@@ -186,6 +186,33 @@ export async function getCollectionWithItemsForUser(
   return { ...collection, items };
 }
 
+export type UpdateCollectionInput = {
+  name: string;
+  description: string | null;
+};
+
+export async function updateCollectionForUser(
+  userId: string,
+  collectionId: string,
+  data: UpdateCollectionInput
+): Promise<boolean> {
+  const result = await prisma.collection.updateMany({
+    where: { id: collectionId, userId },
+    data: { name: data.name, description: data.description }
+  });
+  return result.count > 0;
+}
+
+export async function deleteCollectionForUser(
+  userId: string,
+  collectionId: string
+): Promise<boolean> {
+  const result = await prisma.collection.deleteMany({
+    where: { id: collectionId, userId }
+  });
+  return result.count > 0;
+}
+
 export async function createCollectionForUser(
   userId: string,
   data: CreateCollectionInput

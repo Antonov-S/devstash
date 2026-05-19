@@ -4,8 +4,10 @@ vi.mock("@/lib/prisma", () => ({
   prisma: {
     collection: {
       create: vi.fn(),
+      deleteMany: vi.fn(),
       findFirst: vi.fn(),
-      findMany: vi.fn()
+      findMany: vi.fn(),
+      updateMany: vi.fn()
     }
   }
 }));
@@ -18,20 +20,26 @@ import { prisma } from "@/lib/prisma";
 import { getItemsForUserByCollectionId } from "@/lib/db/items";
 import {
   createCollectionForUser,
+  deleteCollectionForUser,
   getCollectionWithItemsForUser,
   getUserCollectionsList,
+  updateCollectionForUser,
   verifyCollectionsOwnedByUser
 } from "@/lib/db/collections";
 
 const mockedCreate = prisma.collection.create as unknown as ReturnType<
   typeof vi.fn
 >;
+const mockedDeleteMany =
+  prisma.collection.deleteMany as unknown as ReturnType<typeof vi.fn>;
 const mockedFindFirst = prisma.collection.findFirst as unknown as ReturnType<
   typeof vi.fn
 >;
 const mockedFindMany = prisma.collection.findMany as unknown as ReturnType<
   typeof vi.fn
 >;
+const mockedUpdateMany =
+  prisma.collection.updateMany as unknown as ReturnType<typeof vi.fn>;
 const mockedGetItems = getItemsForUserByCollectionId as unknown as ReturnType<
   typeof vi.fn
 >;
@@ -167,6 +175,63 @@ describe("verifyCollectionsOwnedByUser", () => {
       "coll_1",
       "coll_other"
     ]);
+
+    expect(result).toBe(false);
+  });
+});
+
+describe("updateCollectionForUser", () => {
+  beforeEach(() => {
+    mockedUpdateMany.mockReset();
+  });
+
+  it("scopes the update to the user and returns true when a row was updated", async () => {
+    mockedUpdateMany.mockResolvedValue({ count: 1 });
+
+    const result = await updateCollectionForUser("user_1", "coll_1", {
+      name: "Renamed",
+      description: "Updated"
+    });
+
+    expect(mockedUpdateMany).toHaveBeenCalledWith({
+      where: { id: "coll_1", userId: "user_1" },
+      data: { name: "Renamed", description: "Updated" }
+    });
+    expect(result).toBe(true);
+  });
+
+  it("returns false when no row matches (wrong owner or missing id)", async () => {
+    mockedUpdateMany.mockResolvedValue({ count: 0 });
+
+    const result = await updateCollectionForUser("user_1", "coll_other", {
+      name: "x",
+      description: null
+    });
+
+    expect(result).toBe(false);
+  });
+});
+
+describe("deleteCollectionForUser", () => {
+  beforeEach(() => {
+    mockedDeleteMany.mockReset();
+  });
+
+  it("scopes the delete by id + userId so cross-user deletes report no match", async () => {
+    mockedDeleteMany.mockResolvedValue({ count: 1 });
+
+    const result = await deleteCollectionForUser("user_1", "coll_1");
+
+    expect(mockedDeleteMany).toHaveBeenCalledWith({
+      where: { id: "coll_1", userId: "user_1" }
+    });
+    expect(result).toBe(true);
+  });
+
+  it("returns false when no row matched", async () => {
+    mockedDeleteMany.mockResolvedValue({ count: 0 });
+
+    const result = await deleteCollectionForUser("user_1", "missing");
 
     expect(result).toBe(false);
   });

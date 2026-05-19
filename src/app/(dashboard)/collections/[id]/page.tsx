@@ -2,6 +2,7 @@ import { FolderOpen, Star } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
 
 import { auth } from "@/auth";
+import { CollectionActions } from "@/components/collections/collection-actions";
 import { ClickableFileRow } from "@/components/items/clickable-file-row";
 import { ClickableImageCard } from "@/components/items/clickable-image-card";
 import { ClickableItemCard } from "@/components/items/clickable-item-card";
@@ -103,6 +104,14 @@ export default async function CollectionDetailPage({
             )}
           </div>
         </div>
+        <CollectionActions
+          collection={{
+            id: collection.id,
+            name: collection.name,
+            description: collection.description,
+            isFavorite: collection.isFavorite
+          }}
+        />
       </div>
 
       {collection.items.length > 0 ? (
