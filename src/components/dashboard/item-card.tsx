@@ -43,20 +43,15 @@ export function ItemCard({ item }: { item: ItemWithMeta }) {
             {item.description}
           </p>
         )}
-        <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-          <Badge
-            variant="outline"
-            className="text-[11px] capitalize"
-            style={{ borderColor: item.itemType.color, color: item.itemType.color }}
-          >
-            {item.itemType.name}
-          </Badge>
-          {item.tags.map((tag) => (
-            <Badge key={tag} variant="secondary" className="text-[11px]">
-              {tag}
-            </Badge>
-          ))}
-        </div>
+        {item.tags.length > 0 && (
+          <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+            {item.tags.map((tag) => (
+              <Badge key={tag} variant="secondary" className="text-[11px]">
+                {tag}
+              </Badge>
+            ))}
+          </div>
+        )}
       </div>
 
       <span className="shrink-0 text-sm text-muted-foreground">
