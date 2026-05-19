@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Star } from "lucide-react";
 
+import { CollectionCardMenu } from "@/components/collections/collection-card-menu";
 import {
   Card,
   CardContent,
@@ -19,51 +20,61 @@ export function CollectionCard({
   const borderColor = collection.dominantType?.color ?? "var(--border)";
 
   return (
-    <Link
-      href={`/collections/${collection.id}`}
-      className="group relative block rounded-xl transition-transform hover:-translate-y-0.5"
-    >
-      <Card
-        className="h-full gap-5 py-6 transition-colors group-hover:bg-card/80"
-        style={{ borderLeftWidth: "3px", borderLeftColor: borderColor }}
+    <div className="group relative h-full">
+      <Link
+        href={`/collections/${collection.id}`}
+        className="block h-full rounded-xl transition-transform group-hover:-translate-y-0.5"
       >
-        <CardHeader className="gap-2 px-6">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <span className="truncate">{collection.name}</span>
-            {collection.isFavorite && (
-              <Star className="size-4 shrink-0 fill-yellow-400 text-yellow-400" />
+        <Card
+          className="h-full gap-5 py-6 transition-colors group-hover:bg-card/80"
+          style={{ borderLeftWidth: "3px", borderLeftColor: borderColor }}
+        >
+          <CardHeader className="gap-2 px-6 pr-12">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <span className="truncate">{collection.name}</span>
+              {collection.isFavorite && (
+                <Star className="size-4 shrink-0 fill-yellow-400 text-yellow-400" />
+              )}
+            </CardTitle>
+            <CardDescription className="text-sm">
+              {collection.itemCount}{" "}
+              {collection.itemCount === 1 ? "item" : "items"}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-5 px-6">
+            {collection.description && (
+              <p className="line-clamp-2 text-sm text-muted-foreground">
+                {collection.description}
+              </p>
             )}
-          </CardTitle>
-          <CardDescription className="text-sm">
-            {collection.itemCount}{" "}
-            {collection.itemCount === 1 ? "item" : "items"}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-5 px-6">
-          {collection.description && (
-            <p className="line-clamp-2 text-sm text-muted-foreground">
-              {collection.description}
-            </p>
-          )}
-          {collection.types.length > 0 && (
-            <div className="flex items-center gap-2">
-              {collection.types.map((type) => {
-                const Icon = iconMap[type.icon];
-                if (!Icon) return null;
-                return (
-                  <span
-                    key={type.id}
-                    className="flex size-8 items-center justify-center rounded-md bg-muted/50"
-                    title={type.name}
-                  >
-                    <Icon className="size-4" style={{ color: type.color }} />
-                  </span>
-                );
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </Link>
+            {collection.types.length > 0 && (
+              <div className="flex items-center gap-2">
+                {collection.types.map((type) => {
+                  const Icon = iconMap[type.icon];
+                  if (!Icon) return null;
+                  return (
+                    <span
+                      key={type.id}
+                      className="flex size-8 items-center justify-center rounded-md bg-muted/50"
+                      title={type.name}
+                    >
+                      <Icon className="size-4" style={{ color: type.color }} />
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </Link>
+      <CollectionCardMenu
+        collection={{
+          id: collection.id,
+          name: collection.name,
+          description: collection.description,
+          isFavorite: collection.isFavorite
+        }}
+      />
+    </div>
   );
 }
