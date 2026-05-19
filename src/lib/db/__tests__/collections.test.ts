@@ -4,14 +4,21 @@ vi.mock("@/lib/prisma", () => ({
   prisma: {
     collection: {
       create: vi.fn(),
+      findFirst: vi.fn(),
       findMany: vi.fn()
     }
   }
 }));
 
+vi.mock("@/lib/db/items", () => ({
+  getItemsForUserByCollectionId: vi.fn()
+}));
+
 import { prisma } from "@/lib/prisma";
+import { getItemsForUserByCollectionId } from "@/lib/db/items";
 import {
   createCollectionForUser,
+  getCollectionWithItemsForUser,
   getUserCollectionsList,
   verifyCollectionsOwnedByUser
 } from "@/lib/db/collections";
@@ -19,7 +26,13 @@ import {
 const mockedCreate = prisma.collection.create as unknown as ReturnType<
   typeof vi.fn
 >;
+const mockedFindFirst = prisma.collection.findFirst as unknown as ReturnType<
+  typeof vi.fn
+>;
 const mockedFindMany = prisma.collection.findMany as unknown as ReturnType<
+  typeof vi.fn
+>;
+const mockedGetItems = getItemsForUserByCollectionId as unknown as ReturnType<
   typeof vi.fn
 >;
 
@@ -156,5 +169,62 @@ describe("verifyCollectionsOwnedByUser", () => {
     ]);
 
     expect(result).toBe(false);
+  });
+});
+
+describe("getCollectionWithItemsForUser", () => {
+  beforeEach(() => {
+    mockedFindFirst.mockReset();
+    mockedGetItems.mockReset();
+  });
+
+  it("returns null and skips the items fetch when the collection is not owned by the user", async () => {
+    mockedFindFirst.mockResolvedValue(null);
+
+    const result = await getCollectionWithItemsForUser("user_1", "coll_missing");
+
+    expect(result).toBeNull();
+    expect(mockedFindFirst).toHaveBeenCalledWith({
+      where: { id: "coll_missing", userId: "user_1" },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        isFavorite: true,
+        updatedAt: true
+      }
+    });
+    expect(mockedGetItems).not.toHaveBeenCalled();
+  });
+
+  it("returns collection metadata + items when the collection belongs to the user", async () => {
+    const now = new Date("2026-05-18T00:00:00Z");
+    mockedFindFirst.mockResolvedValue({
+      id: "coll_1",
+      name: "React Patterns",
+      description: "Custom hooks",
+      isFavorite: true,
+      updatedAt: now
+    });
+    const fakeItems = [
+      {
+        id: "item_1",
+        title: "useAuth",
+        tags: ["react"]
+      }
+    ];
+    mockedGetItems.mockResolvedValue(fakeItems);
+
+    const result = await getCollectionWithItemsForUser("user_1", "coll_1");
+
+    expect(mockedGetItems).toHaveBeenCalledWith("user_1", "coll_1");
+    expect(result).toEqual({
+      id: "coll_1",
+      name: "React Patterns",
+      description: "Custom hooks",
+      isFavorite: true,
+      updatedAt: now,
+      items: fakeItems
+    });
   });
 });

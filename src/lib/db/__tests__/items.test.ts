@@ -33,6 +33,7 @@ import {
   createItemForUser,
   deleteItemForUser,
   getItemDetailForUser,
+  getItemsForUserByCollectionId,
   getItemsForUserByTypeId,
   getPinnedItemsForUser,
   updateItemForUser
@@ -582,5 +583,44 @@ describe("getItemsForUserByTypeId", () => {
     expect(mockedFindMany).toHaveBeenCalledWith(
       expect.objectContaining({ take: 25 })
     );
+  });
+});
+
+describe("getItemsForUserByCollectionId", () => {
+  beforeEach(() => {
+    mockedFindMany.mockReset();
+    mockedFindMany.mockResolvedValue([]);
+  });
+
+  it("filters by userId and collection membership with a take: 200 default cap", async () => {
+    await getItemsForUserByCollectionId("user_1", "coll_1");
+
+    expect(mockedFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          userId: "user_1",
+          collections: { some: { collectionId: "coll_1" } }
+        },
+        take: 200
+      })
+    );
+  });
+
+  it("uses an explicit limit when one is provided", async () => {
+    await getItemsForUserByCollectionId("user_1", "coll_1", 50);
+
+    expect(mockedFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({ take: 50 })
+    );
+  });
+
+  it("maps the tag rows into a flat string[] in returned items", async () => {
+    mockedFindMany.mockResolvedValue([baseRow]);
+
+    const result = await getItemsForUserByCollectionId("user_1", "coll_1");
+
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe("item_1");
+    expect(result[0].tags).toEqual(["react", "auth"]);
   });
 });

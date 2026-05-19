@@ -1,6 +1,10 @@
 import "server-only";
 
 import { prisma } from "@/lib/prisma";
+import {
+  getItemsForUserByCollectionId,
+  type ItemWithMeta
+} from "@/lib/db/items";
 
 export type CollectionTypeIcon = {
   id: string;
@@ -152,6 +156,35 @@ export type CreateCollectionInput = {
   name: string;
   description: string | null;
 };
+
+export type CollectionWithItems = {
+  id: string;
+  name: string;
+  description: string | null;
+  isFavorite: boolean;
+  updatedAt: Date;
+  items: ItemWithMeta[];
+};
+
+export async function getCollectionWithItemsForUser(
+  userId: string,
+  collectionId: string
+): Promise<CollectionWithItems | null> {
+  const collection = await prisma.collection.findFirst({
+    where: { id: collectionId, userId },
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      isFavorite: true,
+      updatedAt: true
+    }
+  });
+  if (!collection) return null;
+
+  const items = await getItemsForUserByCollectionId(userId, collectionId);
+  return { ...collection, items };
+}
 
 export async function createCollectionForUser(
   userId: string,
