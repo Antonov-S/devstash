@@ -155,6 +155,20 @@ export async function getItemsForUserByTypeId(
   return rows.map(toItemWithMeta);
 }
 
+export async function getItemsForUserByCollectionId(
+  userId: string,
+  collectionId: string,
+  limit = 200
+): Promise<ItemWithMeta[]> {
+  const rows = await prisma.item.findMany({
+    where: { userId, collections: { some: { collectionId } } },
+    orderBy: [{ lastUsedAt: { sort: "desc", nulls: "last" } }, { updatedAt: "desc" }],
+    take: limit,
+    select: itemSelect
+  });
+  return rows.map(toItemWithMeta);
+}
+
 export type ItemCollectionSummary = {
   id: string;
   name: string;
