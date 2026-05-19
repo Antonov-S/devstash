@@ -28,6 +28,7 @@ type ItemSeed = {
   content?: string;
   url?: string;
   isPinned?: boolean;
+  tags?: string[];
 };
 
 type CollectionSeed = {
@@ -49,6 +50,7 @@ const collections: CollectionSeed[] = [
         language: "typescript",
         description: "Debounce a fast-changing value with a configurable delay.",
         isPinned: true,
+        tags: ["react", "hooks", "typescript", "performance"],
         content: `import { useEffect, useState } from "react";
 
 export function useDebounce<T>(value: T, delay = 300): T {
@@ -68,6 +70,7 @@ export function useDebounce<T>(value: T, delay = 300): T {
         type: "snippet",
         language: "typescript",
         description: "Light/dark theme provider with a typed useTheme hook.",
+        tags: ["react", "context", "theme", "hooks"],
         content: `import { createContext, useContext, useState, type ReactNode } from "react";
 
 type Theme = "light" | "dark";
@@ -97,6 +100,7 @@ export function useTheme() {
         type: "snippet",
         language: "typescript",
         description: "Merge Tailwind class names safely with clsx + tailwind-merge.",
+        tags: ["tailwind", "utility", "typescript"],
         content: `import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -116,6 +120,7 @@ export function cn(...inputs: ClassValue[]) {
         type: "prompt",
         description: "Structured code review with security, perf, and clarity checks.",
         isPinned: true,
+        tags: ["code-review", "security", "ai"],
         content: `Act as a senior engineer reviewing the following code.
 
 Cover, in order:
@@ -137,6 +142,7 @@ Code:
         title: "Documentation generator",
         type: "prompt",
         description: "Generate README-style docs from a code file.",
+        tags: ["docs", "writing", "ai"],
         content: `You are a technical writer. Produce documentation for the file below.
 
 Include:
@@ -157,6 +163,7 @@ File:
         title: "Refactor assistant",
         type: "prompt",
         description: "Propose a refactor while preserving behavior.",
+        tags: ["refactor", "code-quality", "ai"],
         content: `Refactor the following code to improve {{goal}} while preserving observable behavior.
 
 Constraints:
@@ -186,6 +193,7 @@ Code:
         type: "snippet",
         language: "dockerfile",
         description: "Production Dockerfile using Next.js standalone output.",
+        tags: ["docker", "nextjs", "deployment"],
         content: `# syntax=docker/dockerfile:1.7
 FROM node:20-alpine AS deps
 WORKDIR /app
@@ -212,18 +220,21 @@ CMD ["node", "server.js"]
         title: "Deploy to Fly.io",
         type: "command",
         description: "Build, push, and roll out the app on Fly with health checks.",
+        tags: ["fly", "deployment", "ci-cd"],
         content: "fly deploy --remote-only --strategy rolling --wait-timeout 300"
       },
       {
         title: "Docker docs",
         type: "link",
         description: "Official Docker documentation.",
+        tags: ["docker", "docs", "reference"],
         url: "https://docs.docker.com/"
       },
       {
         title: "GitHub Actions docs",
         type: "link",
         description: "GitHub Actions workflow syntax and reference.",
+        tags: ["github", "ci-cd", "docs"],
         url: "https://docs.github.com/en/actions"
       }
     ]
@@ -237,12 +248,14 @@ CMD ["node", "server.js"]
         title: "Undo last commit (keep changes staged)",
         type: "command",
         description: "Reverts the last commit but keeps the changes in the index.",
+        tags: ["git", "version-control"],
         content: "git reset --soft HEAD~1"
       },
       {
         title: "Stop and remove all containers",
         type: "command",
         description: "Useful to fully reset Docker between dev sessions.",
+        tags: ["docker", "cleanup"],
         content: "docker stop $(docker ps -aq) && docker rm $(docker ps -aq)"
       },
       {
@@ -250,12 +263,14 @@ CMD ["node", "server.js"]
         type: "command",
         description: "Find and kill the process holding a TCP port (Linux/macOS).",
         isPinned: true,
+        tags: ["debug", "network", "unix"],
         content: "lsof -ti:3000 | xargs kill -9"
       },
       {
         title: "Update all global npm packages",
         type: "command",
         description: "Bumps every globally installed npm package to its latest version.",
+        tags: ["npm", "packages"],
         content: "npm update -g"
       }
     ]
@@ -268,6 +283,7 @@ CMD ["node", "server.js"]
         title: "Tailwind CSS docs",
         type: "link",
         description: "Tailwind CSS official documentation and reference.",
+        tags: ["tailwind", "css", "docs"],
         url: "https://tailwindcss.com/docs"
       },
       {
@@ -275,18 +291,21 @@ CMD ["node", "server.js"]
         type: "link",
         description: "Copy-paste accessible React components built on Radix + Tailwind.",
         isPinned: true,
+        tags: ["react", "ui", "components"],
         url: "https://ui.shadcn.com/"
       },
       {
         title: "Radix UI Primitives",
         type: "link",
         description: "Unstyled, accessible UI primitives for React.",
+        tags: ["react", "accessibility", "ui"],
         url: "https://www.radix-ui.com/primitives"
       },
       {
         title: "Lucide icons",
         type: "link",
         description: "Beautiful, consistent open-source icon set.",
+        tags: ["icons", "ui", "design"],
         url: "https://lucide.dev/"
       }
     ]
@@ -338,26 +357,25 @@ async function seedCollectionsAndItems(prisma: PrismaClient, userId: string) {
   });
   const typeIdByName = new Map(typeRecords.map((t) => [t.name, t.id]));
 
+  // Wipe the demo user's existing items + collections so seed runs land cleanly
+  // with the latest data (tags included). Cascade handles TagsOnItems +
+  // ItemCollection. Tags themselves are global and shared with other users, so
+  // they're left alone — orphaned Tag rows are harmless.
+  const { count: deletedItems } = await prisma.item.deleteMany({
+    where: { userId }
+  });
+  const { count: deletedCollections } = await prisma.collection.deleteMany({
+    where: { userId }
+  });
+  if (deletedItems > 0 || deletedCollections > 0) {
+    console.log(
+      `  ⚠ wiped ${deletedItems} item(s) and ${deletedCollections} collection(s) for ${DEMO_EMAIL}`
+    );
+  }
+
   for (const col of collections) {
     const isFavorite = col.isFavorite ?? false;
-    let collection = await prisma.collection.findFirst({
-      where: { userId, name: col.name }
-    });
-    if (collection) {
-      if (collection.isFavorite !== isFavorite) {
-        collection = await prisma.collection.update({
-          where: { id: collection.id },
-          data: { isFavorite }
-        });
-        console.log(
-          `  ↻ "${col.name}" — isFavorite synced to ${isFavorite}`
-        );
-      } else {
-        console.log(`  · "${col.name}" already exists, skipping items`);
-      }
-      continue;
-    }
-    collection = await prisma.collection.create({
+    const collection = await prisma.collection.create({
       data: {
         userId,
         name: col.name,
@@ -367,60 +385,46 @@ async function seedCollectionsAndItems(prisma: PrismaClient, userId: string) {
     });
     console.log(`  ✓ collection "${col.name}"${isFavorite ? " ★" : ""}`);
 
-    if (col.items.length === 0) continue;
-
-    const itemsData = col.items.map((item) => {
+    for (const item of col.items) {
       const itemTypeId = typeIdByName.get(item.type);
       if (!itemTypeId) {
         throw new Error(`Missing system item type "${item.type}" — seed types first`);
       }
-      return {
-        userId,
-        itemTypeId,
-        title: item.title,
-        description: item.description ?? null,
-        language: item.language ?? null,
-        contentType:
-          item.type === "link"
-            ? ("URL" as const)
-            : item.type === "file" || item.type === "image"
-              ? ("FILE" as const)
-              : ("TEXT" as const),
-        content: item.url ? null : item.content ?? null,
-        url: item.url ?? null,
-        isPinned: item.isPinned ?? false
-      };
-    });
+      const contentType =
+        item.type === "link"
+          ? ("URL" as const)
+          : item.type === "file" || item.type === "image"
+            ? ("FILE" as const)
+            : ("TEXT" as const);
 
-    const createdItems = await prisma.item.createManyAndReturn({
-      data: itemsData,
-      select: { id: true, title: true }
-    });
+      const tags = item.tags ?? [];
 
-    await prisma.itemCollection.createMany({
-      data: createdItems.map((created) => ({
-        itemId: created.id,
-        collectionId: collection.id
-      }))
-    });
+      await prisma.item.create({
+        data: {
+          userId,
+          itemTypeId,
+          title: item.title,
+          description: item.description ?? null,
+          language: item.language ?? null,
+          contentType,
+          content: item.url ? null : item.content ?? null,
+          url: item.url ?? null,
+          isPinned: item.isPinned ?? false,
+          collections: {
+            create: [{ collectionId: collection.id }]
+          },
+          tags: {
+            create: tags.map((name) => ({
+              tag: {
+                connectOrCreate: { where: { name }, create: { name } }
+              }
+            }))
+          }
+        }
+      });
 
-    for (const created of createdItems) {
-      console.log(`    · item "${created.title}"`);
-    }
-  }
-
-  const pinnedTitles = collections
-    .flatMap((col) => col.items)
-    .filter((item) => item.isPinned)
-    .map((item) => item.title);
-
-  if (pinnedTitles.length > 0) {
-    const { count } = await prisma.item.updateMany({
-      where: { userId, title: { in: pinnedTitles }, isPinned: false },
-      data: { isPinned: true }
-    });
-    if (count > 0) {
-      console.log(`  ★ pinned ${count} existing item(s)`);
+      const tagSuffix = tags.length > 0 ? ` [${tags.join(", ")}]` : "";
+      console.log(`    · item "${item.title}"${tagSuffix}`);
     }
   }
 }
