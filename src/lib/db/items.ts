@@ -105,6 +105,17 @@ function toItemWithMeta(row: ItemRow): ItemWithMeta {
   };
 }
 
+export async function getFavoriteItemsForUser(
+  userId: string
+): Promise<ItemWithMeta[]> {
+  const rows = await prisma.item.findMany({
+    where: { userId, isFavorite: true },
+    orderBy: { updatedAt: "desc" },
+    select: itemSelect
+  });
+  return rows.map(toItemWithMeta);
+}
+
 export async function getPinnedItemsForUser(
   userId: string,
   limit = 50

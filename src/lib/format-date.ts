@@ -74,3 +74,31 @@ export function formatDateMedium(
   const date = coerce(value);
   return relativeLabel(date, now) ?? mediumFormatter.format(date);
 }
+
+/**
+ * Conversational relative date: "Today" / "Yesterday" / "N days ago" /
+ * "N weeks ago" / "N months ago", falling back to "Mon D, YYYY" for very
+ * old dates. Used on the Favorites page list.
+ */
+export function formatDateRelative(
+  value: Date | string,
+  now: Date = new Date()
+): string {
+  const date = coerce(value);
+  const diffDays = Math.round(
+    (startOfLocalDay(date) - startOfLocalDay(now)) / MS_PER_DAY
+  );
+  if (diffDays === 0) return "Today";
+  if (diffDays === -1) return "Yesterday";
+  if (diffDays < 0) {
+    const past = -diffDays;
+    if (past <= 6) return `${past} days ago`;
+    if (past <= 13) return "1 week ago";
+    if (past <= 27) return `${Math.floor(past / 7)} weeks ago`;
+    if (past <= 364) {
+      const months = Math.floor(past / 30);
+      return months === 1 ? "1 month ago" : `${months} months ago`;
+    }
+  }
+  return mediumFormatter.format(date);
+}

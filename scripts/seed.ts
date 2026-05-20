@@ -28,6 +28,7 @@ type ItemSeed = {
   content?: string;
   url?: string;
   isPinned?: boolean;
+  isFavorite?: boolean;
   tags?: string[];
 };
 
@@ -50,6 +51,7 @@ const collections: CollectionSeed[] = [
         language: "typescript",
         description: "Debounce a fast-changing value with a configurable delay.",
         isPinned: true,
+        isFavorite: true,
         tags: ["react", "hooks", "typescript", "performance"],
         content: `import { useEffect, useState } from "react";
 
@@ -70,6 +72,7 @@ export function useDebounce<T>(value: T, delay = 300): T {
         type: "snippet",
         language: "typescript",
         description: "Light/dark theme provider with a typed useTheme hook.",
+        isFavorite: true,
         tags: ["react", "context", "theme", "hooks"],
         content: `import { createContext, useContext, useState, type ReactNode } from "react";
 
@@ -120,6 +123,7 @@ export function cn(...inputs: ClassValue[]) {
         type: "prompt",
         description: "Structured code review with security, perf, and clarity checks.",
         isPinned: true,
+        isFavorite: true,
         tags: ["code-review", "security", "ai"],
         content: `Act as a senior engineer reviewing the following code.
 
@@ -193,6 +197,7 @@ Code:
         type: "snippet",
         language: "dockerfile",
         description: "Production Dockerfile using Next.js standalone output.",
+        isFavorite: true,
         tags: ["docker", "nextjs", "deployment"],
         content: `# syntax=docker/dockerfile:1.7
 FROM node:20-alpine AS deps
@@ -263,6 +268,7 @@ CMD ["node", "server.js"]
         type: "command",
         description: "Find and kill the process holding a TCP port (Linux/macOS).",
         isPinned: true,
+        isFavorite: true,
         tags: ["debug", "network", "unix"],
         content: "lsof -ti:3000 | xargs kill -9"
       },
@@ -291,6 +297,7 @@ CMD ["node", "server.js"]
         type: "link",
         description: "Copy-paste accessible React components built on Radix + Tailwind.",
         isPinned: true,
+        isFavorite: true,
         tags: ["react", "ui", "components"],
         url: "https://ui.shadcn.com/"
       },
@@ -410,6 +417,7 @@ async function seedCollectionsAndItems(prisma: PrismaClient, userId: string) {
           content: item.url ? null : item.content ?? null,
           url: item.url ?? null,
           isPinned: item.isPinned ?? false,
+          isFavorite: item.isFavorite ?? false,
           collections: {
             create: [{ collectionId: collection.id }]
           },

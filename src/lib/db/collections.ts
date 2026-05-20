@@ -26,11 +26,14 @@ export type CollectionWithMeta = {
 
 async function fetchCollectionsWithMeta(
   userId: string,
-  options: { take?: number; skip?: number } = {}
+  options: { take?: number; skip?: number; isFavorite?: boolean } = {}
 ): Promise<CollectionWithMeta[]> {
-  const { take, skip } = options;
+  const { take, skip, isFavorite } = options;
   const rows = await prisma.collection.findMany({
-    where: { userId },
+    where: {
+      userId,
+      ...(isFavorite !== undefined ? { isFavorite } : {})
+    },
     orderBy: { updatedAt: "desc" },
     skip,
     take,
@@ -110,6 +113,12 @@ export async function getAllCollectionsForUser(
   userId: string
 ): Promise<CollectionWithMeta[]> {
   return fetchCollectionsWithMeta(userId);
+}
+
+export async function getFavoriteCollectionsForUser(
+  userId: string
+): Promise<CollectionWithMeta[]> {
+  return fetchCollectionsWithMeta(userId, { isFavorite: true });
 }
 
 export type PagedCollections = {
