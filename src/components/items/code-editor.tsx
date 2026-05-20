@@ -6,28 +6,25 @@ import type { editor } from "monaco-editor";
 import { Check, Copy, LoaderCircle } from "lucide-react";
 import { toast } from "sonner";
 
+import { useEditorPreferences } from "@/components/editor/editor-preferences-context";
+import { MONACO_THEMES } from "@/components/editor/monaco-themes";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-
-const THEME_NAME = "devstash-dark";
 
 const MIN_HEIGHT = 80;
 const MAX_HEIGHT = 400;
 
-const COMMON_OPTIONS: editor.IStandaloneEditorConstructionOptions = {
-  fontSize: 13,
+const BASE_OPTIONS: editor.IStandaloneEditorConstructionOptions = {
   fontFamily:
     "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
   lineNumbers: "on",
   lineNumbersMinChars: 3,
   glyphMargin: false,
   folding: false,
-  minimap: { enabled: false },
   scrollBeyondLastLine: false,
   smoothScrolling: true,
   automaticLayout: true,
   padding: { top: 12, bottom: 12 },
-  wordWrap: "on",
   wrappingIndent: "indent",
   renderLineHighlight: "line",
   scrollbar: {
@@ -40,7 +37,6 @@ const COMMON_OPTIONS: editor.IStandaloneEditorConstructionOptions = {
   overviewRulerBorder: false,
   overviewRulerLanes: 0,
   hideCursorInOverviewRuler: true,
-  tabSize: 2,
   fixedOverflowWidgets: true
 };
 
@@ -64,34 +60,15 @@ export function CodeEditor({
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const [height, setHeight] = useState<number>(MIN_HEIGHT);
   const [copied, setCopied] = useState(false);
+  const { prefs } = useEditorPreferences();
 
   const resolvedLanguage = normalizeLanguage(language);
+  const themeMeta = MONACO_THEMES[prefs.theme];
 
   const handleBeforeMount: BeforeMount = (monaco) => {
-    monaco.editor.defineTheme(THEME_NAME, {
-      base: "vs-dark",
-      inherit: true,
-      rules: [],
-      colors: {
-        "editor.background": "#1a1a1a",
-        "editor.foreground": "#e4e4e7",
-        "editorLineNumber.foreground": "#52525b",
-        "editorLineNumber.activeForeground": "#a1a1aa",
-        "editor.lineHighlightBackground": "#23232380",
-        "editor.lineHighlightBorder": "#00000000",
-        "editor.selectionBackground": "#3f3f46",
-        "editor.inactiveSelectionBackground": "#3f3f4680",
-        "editorCursor.foreground": "#e4e4e7",
-        "editorWhitespace.foreground": "#3f3f46",
-        "editorIndentGuide.background1": "#27272a",
-        "editorIndentGuide.activeBackground1": "#3f3f46",
-        "scrollbarSlider.background": "#3f3f4680",
-        "scrollbarSlider.hoverBackground": "#52525b80",
-        "scrollbarSlider.activeBackground": "#71717a80",
-        "editorWidget.background": "#1f1f1f",
-        "editorWidget.border": "#27272a"
-      }
-    });
+    for (const [name, meta] of Object.entries(MONACO_THEMES)) {
+      monaco.editor.defineTheme(name, meta.definition);
+    }
   };
 
   const handleMount: OnMount = (instance) => {
@@ -118,12 +95,16 @@ export function CodeEditor({
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-md border border-border/60 bg-[#1a1a1a]",
+        "overflow-hidden rounded-md border border-border/60",
         className
       )}
+      style={{ background: themeMeta.chromeBg }}
       aria-label={ariaLabel}
     >
-      <div className="flex items-center justify-between gap-2 border-b border-border/60 bg-[#171717] px-3 py-2">
+      <div
+        className="flex items-center justify-between gap-2 border-b border-border/60 px-3 py-2"
+        style={{ background: themeMeta.chromeHeaderBg }}
+      >
         <div className="flex items-center gap-1.5" aria-hidden>
           <span className="size-3 rounded-full bg-[#ff5f57]" />
           <span className="size-3 rounded-full bg-[#febc2e]" />
@@ -155,13 +136,17 @@ export function CodeEditor({
         height={height}
         value={value}
         language={resolvedLanguage ?? "plaintext"}
-        theme={THEME_NAME}
+        theme={prefs.theme}
         beforeMount={handleBeforeMount}
         onMount={handleMount}
         onChange={(next) => onChange?.(next ?? "")}
         loading={<EditorLoading />}
         options={{
-          ...COMMON_OPTIONS,
+          ...BASE_OPTIONS,
+          fontSize: prefs.fontSize,
+          tabSize: prefs.tabSize,
+          wordWrap: prefs.wordWrap ? "on" : "off",
+          minimap: { enabled: prefs.minimap },
           readOnly,
           domReadOnly: readOnly,
           renderLineHighlight: readOnly ? "none" : "line",

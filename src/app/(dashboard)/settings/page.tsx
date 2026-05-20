@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { ChangePasswordDialog } from "@/components/settings/change-password-dialog";
 import { DeleteAccountDialog } from "@/components/settings/delete-account-dialog";
+import { EditorPreferencesForm } from "@/components/settings/editor-preferences-form";
 import { getUserProfileById } from "@/lib/db/users";
 
 export const metadata = {
@@ -46,6 +47,17 @@ export default async function SettingsPage() {
           </div>
           {profile.hasPassword ? <ChangePasswordDialog /> : null}
         </div>
+      </section>
+
+      <section className="rounded-xl bg-card p-6 ring-1 ring-foreground/10">
+        <div className="mb-6">
+          <h2 className="font-semibold">Editor preferences</h2>
+          <p className="text-sm text-muted-foreground">
+            Customize the code editor. Changes save automatically.
+          </p>
+        </div>
+
+        <EditorPreferencesForm />
       </section>
 
       <section className="rounded-xl bg-card p-6 ring-1 ring-destructive/40">

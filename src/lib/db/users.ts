@@ -1,6 +1,10 @@
 import "server-only";
 
 import { prisma } from "@/lib/prisma";
+import {
+  parseEditorPreferences,
+  type EditorPreferences
+} from "@/lib/editor-preferences";
 
 const DEMO_EMAIL = "demo@devstash.io";
 
@@ -61,4 +65,26 @@ export async function getUserProfileById(
     createdAt: user.createdAt,
     hasPassword: user.password !== null
   };
+}
+
+export async function getUserEditorPreferences(
+  userId: string
+): Promise<EditorPreferences> {
+  const row = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { editorPreferences: true }
+  });
+  return parseEditorPreferences(row?.editorPreferences ?? null);
+}
+
+export async function updateUserEditorPreferences(
+  userId: string,
+  prefs: EditorPreferences
+): Promise<EditorPreferences> {
+  const updated = await prisma.user.update({
+    where: { id: userId },
+    data: { editorPreferences: prefs },
+    select: { editorPreferences: true }
+  });
+  return parseEditorPreferences(updated.editorPreferences);
 }
