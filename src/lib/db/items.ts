@@ -297,6 +297,18 @@ export async function updateItemForUser(
   return getItemDetailForUser(userId, itemId);
 }
 
+export async function setItemFavoriteForUser(
+  userId: string,
+  itemId: string,
+  isFavorite: boolean
+): Promise<boolean> {
+  const result = await prisma.item.updateMany({
+    where: { id: itemId, userId },
+    data: { isFavorite }
+  });
+  return result.count > 0;
+}
+
 export async function deleteItemForUser(
   userId: string,
   itemId: string

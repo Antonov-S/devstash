@@ -7,6 +7,7 @@ import { verifyCollectionsOwnedByUser } from "@/lib/db/collections";
 import {
   createItemForUser,
   deleteItemForUser,
+  setItemFavoriteForUser,
   updateItemForUser,
   type ItemDetail
 } from "@/lib/db/items";
@@ -244,6 +245,39 @@ export async function createItemAction(
   } catch (error) {
     console.error("createItemAction failed", error);
     return { success: false, error: "Could not create item. Please try again." };
+  }
+}
+
+export type SetItemFavoriteResult =
+  | { success: true; isFavorite: boolean }
+  | { success: false; error: string };
+
+export async function setItemFavoriteAction(
+  itemId: string,
+  isFavorite: boolean
+): Promise<SetItemFavoriteResult> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, error: "You are not signed in." };
+  }
+
+  if (typeof itemId !== "string" || !itemId) {
+    return { success: false, error: "Invalid item id" };
+  }
+
+  try {
+    const updated = await setItemFavoriteForUser(
+      session.user.id,
+      itemId,
+      isFavorite
+    );
+    if (!updated) {
+      return { success: false, error: "Item not found" };
+    }
+    return { success: true, isFavorite };
+  } catch (error) {
+    console.error("setItemFavoriteAction failed", error);
+    return { success: false, error: "Could not update favorite. Please try again." };
   }
 }
 

@@ -1,11 +1,14 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Pencil, Star, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { deleteCollectionAction } from "@/actions/collections";
+import {
+  deleteCollectionAction,
+  setCollectionFavoriteAction
+} from "@/actions/collections";
 import { DeleteCollectionDialog } from "@/components/collections/delete-collection-dialog";
 import { EditCollectionDialog } from "@/components/collections/edit-collection-dialog";
 import { Button } from "@/components/ui/button";
@@ -24,6 +27,12 @@ export function CollectionActions({ collection }: CollectionActionsProps) {
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, startDeleting] = useTransition();
+  const [isFavorite, setIsFavorite] = useState(collection.isFavorite);
+  const [favoritePending, startToggleFavorite] = useTransition();
+
+  useEffect(() => {
+    setIsFavorite(collection.isFavorite);
+  }, [collection.id, collection.isFavorite]);
 
   function handleDeleteConfirm() {
     startDeleting(async () => {
@@ -37,8 +46,19 @@ export function CollectionActions({ collection }: CollectionActionsProps) {
     });
   }
 
-  function handleFavoriteStub() {
-    toast.info("Favorites coming soon");
+  function handleToggleFavorite() {
+    const next = !isFavorite;
+    const previous = isFavorite;
+    setIsFavorite(next);
+    startToggleFavorite(async () => {
+      const result = await setCollectionFavoriteAction(collection.id, next);
+      if (!result.success) {
+        setIsFavorite(previous);
+        toast.error(result.error);
+        return;
+      }
+      router.refresh();
+    });
   }
 
   return (
@@ -48,14 +68,16 @@ export function CollectionActions({ collection }: CollectionActionsProps) {
           variant="ghost"
           size="icon"
           aria-label={
-            collection.isFavorite ? "Remove from favorites" : "Add to favorites"
+            isFavorite ? "Remove from favorites" : "Add to favorites"
           }
+          aria-pressed={isFavorite}
           title="Favorite"
-          onClick={handleFavoriteStub}
+          onClick={handleToggleFavorite}
+          disabled={favoritePending}
         >
           <Star
             className={
-              collection.isFavorite
+              isFavorite
                 ? "size-4 fill-yellow-400 text-yellow-400"
                 : "size-4"
             }

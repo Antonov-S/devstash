@@ -1,4 +1,4 @@
-import { Image as ImageIcon, Pin, Star } from "lucide-react";
+import { Image as ImageIcon, Pin } from "lucide-react";
 
 import type { ItemWithMeta } from "@/lib/db/items";
 
@@ -23,21 +23,11 @@ export function ImageThumbnailCard({ item }: { item: ItemWithMeta }) {
           </div>
         )}
 
-        {(item.isPinned || item.isFavorite) && (
-          <div className="absolute right-2 top-2 flex items-center gap-1">
-            {item.isPinned && (
-              <span className="flex size-6 items-center justify-center rounded-full bg-background/80 text-foreground backdrop-blur">
-                <Pin className="size-3.5" aria-hidden />
-              </span>
-            )}
-            {item.isFavorite && (
-              <span className="flex size-6 items-center justify-center rounded-full bg-background/80 backdrop-blur">
-                <Star
-                  className="size-3.5 fill-yellow-400 text-yellow-400"
-                  aria-hidden
-                />
-              </span>
-            )}
+        {item.isPinned && (
+          <div className="absolute left-2 top-2">
+            <span className="flex size-6 items-center justify-center rounded-full bg-background/80 text-foreground backdrop-blur">
+              <Pin className="size-3.5" aria-hidden />
+            </span>
           </div>
         )}
       </div>

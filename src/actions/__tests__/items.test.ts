@@ -7,7 +7,8 @@ vi.mock("@/auth", () => ({
 vi.mock("@/lib/db/items", () => ({
   createItemForUser: vi.fn(),
   updateItemForUser: vi.fn(),
-  deleteItemForUser: vi.fn()
+  deleteItemForUser: vi.fn(),
+  setItemFavoriteForUser: vi.fn()
 }));
 
 vi.mock("@/lib/db/collections", () => ({
@@ -23,12 +24,14 @@ import { verifyCollectionsOwnedByUser } from "@/lib/db/collections";
 import {
   createItemForUser,
   deleteItemForUser,
+  setItemFavoriteForUser,
   updateItemForUser
 } from "@/lib/db/items";
 import { keyFromPublicUrl } from "@/lib/r2";
 import {
   createItemAction,
   deleteItemAction,
+  setItemFavoriteAction,
   updateItemAction
 } from "@/actions/items";
 
@@ -36,6 +39,9 @@ const mockedAuth = auth as unknown as ReturnType<typeof vi.fn>;
 const mockedCreate = createItemForUser as unknown as ReturnType<typeof vi.fn>;
 const mockedUpdate = updateItemForUser as unknown as ReturnType<typeof vi.fn>;
 const mockedDelete = deleteItemForUser as unknown as ReturnType<typeof vi.fn>;
+const mockedSetFavorite = setItemFavoriteForUser as unknown as ReturnType<
+  typeof vi.fn
+>;
 const mockedVerifyCollections =
   verifyCollectionsOwnedByUser as unknown as ReturnType<typeof vi.fn>;
 const mockedKeyFromPublicUrl = keyFromPublicUrl as unknown as ReturnType<
@@ -600,6 +606,76 @@ describe("deleteItemAction", () => {
     expect(result).toEqual({
       success: false,
       error: "Could not delete item. Please try again."
+    });
+
+    errSpy.mockRestore();
+  });
+});
+
+describe("setItemFavoriteAction", () => {
+  beforeEach(() => {
+    mockedAuth.mockReset();
+    mockedSetFavorite.mockReset();
+  });
+
+  it("rejects when there is no session", async () => {
+    mockedAuth.mockResolvedValue(null);
+
+    const result = await setItemFavoriteAction("item_1", true);
+
+    expect(result).toEqual({ success: false, error: "You are not signed in." });
+    expect(mockedSetFavorite).not.toHaveBeenCalled();
+  });
+
+  it("rejects when itemId is empty", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+
+    const result = await setItemFavoriteAction("", true);
+
+    expect(result).toEqual({ success: false, error: "Invalid item id" });
+    expect(mockedSetFavorite).not.toHaveBeenCalled();
+  });
+
+  it("returns 'Item not found' when the db reports nothing was updated", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+    mockedSetFavorite.mockResolvedValue(false);
+
+    const result = await setItemFavoriteAction("item_missing", true);
+
+    expect(result).toEqual({ success: false, error: "Item not found" });
+    expect(mockedSetFavorite).toHaveBeenCalledWith("user_1", "item_missing", true);
+  });
+
+  it("returns success and echoes isFavorite when the row was updated", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+    mockedSetFavorite.mockResolvedValue(true);
+
+    const result = await setItemFavoriteAction("item_1", true);
+
+    expect(result).toEqual({ success: true, isFavorite: true });
+    expect(mockedSetFavorite).toHaveBeenCalledWith("user_1", "item_1", true);
+  });
+
+  it("forwards a false toggle through to the db helper", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+    mockedSetFavorite.mockResolvedValue(true);
+
+    const result = await setItemFavoriteAction("item_1", false);
+
+    expect(result).toEqual({ success: true, isFavorite: false });
+    expect(mockedSetFavorite).toHaveBeenCalledWith("user_1", "item_1", false);
+  });
+
+  it("returns a generic error when the db function throws", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+    mockedSetFavorite.mockRejectedValue(new Error("db down"));
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const result = await setItemFavoriteAction("item_1", true);
+
+    expect(result).toEqual({
+      success: false,
+      error: "Could not update favorite. Please try again."
     });
 
     errSpy.mockRestore();

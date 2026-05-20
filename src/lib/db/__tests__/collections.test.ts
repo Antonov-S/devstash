@@ -28,6 +28,7 @@ import {
   getCollectionsPagedForUser,
   getCollectionWithItemsForUser,
   getUserCollectionsList,
+  setCollectionFavoriteForUser,
   updateCollectionForUser,
   verifyCollectionsOwnedByUser
 } from "@/lib/db/collections";
@@ -364,5 +365,46 @@ describe("getCollectionsPagedForUser", () => {
     expect(mockedFindMany).toHaveBeenCalledWith(
       expect.objectContaining({ skip: 0, take: 21 })
     );
+  });
+});
+
+describe("setCollectionFavoriteForUser", () => {
+  beforeEach(() => {
+    mockedUpdateMany.mockReset();
+  });
+
+  it("scopes the update by id + userId and returns true when a row was updated", async () => {
+    mockedUpdateMany.mockResolvedValue({ count: 1 });
+
+    const result = await setCollectionFavoriteForUser("user_1", "coll_1", true);
+
+    expect(mockedUpdateMany).toHaveBeenCalledWith({
+      where: { id: "coll_1", userId: "user_1" },
+      data: { isFavorite: true }
+    });
+    expect(result).toBe(true);
+  });
+
+  it("returns false when no row matched (wrong owner or missing id)", async () => {
+    mockedUpdateMany.mockResolvedValue({ count: 0 });
+
+    const result = await setCollectionFavoriteForUser(
+      "user_1",
+      "coll_missing",
+      true
+    );
+
+    expect(result).toBe(false);
+  });
+
+  it("forwards isFavorite=false through to the data payload", async () => {
+    mockedUpdateMany.mockResolvedValue({ count: 1 });
+
+    await setCollectionFavoriteForUser("user_1", "coll_1", false);
+
+    expect(mockedUpdateMany).toHaveBeenCalledWith({
+      where: { id: "coll_1", userId: "user_1" },
+      data: { isFavorite: false }
+    });
   });
 });
