@@ -26,11 +26,13 @@ export type CollectionWithMeta = {
 
 async function fetchCollectionsWithMeta(
   userId: string,
-  take?: number
+  options: { take?: number; skip?: number } = {}
 ): Promise<CollectionWithMeta[]> {
+  const { take, skip } = options;
   const rows = await prisma.collection.findMany({
     where: { userId },
     orderBy: { updatedAt: "desc" },
+    skip,
     take,
     select: {
       id: true,
@@ -101,13 +103,30 @@ export async function getRecentCollectionsForUser(
   userId: string,
   limit = 6
 ): Promise<CollectionWithMeta[]> {
-  return fetchCollectionsWithMeta(userId, limit);
+  return fetchCollectionsWithMeta(userId, { take: limit });
 }
 
 export async function getAllCollectionsForUser(
   userId: string
 ): Promise<CollectionWithMeta[]> {
   return fetchCollectionsWithMeta(userId);
+}
+
+export type PagedCollections = {
+  collections: CollectionWithMeta[];
+  totalCount: number;
+};
+
+export async function getCollectionsPagedForUser(
+  userId: string,
+  options: { skip?: number; take?: number } = {}
+): Promise<PagedCollections> {
+  const { skip = 0, take } = options;
+  const [collections, totalCount] = await Promise.all([
+    fetchCollectionsWithMeta(userId, { skip, take }),
+    prisma.collection.count({ where: { userId } })
+  ]);
+  return { collections, totalCount };
 }
 
 export type CollectionStats = {
@@ -164,11 +183,13 @@ export type CollectionWithItems = {
   isFavorite: boolean;
   updatedAt: Date;
   items: ItemWithMeta[];
+  totalItemCount: number;
 };
 
 export async function getCollectionWithItemsForUser(
   userId: string,
-  collectionId: string
+  collectionId: string,
+  options: { skip?: number; take?: number } = {}
 ): Promise<CollectionWithItems | null> {
   const collection = await prisma.collection.findFirst({
     where: { id: collectionId, userId },
@@ -182,8 +203,12 @@ export async function getCollectionWithItemsForUser(
   });
   if (!collection) return null;
 
-  const items = await getItemsForUserByCollectionId(userId, collectionId);
-  return { ...collection, items };
+  const { items, totalCount } = await getItemsForUserByCollectionId(
+    userId,
+    collectionId,
+    options
+  );
+  return { ...collection, items, totalItemCount: totalCount };
 }
 
 export type UpdateCollectionInput = {

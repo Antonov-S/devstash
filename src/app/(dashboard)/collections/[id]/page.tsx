@@ -6,8 +6,10 @@ import { CollectionActions } from "@/components/collections/collection-actions";
 import { ClickableFileRow } from "@/components/items/clickable-file-row";
 import { ClickableImageCard } from "@/components/items/clickable-image-card";
 import { ClickableItemCard } from "@/components/items/clickable-item-card";
+import { Pagination } from "@/components/ui/pagination";
 import { getCollectionWithItemsForUser } from "@/lib/db/collections";
 import type { ItemWithMeta } from "@/lib/db/items";
+import { ITEMS_PER_PAGE, paginate, parsePageParam } from "@/lib/pagination";
 
 export const dynamic = "force-dynamic";
 
@@ -60,9 +62,11 @@ function ItemsGrid({ items }: { items: ItemWithMeta[] }) {
 }
 
 export default async function CollectionDetailPage({
-  params
+  params,
+  searchParams
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ page?: string | string[] }>;
 }) {
   const { id } = await params;
 
@@ -70,8 +74,20 @@ export default async function CollectionDetailPage({
   if (!session?.user?.id) redirect(`/sign-in?callbackUrl=/collections/${id}`);
   const userId = session.user.id;
 
-  const collection = await getCollectionWithItemsForUser(userId, id);
+  const { page: rawPage } = await searchParams;
+  const requestedPage = parsePageParam(rawPage);
+
+  const collection = await getCollectionWithItemsForUser(userId, id, {
+    skip: (requestedPage - 1) * ITEMS_PER_PAGE,
+    take: ITEMS_PER_PAGE
+  });
   if (!collection) notFound();
+
+  const { currentPage, totalPages } = paginate({
+    page: requestedPage,
+    perPage: ITEMS_PER_PAGE,
+    totalCount: collection.totalItemCount
+  });
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6">
@@ -94,8 +110,8 @@ export default async function CollectionDetailPage({
               )}
             </h1>
             <p className="text-sm text-muted-foreground">
-              {collection.items.length}{" "}
-              {collection.items.length === 1 ? "item" : "items"}
+              {collection.totalItemCount}{" "}
+              {collection.totalItemCount === 1 ? "item" : "items"}
             </p>
             {collection.description && (
               <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
@@ -115,7 +131,15 @@ export default async function CollectionDetailPage({
       </div>
 
       {collection.items.length > 0 ? (
-        <ItemsGrid items={collection.items} />
+        <>
+          <ItemsGrid items={collection.items} />
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            baseHref={`/collections/${id}`}
+            className="mt-2"
+          />
+        </>
       ) : (
         <div className="flex flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-border bg-card p-12 text-center">
           <span

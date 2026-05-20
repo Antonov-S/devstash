@@ -8,11 +8,17 @@ import { ClickableImageCard } from "@/components/items/clickable-image-card";
 import { ClickableItemCard } from "@/components/items/clickable-item-card";
 import { NewItemDialog } from "@/components/items/new-item-dialog";
 import { Button } from "@/components/ui/button";
+import { Pagination } from "@/components/ui/pagination";
 import {
   getItemsForUserByTypeId,
   getSystemItemTypeByName
 } from "@/lib/db/items";
 import { iconMap } from "@/lib/icons";
+import {
+  ITEMS_PER_PAGE,
+  paginate,
+  parsePageParam
+} from "@/lib/pagination";
 import {
   type SystemTypeName,
   systemTypeNameFromSlug
@@ -47,9 +53,11 @@ export async function generateMetadata({
 }
 
 export default async function ItemsByTypePage({
-  params
+  params,
+  searchParams
 }: {
   params: Promise<{ type: string }>;
+  searchParams: Promise<{ page?: string | string[] }>;
 }) {
   const { type: slug } = await params;
   const typeName = systemTypeNameFromSlug(slug);
@@ -62,7 +70,23 @@ export default async function ItemsByTypePage({
   const itemType = await getSystemItemTypeByName(typeName);
   if (!itemType) notFound();
 
-  const items = await getItemsForUserByTypeId(userId, itemType.id);
+  const { page: rawPage } = await searchParams;
+  const requestedPage = parsePageParam(rawPage);
+
+  const { items, totalCount } = await getItemsForUserByTypeId(
+    userId,
+    itemType.id,
+    {
+      skip: (requestedPage - 1) * ITEMS_PER_PAGE,
+      take: ITEMS_PER_PAGE
+    }
+  );
+  const { currentPage, totalPages } = paginate({
+    page: requestedPage,
+    perPage: ITEMS_PER_PAGE,
+    totalCount
+  });
+
   const Icon = iconMap[itemType.icon] ?? null;
   const label = capitalize(slug);
 
@@ -84,7 +108,7 @@ export default async function ItemsByTypePage({
           <div>
             <h1 className="text-2xl font-semibold">{label}</h1>
             <p className="text-sm text-muted-foreground">
-              {items.length} {items.length === 1 ? "item" : "items"}
+              {totalCount} {totalCount === 1 ? "item" : "items"}
             </p>
           </div>
         </div>
@@ -106,25 +130,33 @@ export default async function ItemsByTypePage({
       </div>
 
       {items.length > 0 ? (
-        typeName === "image" ? (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {items.map((item) => (
-              <ClickableImageCard key={item.id} item={item} />
-            ))}
-          </div>
-        ) : typeName === "file" ? (
-          <div className="flex flex-col gap-2">
-            {items.map((item) => (
-              <ClickableFileRow key={item.id} item={item} />
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
-            {items.map((item) => (
-              <ClickableItemCard key={item.id} item={item} />
-            ))}
-          </div>
-        )
+        <>
+          {typeName === "image" ? (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {items.map((item) => (
+                <ClickableImageCard key={item.id} item={item} />
+              ))}
+            </div>
+          ) : typeName === "file" ? (
+            <div className="flex flex-col gap-2">
+              {items.map((item) => (
+                <ClickableFileRow key={item.id} item={item} />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+              {items.map((item) => (
+                <ClickableItemCard key={item.id} item={item} />
+              ))}
+            </div>
+          )}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            baseHref={`/items/${slug}`}
+            className="mt-2"
+          />
+        </>
       ) : (
         <div className="flex flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-border bg-card p-12 text-center">
           {Icon && (

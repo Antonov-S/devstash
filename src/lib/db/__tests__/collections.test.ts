@@ -4,10 +4,14 @@ vi.mock("@/lib/prisma", () => ({
   prisma: {
     collection: {
       create: vi.fn(),
+      count: vi.fn(),
       deleteMany: vi.fn(),
       findFirst: vi.fn(),
       findMany: vi.fn(),
       updateMany: vi.fn()
+    },
+    itemCollection: {
+      findMany: vi.fn()
     }
   }
 }));
@@ -21,6 +25,7 @@ import { getItemsForUserByCollectionId } from "@/lib/db/items";
 import {
   createCollectionForUser,
   deleteCollectionForUser,
+  getCollectionsPagedForUser,
   getCollectionWithItemsForUser,
   getUserCollectionsList,
   updateCollectionForUser,
@@ -28,6 +33,9 @@ import {
 } from "@/lib/db/collections";
 
 const mockedCreate = prisma.collection.create as unknown as ReturnType<
+  typeof vi.fn
+>;
+const mockedCount = prisma.collection.count as unknown as ReturnType<
   typeof vi.fn
 >;
 const mockedDeleteMany =
@@ -38,6 +46,8 @@ const mockedFindFirst = prisma.collection.findFirst as unknown as ReturnType<
 const mockedFindMany = prisma.collection.findMany as unknown as ReturnType<
   typeof vi.fn
 >;
+const mockedItemCollectionFindMany = prisma.itemCollection
+  .findMany as unknown as ReturnType<typeof vi.fn>;
 const mockedUpdateMany =
   prisma.collection.updateMany as unknown as ReturnType<typeof vi.fn>;
 const mockedGetItems = getItemsForUserByCollectionId as unknown as ReturnType<
@@ -262,7 +272,7 @@ describe("getCollectionWithItemsForUser", () => {
     expect(mockedGetItems).not.toHaveBeenCalled();
   });
 
-  it("returns collection metadata + items when the collection belongs to the user", async () => {
+  it("returns collection metadata + items + totalItemCount when the collection belongs to the user", async () => {
     const now = new Date("2026-05-18T00:00:00Z");
     mockedFindFirst.mockResolvedValue({
       id: "coll_1",
@@ -278,18 +288,81 @@ describe("getCollectionWithItemsForUser", () => {
         tags: ["react"]
       }
     ];
-    mockedGetItems.mockResolvedValue(fakeItems);
+    mockedGetItems.mockResolvedValue({ items: fakeItems, totalCount: 42 });
 
     const result = await getCollectionWithItemsForUser("user_1", "coll_1");
 
-    expect(mockedGetItems).toHaveBeenCalledWith("user_1", "coll_1");
+    expect(mockedGetItems).toHaveBeenCalledWith("user_1", "coll_1", {});
     expect(result).toEqual({
       id: "coll_1",
       name: "React Patterns",
       description: "Custom hooks",
       isFavorite: true,
       updatedAt: now,
-      items: fakeItems
+      items: fakeItems,
+      totalItemCount: 42
     });
+  });
+
+  it("forwards pagination options through to the items fetch", async () => {
+    const now = new Date("2026-05-18T00:00:00Z");
+    mockedFindFirst.mockResolvedValue({
+      id: "coll_1",
+      name: "React",
+      description: null,
+      isFavorite: false,
+      updatedAt: now
+    });
+    mockedGetItems.mockResolvedValue({ items: [], totalCount: 0 });
+
+    await getCollectionWithItemsForUser("user_1", "coll_1", {
+      skip: 21,
+      take: 21
+    });
+
+    expect(mockedGetItems).toHaveBeenCalledWith("user_1", "coll_1", {
+      skip: 21,
+      take: 21
+    });
+  });
+});
+
+describe("getCollectionsPagedForUser", () => {
+  beforeEach(() => {
+    mockedFindMany.mockReset();
+    mockedCount.mockReset();
+    mockedItemCollectionFindMany.mockReset();
+    mockedItemCollectionFindMany.mockResolvedValue([]);
+  });
+
+  it("scopes the count and findMany to the user and forwards skip/take", async () => {
+    mockedFindMany.mockResolvedValue([]);
+    mockedCount.mockResolvedValue(42);
+
+    const result = await getCollectionsPagedForUser("user_1", {
+      skip: 21,
+      take: 21
+    });
+
+    expect(mockedFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userId: "user_1" },
+        skip: 21,
+        take: 21
+      })
+    );
+    expect(mockedCount).toHaveBeenCalledWith({ where: { userId: "user_1" } });
+    expect(result).toEqual({ collections: [], totalCount: 42 });
+  });
+
+  it("defaults skip to 0 when only take is supplied", async () => {
+    mockedFindMany.mockResolvedValue([]);
+    mockedCount.mockResolvedValue(0);
+
+    await getCollectionsPagedForUser("user_1", { take: 21 });
+
+    expect(mockedFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({ skip: 0, take: 21 })
+    );
   });
 });

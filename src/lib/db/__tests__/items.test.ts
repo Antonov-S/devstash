@@ -5,6 +5,7 @@ vi.mock("@/lib/prisma", () => ({
     item: {
       findFirst: vi.fn(),
       findMany: vi.fn(),
+      count: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
       deleteMany: vi.fn()
@@ -54,6 +55,9 @@ const mockedTagsDeleteMany = prisma.tagsOnItems.deleteMany as unknown as ReturnT
 const mockedItemCollectionDeleteMany =
   prisma.itemCollection.deleteMany as unknown as ReturnType<typeof vi.fn>;
 const mockedTransaction = prisma.$transaction as unknown as ReturnType<
+  typeof vi.fn
+>;
+const mockedItemCount = prisma.item.count as unknown as ReturnType<
   typeof vi.fn
 >;
 
@@ -564,25 +568,50 @@ describe("getItemsForUserByTypeId", () => {
   beforeEach(() => {
     mockedFindMany.mockReset();
     mockedFindMany.mockResolvedValue([]);
+    mockedItemCount.mockReset();
+    mockedItemCount.mockResolvedValue(0);
   });
 
-  it("scopes the query and applies a take: 200 default cap", async () => {
-    await getItemsForUserByTypeId("user_1", "type_1");
+  it("scopes the query, defaults to skip:0/take:200, and counts in parallel", async () => {
+    mockedItemCount.mockResolvedValue(42);
+
+    const result = await getItemsForUserByTypeId("user_1", "type_1");
 
     expect(mockedFindMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { userId: "user_1", itemTypeId: "type_1" },
+        skip: 0,
         take: 200
       })
     );
+    expect(mockedItemCount).toHaveBeenCalledWith({
+      where: { userId: "user_1", itemTypeId: "type_1" }
+    });
+    expect(result.totalCount).toBe(42);
+    expect(result.items).toEqual([]);
   });
 
-  it("uses an explicit limit when one is provided", async () => {
-    await getItemsForUserByTypeId("user_1", "type_1", 25);
+  it("forwards explicit skip and take options", async () => {
+    await getItemsForUserByTypeId("user_1", "type_1", { skip: 21, take: 21 });
 
     expect(mockedFindMany).toHaveBeenCalledWith(
-      expect.objectContaining({ take: 25 })
+      expect.objectContaining({ skip: 21, take: 21 })
     );
+  });
+
+  it("maps the tag rows into a flat string[] inside the returned items", async () => {
+    mockedFindMany.mockResolvedValue([baseRow]);
+    mockedItemCount.mockResolvedValue(1);
+
+    const { items, totalCount } = await getItemsForUserByTypeId(
+      "user_1",
+      "type_1"
+    );
+
+    expect(totalCount).toBe(1);
+    expect(items).toHaveLength(1);
+    expect(items[0].id).toBe("item_1");
+    expect(items[0].tags).toEqual(["react", "auth"]);
   });
 });
 
@@ -590,10 +619,17 @@ describe("getItemsForUserByCollectionId", () => {
   beforeEach(() => {
     mockedFindMany.mockReset();
     mockedFindMany.mockResolvedValue([]);
+    mockedItemCount.mockReset();
+    mockedItemCount.mockResolvedValue(0);
   });
 
-  it("filters by userId and collection membership with a take: 200 default cap", async () => {
-    await getItemsForUserByCollectionId("user_1", "coll_1");
+  it("filters by userId and collection membership with default skip:0/take:200", async () => {
+    mockedItemCount.mockResolvedValue(5);
+
+    const { totalCount } = await getItemsForUserByCollectionId(
+      "user_1",
+      "coll_1"
+    );
 
     expect(mockedFindMany).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -601,26 +637,38 @@ describe("getItemsForUserByCollectionId", () => {
           userId: "user_1",
           collections: { some: { collectionId: "coll_1" } }
         },
+        skip: 0,
         take: 200
       })
     );
+    expect(mockedItemCount).toHaveBeenCalledWith({
+      where: {
+        userId: "user_1",
+        collections: { some: { collectionId: "coll_1" } }
+      }
+    });
+    expect(totalCount).toBe(5);
   });
 
-  it("uses an explicit limit when one is provided", async () => {
-    await getItemsForUserByCollectionId("user_1", "coll_1", 50);
+  it("forwards explicit skip and take options", async () => {
+    await getItemsForUserByCollectionId("user_1", "coll_1", {
+      skip: 42,
+      take: 21
+    });
 
     expect(mockedFindMany).toHaveBeenCalledWith(
-      expect.objectContaining({ take: 50 })
+      expect.objectContaining({ skip: 42, take: 21 })
     );
   });
 
-  it("maps the tag rows into a flat string[] in returned items", async () => {
+  it("maps the tag rows into a flat string[] inside the returned items", async () => {
     mockedFindMany.mockResolvedValue([baseRow]);
+    mockedItemCount.mockResolvedValue(1);
 
-    const result = await getItemsForUserByCollectionId("user_1", "coll_1");
+    const { items } = await getItemsForUserByCollectionId("user_1", "coll_1");
 
-    expect(result).toHaveLength(1);
-    expect(result[0].id).toBe("item_1");
-    expect(result[0].tags).toEqual(["react", "auth"]);
+    expect(items).toHaveLength(1);
+    expect(items[0].id).toBe("item_1");
+    expect(items[0].tags).toEqual(["react", "auth"]);
   });
 });
