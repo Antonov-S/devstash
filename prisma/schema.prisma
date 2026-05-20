@@ -23,6 +23,7 @@ model User {
   isPro                Boolean   @default(false)
   stripeCustomerId     String?   @unique
   stripeSubscriptionId String?   @unique
+  editorPreferences    Json? // Monaco editor preferences (font/tab/wrap/minimap/theme) — see src/lib/editor-preferences.ts
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
 
