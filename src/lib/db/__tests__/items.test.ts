@@ -34,6 +34,7 @@ import { deleteObjectFromR2, keyFromPublicUrl } from "@/lib/r2";
 import {
   createItemForUser,
   deleteItemForUser,
+  getFavoriteItemsForUser,
   getItemDetailForUser,
   getItemsForUserByCollectionId,
   getItemsForUserByTypeId,
@@ -565,6 +566,33 @@ describe("getPinnedItemsForUser", () => {
 
     expect(mockedFindMany).toHaveBeenCalledWith(
       expect.objectContaining({ take: 5 })
+    );
+  });
+});
+
+describe("getFavoriteItemsForUser", () => {
+  beforeEach(() => {
+    mockedFindMany.mockReset();
+    mockedFindMany.mockResolvedValue([]);
+  });
+
+  it("passes take: 200 by default and filters to favorite items for the user", async () => {
+    await getFavoriteItemsForUser("user_1");
+
+    expect(mockedFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userId: "user_1", isFavorite: true },
+        orderBy: { updatedAt: "desc" },
+        take: 200
+      })
+    );
+  });
+
+  it("uses an explicit limit when one is provided", async () => {
+    await getFavoriteItemsForUser("user_1", 7);
+
+    expect(mockedFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({ take: 7 })
     );
   });
 });

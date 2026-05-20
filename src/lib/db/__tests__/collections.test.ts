@@ -27,6 +27,7 @@ import {
   deleteCollectionForUser,
   getCollectionsPagedForUser,
   getCollectionWithItemsForUser,
+  getFavoriteCollectionsForUser,
   getUserCollectionsList,
   setCollectionFavoriteForUser,
   updateCollectionForUser,
@@ -364,6 +365,35 @@ describe("getCollectionsPagedForUser", () => {
 
     expect(mockedFindMany).toHaveBeenCalledWith(
       expect.objectContaining({ skip: 0, take: 21 })
+    );
+  });
+});
+
+describe("getFavoriteCollectionsForUser", () => {
+  beforeEach(() => {
+    mockedFindMany.mockReset();
+    mockedFindMany.mockResolvedValue([]);
+    mockedItemCollectionFindMany.mockReset();
+    mockedItemCollectionFindMany.mockResolvedValue([]);
+  });
+
+  it("passes take: 200 by default and filters to favorite collections for the user", async () => {
+    await getFavoriteCollectionsForUser("user_1");
+
+    expect(mockedFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userId: "user_1", isFavorite: true },
+        orderBy: { updatedAt: "desc" },
+        take: 200
+      })
+    );
+  });
+
+  it("uses an explicit limit when one is provided", async () => {
+    await getFavoriteCollectionsForUser("user_1", 9);
+
+    expect(mockedFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({ take: 9 })
     );
   });
 });

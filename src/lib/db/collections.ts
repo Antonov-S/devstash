@@ -1,5 +1,6 @@
 import "server-only";
 
+import { FAVORITES_COLLECTIONS_LIMIT } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
 import {
   getItemsForUserByCollectionId,
@@ -116,9 +117,10 @@ export async function getAllCollectionsForUser(
 }
 
 export async function getFavoriteCollectionsForUser(
-  userId: string
+  userId: string,
+  limit: number = FAVORITES_COLLECTIONS_LIMIT
 ): Promise<CollectionWithMeta[]> {
-  return fetchCollectionsWithMeta(userId, { isFavorite: true });
+  return fetchCollectionsWithMeta(userId, { take: limit, isFavorite: true });
 }
 
 export type PagedCollections = {
