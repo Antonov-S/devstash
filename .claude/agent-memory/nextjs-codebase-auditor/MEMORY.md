@@ -1,1 +1,1 @@
-- [DevStash Project Conventions](project_conventions.md) — Safe patterns, known stubs, architecture decisions, and false-positive traps for DevStash audits
+- [DevStash Project Conventions](project-conventions.md) — Confirmed-safe patterns, architecture decisions, Vitest workarounds, auth split config, R2 security, and remaining open audit findings
