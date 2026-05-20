@@ -1,3 +1,6 @@
+import { Star } from "lucide-react";
+import Link from "next/link";
+
 import { NewCollectionDialog } from "@/components/collections/new-collection-dialog";
 import { NewItemDialog } from "@/components/items/new-item-dialog";
 import { SearchTrigger } from "@/components/search/search-trigger";
@@ -15,6 +18,13 @@ export function TopBar() {
       </div>
 
       <div className="flex shrink-0 items-center gap-2">
+        <Link
+          href="/favorites"
+          aria-label="Favorites"
+          className="inline-flex size-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <Star className="size-4" />
+        </Link>
         <NewCollectionDialog />
         <NewItemDialog />
       </div>

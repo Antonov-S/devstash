@@ -3,6 +3,7 @@ import { describe, it, expect } from "vitest";
 import {
   formatDateLong,
   formatDateMedium,
+  formatDateRelative,
   formatDateShort
 } from "@/lib/format-date";
 
@@ -99,5 +100,54 @@ describe("formatDateMedium", () => {
     const now = NOON(2026, 4, 18);
     const future = NOON(2026, 4, 25);
     expect(formatDateMedium(future, now)).toBe("May 25, 2026");
+  });
+});
+
+describe("formatDateRelative", () => {
+  it("returns Today for the same local day", () => {
+    const now = NOON(2026, 4, 18);
+    expect(formatDateRelative(now, now)).toBe("Today");
+  });
+
+  it("returns Yesterday for one calendar day earlier", () => {
+    const now = NOON(2026, 4, 18);
+    const yesterday = NOON(2026, 4, 17);
+    expect(formatDateRelative(yesterday, now)).toBe("Yesterday");
+  });
+
+  it("returns N days ago for 2–6 days earlier", () => {
+    const now = NOON(2026, 4, 18);
+    expect(formatDateRelative(NOON(2026, 4, 16), now)).toBe("2 days ago");
+    expect(formatDateRelative(NOON(2026, 4, 12), now)).toBe("6 days ago");
+  });
+
+  it("returns 1 week ago for 7–13 days earlier", () => {
+    const now = NOON(2026, 4, 18);
+    expect(formatDateRelative(NOON(2026, 4, 11), now)).toBe("1 week ago");
+    expect(formatDateRelative(NOON(2026, 4, 5), now)).toBe("1 week ago");
+  });
+
+  it("returns N weeks ago for 14–27 days earlier", () => {
+    const now = NOON(2026, 4, 28);
+    expect(formatDateRelative(NOON(2026, 4, 14), now)).toBe("2 weeks ago");
+    expect(formatDateRelative(NOON(2026, 4, 7), now)).toBe("3 weeks ago");
+  });
+
+  it("returns N months ago for 28–364 days earlier", () => {
+    const now = NOON(2026, 4, 18);
+    expect(formatDateRelative(NOON(2026, 3, 18), now)).toBe("1 month ago");
+    expect(formatDateRelative(NOON(2026, 1, 18), now)).toBe("2 months ago");
+  });
+
+  it("falls back to Mon D, YYYY for very old dates", () => {
+    const now = NOON(2026, 4, 18);
+    const ancient = NOON(2024, 0, 5);
+    expect(formatDateRelative(ancient, now)).toBe("Jan 5, 2024");
+  });
+
+  it("falls back to Mon D, YYYY for future dates", () => {
+    const now = NOON(2026, 4, 18);
+    const future = NOON(2026, 4, 25);
+    expect(formatDateRelative(future, now)).toBe("May 25, 2026");
   });
 });

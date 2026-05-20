@@ -1,12 +1,27 @@
-# Current Feature
+# Current Feature: Favorites Page
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
+- Add star icon button to TopBar linking to `/favorites`
+- Create `/favorites` route inside `(dashboard)` shell with auth protection
+- Fetch all user favorited items and collections
+- Compact list view (VS Code/terminal style, not cards)
+- Each row: type icon, title, type badge, date added
+- Separate sections for items and collections with counts
+- Click item opens `ItemDrawer`, click collection navigates to `/collections/[id]`
+- Empty state when no favorites exist
+- Sort by most recently favorited (`updatedAt`)
+
 ## Notes
+
+- UI style: monospace or semi-monospace font, minimal padding, high density, subtle hover states
+- No cards or heavy borders — clean lines only
+- "Date added" for items = `updatedAt` (when isFavorite was last toggled); for collections = `updatedAt`
+- Favorite toggle for items is stubbed in the drawer action bar — this feature should wire it up if not already done
 
 ## History
 
