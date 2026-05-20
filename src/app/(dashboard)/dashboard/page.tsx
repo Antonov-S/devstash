@@ -15,6 +15,10 @@ import {
   getPinnedItemsForUser,
   getRecentItemsForUser
 } from "@/lib/db/items";
+import {
+  DASHBOARD_COLLECTIONS_LIMIT,
+  DASHBOARD_RECENT_ITEMS_LIMIT
+} from "@/lib/pagination";
 
 export const dynamic = "force-dynamic";
 
@@ -29,10 +33,10 @@ export default async function DashboardPage() {
     recentItems,
     itemStats
   ] = await Promise.all([
-    getRecentCollectionsForUser(userId, 6),
+    getRecentCollectionsForUser(userId, DASHBOARD_COLLECTIONS_LIMIT),
     getCollectionStatsForUser(userId),
     getPinnedItemsForUser(userId),
-    getRecentItemsForUser(userId, 10),
+    getRecentItemsForUser(userId, DASHBOARD_RECENT_ITEMS_LIMIT),
     getItemStatsForUser(userId)
   ]);
 

@@ -141,32 +141,54 @@ export async function getSystemItemTypeByName(
   return type;
 }
 
+export type PagedItems = {
+  items: ItemWithMeta[];
+  totalCount: number;
+};
+
+export type ItemPageOptions = {
+  skip?: number;
+  take?: number;
+};
+
 export async function getItemsForUserByTypeId(
   userId: string,
   itemTypeId: string,
-  limit = 200
-): Promise<ItemWithMeta[]> {
-  const rows = await prisma.item.findMany({
-    where: { userId, itemTypeId },
-    orderBy: [{ lastUsedAt: { sort: "desc", nulls: "last" } }, { updatedAt: "desc" }],
-    take: limit,
-    select: itemSelect
-  });
-  return rows.map(toItemWithMeta);
+  options: ItemPageOptions = {}
+): Promise<PagedItems> {
+  const { skip = 0, take = 200 } = options;
+  const where = { userId, itemTypeId };
+  const [rows, totalCount] = await Promise.all([
+    prisma.item.findMany({
+      where,
+      orderBy: [{ lastUsedAt: { sort: "desc", nulls: "last" } }, { updatedAt: "desc" }],
+      skip,
+      take,
+      select: itemSelect
+    }),
+    prisma.item.count({ where })
+  ]);
+  return { items: rows.map(toItemWithMeta), totalCount };
 }
 
 export async function getItemsForUserByCollectionId(
   userId: string,
   collectionId: string,
-  limit = 200
-): Promise<ItemWithMeta[]> {
-  const rows = await prisma.item.findMany({
-    where: { userId, collections: { some: { collectionId } } },
-    orderBy: [{ lastUsedAt: { sort: "desc", nulls: "last" } }, { updatedAt: "desc" }],
-    take: limit,
-    select: itemSelect
-  });
-  return rows.map(toItemWithMeta);
+  options: ItemPageOptions = {}
+): Promise<PagedItems> {
+  const { skip = 0, take = 200 } = options;
+  const where = { userId, collections: { some: { collectionId } } };
+  const [rows, totalCount] = await Promise.all([
+    prisma.item.findMany({
+      where,
+      orderBy: [{ lastUsedAt: { sort: "desc", nulls: "last" } }, { updatedAt: "desc" }],
+      skip,
+      take,
+      select: itemSelect
+    }),
+    prisma.item.count({ where })
+  ]);
+  return { items: rows.map(toItemWithMeta), totalCount };
 }
 
 export type ItemCollectionSummary = {
