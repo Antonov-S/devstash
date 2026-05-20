@@ -6,6 +6,7 @@ import { auth } from "@/auth";
 import {
   createCollectionForUser,
   deleteCollectionForUser,
+  setCollectionFavoriteForUser,
   updateCollectionForUser,
   type CollectionWithMeta
 } from "@/lib/db/collections";
@@ -115,6 +116,42 @@ export async function updateCollectionAction(
     return {
       success: false,
       error: "Could not update collection. Please try again."
+    };
+  }
+}
+
+export type SetCollectionFavoriteResult =
+  | { success: true; isFavorite: boolean }
+  | { success: false; error: string };
+
+export async function setCollectionFavoriteAction(
+  collectionId: string,
+  isFavorite: boolean
+): Promise<SetCollectionFavoriteResult> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, error: "You are not signed in." };
+  }
+
+  if (typeof collectionId !== "string" || !collectionId) {
+    return { success: false, error: "Invalid collection id" };
+  }
+
+  try {
+    const updated = await setCollectionFavoriteForUser(
+      session.user.id,
+      collectionId,
+      isFavorite
+    );
+    if (!updated) {
+      return { success: false, error: "Collection not found" };
+    }
+    return { success: true, isFavorite };
+  } catch (error) {
+    console.error("setCollectionFavoriteAction failed", error);
+    return {
+      success: false,
+      error: "Could not update favorite. Please try again."
     };
   }
 }

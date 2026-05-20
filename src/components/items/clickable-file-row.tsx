@@ -15,6 +15,7 @@ import {
 import { useState } from "react";
 
 import { ItemDrawer } from "@/components/items/item-drawer";
+import { QuickFavoriteButton } from "@/components/items/quick-favorite-button";
 import type { ItemWithMeta } from "@/lib/db/items";
 import { formatDateMedium } from "@/lib/format-date";
 import { formatBytes, getExtension } from "@/lib/upload-constraints";
@@ -74,6 +75,16 @@ export function ClickableFileRow({ item }: { item: ItemWithMeta }) {
             </div>
           </div>
         </button>
+        <QuickFavoriteButton
+          itemId={item.id}
+          initialFavorite={item.isFavorite}
+          label={item.title}
+          className={
+            item.isFavorite
+              ? "shrink-0"
+              : "shrink-0 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100"
+          }
+        />
         <a
           href={downloadHref}
           download={item.fileName ?? undefined}

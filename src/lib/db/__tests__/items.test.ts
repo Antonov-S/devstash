@@ -8,6 +8,7 @@ vi.mock("@/lib/prisma", () => ({
       count: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
+      updateMany: vi.fn(),
       deleteMany: vi.fn()
     },
     itemType: {
@@ -37,6 +38,7 @@ import {
   getItemsForUserByCollectionId,
   getItemsForUserByTypeId,
   getPinnedItemsForUser,
+  setItemFavoriteForUser,
   updateItemForUser
 } from "@/lib/db/items";
 
@@ -58,6 +60,9 @@ const mockedTransaction = prisma.$transaction as unknown as ReturnType<
   typeof vi.fn
 >;
 const mockedItemCount = prisma.item.count as unknown as ReturnType<
+  typeof vi.fn
+>;
+const mockedItemUpdateMany = prisma.item.updateMany as unknown as ReturnType<
   typeof vi.fn
 >;
 
@@ -670,5 +675,42 @@ describe("getItemsForUserByCollectionId", () => {
     expect(items).toHaveLength(1);
     expect(items[0].id).toBe("item_1");
     expect(items[0].tags).toEqual(["react", "auth"]);
+  });
+});
+
+describe("setItemFavoriteForUser", () => {
+  beforeEach(() => {
+    mockedItemUpdateMany.mockReset();
+  });
+
+  it("scopes the update by id + userId and returns true when a row was updated", async () => {
+    mockedItemUpdateMany.mockResolvedValue({ count: 1 });
+
+    const result = await setItemFavoriteForUser("user_1", "item_1", true);
+
+    expect(mockedItemUpdateMany).toHaveBeenCalledWith({
+      where: { id: "item_1", userId: "user_1" },
+      data: { isFavorite: true }
+    });
+    expect(result).toBe(true);
+  });
+
+  it("returns false when no row matched (wrong owner or missing id)", async () => {
+    mockedItemUpdateMany.mockResolvedValue({ count: 0 });
+
+    const result = await setItemFavoriteForUser("user_1", "item_missing", true);
+
+    expect(result).toBe(false);
+  });
+
+  it("forwards isFavorite=false through to the data payload", async () => {
+    mockedItemUpdateMany.mockResolvedValue({ count: 1 });
+
+    await setItemFavoriteForUser("user_1", "item_1", false);
+
+    expect(mockedItemUpdateMany).toHaveBeenCalledWith({
+      where: { id: "item_1", userId: "user_1" },
+      data: { isFavorite: false }
+    });
   });
 });

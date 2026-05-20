@@ -1,4 +1,4 @@
-import { Pin, Star } from "lucide-react";
+import { Pin } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import type { ItemWithMeta } from "@/lib/db/items";
@@ -33,9 +33,6 @@ export function ItemCard({ item }: { item: ItemWithMeta }) {
           </h3>
           {item.isPinned && (
             <Pin className="size-3.5 shrink-0 text-muted-foreground" />
-          )}
-          {item.isFavorite && (
-            <Star className="size-3.5 shrink-0 fill-yellow-400 text-yellow-400" />
           )}
         </div>
         {item.description && (

@@ -8,12 +8,18 @@ import type { ItemWithMeta } from "@/lib/db/items";
 
 export function ViewActionBar({
   cardItem,
+  isFavorite,
+  favoritePending,
+  onToggleFavorite,
   disabled,
   onCopy,
   onEdit,
   onDelete
 }: {
   cardItem: ItemWithMeta;
+  isFavorite: boolean;
+  favoritePending: boolean;
+  onToggleFavorite: () => void;
   disabled: boolean;
   onCopy: () => void;
   onEdit: () => void;
@@ -24,12 +30,14 @@ export function ViewActionBar({
       <Button
         variant="ghost"
         size="sm"
-        aria-pressed={cardItem.isFavorite}
-        disabled={disabled}
+        aria-pressed={isFavorite}
+        aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+        onClick={onToggleFavorite}
+        disabled={disabled || favoritePending}
       >
         <Star
           className={
-            cardItem.isFavorite ? "fill-yellow-400 text-yellow-400" : undefined
+            isFavorite ? "fill-yellow-400 text-yellow-400" : undefined
           }
           aria-hidden
         />

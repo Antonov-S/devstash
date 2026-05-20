@@ -7,18 +7,21 @@ vi.mock("@/auth", () => ({
 vi.mock("@/lib/db/collections", () => ({
   createCollectionForUser: vi.fn(),
   deleteCollectionForUser: vi.fn(),
-  updateCollectionForUser: vi.fn()
+  updateCollectionForUser: vi.fn(),
+  setCollectionFavoriteForUser: vi.fn()
 }));
 
 import { auth } from "@/auth";
 import {
   createCollectionForUser,
   deleteCollectionForUser,
+  setCollectionFavoriteForUser,
   updateCollectionForUser
 } from "@/lib/db/collections";
 import {
   createCollectionAction,
   deleteCollectionAction,
+  setCollectionFavoriteAction,
   updateCollectionAction
 } from "@/actions/collections";
 
@@ -30,6 +33,9 @@ const mockedDelete = deleteCollectionForUser as unknown as ReturnType<
   typeof vi.fn
 >;
 const mockedUpdate = updateCollectionForUser as unknown as ReturnType<
+  typeof vi.fn
+>;
+const mockedSetFavorite = setCollectionFavoriteForUser as unknown as ReturnType<
   typeof vi.fn
 >;
 
@@ -254,6 +260,80 @@ describe("deleteCollectionAction", () => {
     expect(result).toEqual({
       success: false,
       error: "Could not delete collection. Please try again."
+    });
+
+    errSpy.mockRestore();
+  });
+});
+
+describe("setCollectionFavoriteAction", () => {
+  beforeEach(() => {
+    mockedAuth.mockReset();
+    mockedSetFavorite.mockReset();
+  });
+
+  it("rejects when there is no session", async () => {
+    mockedAuth.mockResolvedValue(null);
+
+    const result = await setCollectionFavoriteAction("coll_1", true);
+
+    expect(result).toEqual({ success: false, error: "You are not signed in." });
+    expect(mockedSetFavorite).not.toHaveBeenCalled();
+  });
+
+  it("rejects when collectionId is empty", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+
+    const result = await setCollectionFavoriteAction("", true);
+
+    expect(result).toEqual({ success: false, error: "Invalid collection id" });
+    expect(mockedSetFavorite).not.toHaveBeenCalled();
+  });
+
+  it("returns 'Collection not found' when the db reports nothing was updated", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+    mockedSetFavorite.mockResolvedValue(false);
+
+    const result = await setCollectionFavoriteAction("coll_missing", true);
+
+    expect(result).toEqual({ success: false, error: "Collection not found" });
+    expect(mockedSetFavorite).toHaveBeenCalledWith(
+      "user_1",
+      "coll_missing",
+      true
+    );
+  });
+
+  it("returns success and echoes isFavorite when the row was updated", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+    mockedSetFavorite.mockResolvedValue(true);
+
+    const result = await setCollectionFavoriteAction("coll_1", true);
+
+    expect(result).toEqual({ success: true, isFavorite: true });
+    expect(mockedSetFavorite).toHaveBeenCalledWith("user_1", "coll_1", true);
+  });
+
+  it("forwards a false toggle through to the db helper", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+    mockedSetFavorite.mockResolvedValue(true);
+
+    const result = await setCollectionFavoriteAction("coll_1", false);
+
+    expect(result).toEqual({ success: true, isFavorite: false });
+    expect(mockedSetFavorite).toHaveBeenCalledWith("user_1", "coll_1", false);
+  });
+
+  it("returns a generic error when the db function throws", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+    mockedSetFavorite.mockRejectedValue(new Error("db down"));
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const result = await setCollectionFavoriteAction("coll_1", true);
+
+    expect(result).toEqual({
+      success: false,
+      error: "Could not update favorite. Please try again."
     });
 
     errSpy.mockRestore();

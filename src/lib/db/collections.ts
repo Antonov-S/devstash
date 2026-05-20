@@ -237,6 +237,18 @@ export async function updateCollectionForUser(
   return result.count > 0;
 }
 
+export async function setCollectionFavoriteForUser(
+  userId: string,
+  collectionId: string,
+  isFavorite: boolean
+): Promise<boolean> {
+  const result = await prisma.collection.updateMany({
+    where: { id: collectionId, userId },
+    data: { isFavorite }
+  });
+  return result.count > 0;
+}
+
 export async function deleteCollectionForUser(
   userId: string,
   collectionId: string

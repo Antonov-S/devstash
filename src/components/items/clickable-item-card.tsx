@@ -5,6 +5,7 @@ import { useState } from "react";
 import { ItemCard } from "@/components/dashboard/item-card";
 import { ItemDrawer } from "@/components/items/item-drawer";
 import { QuickCopyButton } from "@/components/items/quick-copy-button";
+import { QuickFavoriteButton } from "@/components/items/quick-favorite-button";
 import type { ItemWithMeta } from "@/lib/db/items";
 
 const TYPES_WITH_CONTENT_COPY = new Set([
@@ -36,6 +37,16 @@ export function ClickableItemCard({ item }: { item: ItemWithMeta }) {
         >
           <ItemCard item={item} />
         </button>
+        <QuickFavoriteButton
+          itemId={item.id}
+          initialFavorite={item.isFavorite}
+          label={item.title}
+          className={
+            item.isFavorite
+              ? "absolute top-3 right-3"
+              : "absolute top-3 right-3 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100"
+          }
+        />
         {copyText && (
           <QuickCopyButton
             text={copyText}

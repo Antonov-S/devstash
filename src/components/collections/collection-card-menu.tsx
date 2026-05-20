@@ -1,11 +1,14 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { MoreHorizontal, Pencil, Star, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { deleteCollectionAction } from "@/actions/collections";
+import {
+  deleteCollectionAction,
+  setCollectionFavoriteAction
+} from "@/actions/collections";
 import { DeleteCollectionDialog } from "@/components/collections/delete-collection-dialog";
 import { EditCollectionDialog } from "@/components/collections/edit-collection-dialog";
 import {
@@ -29,6 +32,12 @@ export function CollectionCardMenu({ collection }: CollectionCardMenuProps) {
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, startDeleting] = useTransition();
+  const [isFavorite, setIsFavorite] = useState(collection.isFavorite);
+  const [, startToggleFavorite] = useTransition();
+
+  useEffect(() => {
+    setIsFavorite(collection.isFavorite);
+  }, [collection.id, collection.isFavorite]);
 
   function stop(event: React.SyntheticEvent) {
     event.preventDefault();
@@ -48,6 +57,21 @@ export function CollectionCardMenu({ collection }: CollectionCardMenuProps) {
     });
   }
 
+  function handleToggleFavorite() {
+    const next = !isFavorite;
+    const previous = isFavorite;
+    setIsFavorite(next);
+    startToggleFavorite(async () => {
+      const result = await setCollectionFavoriteAction(collection.id, next);
+      if (!result.success) {
+        setIsFavorite(previous);
+        toast.error(result.error);
+        return;
+      }
+      router.refresh();
+    });
+  }
+
   return (
     <>
       <div
@@ -63,17 +87,13 @@ export function CollectionCardMenu({ collection }: CollectionCardMenuProps) {
             <MoreHorizontal className="size-4" aria-hidden />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-44">
-            <DropdownMenuItem onClick={() => toast.info("Favorites coming soon")}>
+            <DropdownMenuItem onClick={handleToggleFavorite}>
               <Star
                 className={
-                  collection.isFavorite
-                    ? "fill-yellow-400 text-yellow-400"
-                    : undefined
+                  isFavorite ? "fill-yellow-400 text-yellow-400" : undefined
                 }
               />
-              <span>
-                {collection.isFavorite ? "Unfavorite" : "Favorite"}
-              </span>
+              <span>{isFavorite ? "Unfavorite" : "Favorite"}</span>
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setEditOpen(true)}>
               <Pencil />

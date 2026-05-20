@@ -4,7 +4,11 @@ import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
-import { deleteItemAction, updateItemAction } from "@/actions/items";
+import {
+  deleteItemAction,
+  setItemFavoriteAction,
+  updateItemAction
+} from "@/actions/items";
 import { DeleteItemDialog } from "@/components/items/delete-item-dialog";
 import { ItemDrawerBody } from "@/components/items/item-drawer-body";
 import { ItemDrawerSkeleton } from "@/components/items/item-drawer-skeleton";
@@ -49,6 +53,8 @@ export function ItemDrawer({ cardItem, open, onOpenChange }: Props) {
   const [saving, startSaving] = useTransition();
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, startDeleting] = useTransition();
+  const [isFavorite, setIsFavorite] = useState(cardItem.isFavorite);
+  const [favoritePending, startToggleFavorite] = useTransition();
 
   useEffect(() => {
     if (!open || detail) return;
@@ -83,6 +89,10 @@ export function ItemDrawer({ cardItem, open, onOpenChange }: Props) {
       setEdit(null);
     }
   }, [open]);
+
+  useEffect(() => {
+    setIsFavorite(cardItem.isFavorite);
+  }, [cardItem.id, cardItem.isFavorite]);
 
   const Icon = iconMap[cardItem.itemType.icon] ?? null;
   const typeName = (detail?.itemType.name ?? cardItem.itemType.name).toLowerCase();
@@ -135,6 +145,21 @@ export function ItemDrawer({ cardItem, open, onOpenChange }: Props) {
       setMode("view");
       setEdit(null);
       toast.success("Item updated");
+      router.refresh();
+    });
+  }
+
+  function handleToggleFavorite() {
+    const next = !isFavorite;
+    const previous = isFavorite;
+    setIsFavorite(next);
+    startToggleFavorite(async () => {
+      const result = await setItemFavoriteAction(cardItem.id, next);
+      if (!result.success) {
+        setIsFavorite(previous);
+        toast.error(result.error);
+        return;
+      }
       router.refresh();
     });
   }
@@ -203,6 +228,9 @@ export function ItemDrawer({ cardItem, open, onOpenChange }: Props) {
           {mode === "view" ? (
             <ViewActionBar
               cardItem={cardItem}
+              isFavorite={isFavorite}
+              favoritePending={favoritePending}
+              onToggleFavorite={handleToggleFavorite}
               disabled={loading || !detail}
               onCopy={handleCopy}
               onEdit={handleStartEdit}
