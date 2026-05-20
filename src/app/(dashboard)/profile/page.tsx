@@ -2,10 +2,7 @@ import { redirect } from "next/navigation";
 import { CalendarDays, Code2, FolderOpen, Mail } from "lucide-react";
 
 import { auth } from "@/auth";
-import { Separator } from "@/components/ui/separator";
 import { UserAvatar } from "@/components/user-avatar";
-import { ChangePasswordDialog } from "@/components/profile/change-password-dialog";
-import { DeleteAccountDialog } from "@/components/profile/delete-account-dialog";
 import { iconMap } from "@/lib/icons";
 import { getCollectionStatsForUser } from "@/lib/db/collections";
 import { formatDateLong } from "@/lib/format-date";
@@ -43,7 +40,7 @@ export default async function ProfilePage() {
       <div>
         <h1 className="text-2xl font-bold text-foreground">Profile</h1>
         <p className="text-sm text-muted-foreground">
-          Manage your account settings
+          View your account information and usage
         </p>
       </div>
 
@@ -80,23 +77,6 @@ export default async function ProfilePage() {
             </span>
           </div>
         </div>
-
-        <Separator className="my-4" />
-
-        {profile.hasPassword ? (
-          <div className="flex flex-row gap-3">
-            <ChangePasswordDialog />
-            <DeleteAccountDialog email={profile.email} />
-          </div>
-        ) : (
-          <div className="flex flex-col gap-3">
-            <p className="text-xs text-muted-foreground">
-              You sign in with GitHub. There&apos;s no password to manage for
-              this account.
-            </p>
-            <DeleteAccountDialog email={profile.email} />
-          </div>
-        )}
       </section>
 
       <section className="rounded-xl bg-card p-6 ring-1 ring-foreground/10">
