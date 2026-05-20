@@ -2,6 +2,7 @@ import "server-only";
 
 import type { ContentType } from "@/generated/prisma/enums";
 
+import { FAVORITES_ITEMS_LIMIT } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
 import { deleteObjectFromR2, keyFromPublicUrl } from "@/lib/r2";
 import type { SystemTypeName } from "@/lib/system-types";
@@ -106,11 +107,13 @@ function toItemWithMeta(row: ItemRow): ItemWithMeta {
 }
 
 export async function getFavoriteItemsForUser(
-  userId: string
+  userId: string,
+  limit: number = FAVORITES_ITEMS_LIMIT
 ): Promise<ItemWithMeta[]> {
   const rows = await prisma.item.findMany({
     where: { userId, isFavorite: true },
     orderBy: { updatedAt: "desc" },
+    take: limit,
     select: itemSelect
   });
   return rows.map(toItemWithMeta);
