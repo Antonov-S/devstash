@@ -1,12 +1,38 @@
-# Current Feature
+# Current Feature: Homepage (Real App)
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
+- Replace the `<h1>Devstash</h1>` placeholder at `src/app/page.tsx` with a 7-section marketing homepage (Navigation, Hero, Features, AI, Pricing, CTA, Footer) that matches the static prototype in `prototypes/homepage/`.
+- `src/app/page.tsx` stays a **server component** that calls `auth()` once and threads `isAuthenticated` into the nav, hero, pricing, and CTA so every "Start for free"-style CTA flips to "Open dashboard" → `/dashboard` when signed in (Sign In link hides).
+- Co-locate the 10 new components under `src/components/marketing/` per the spec's split table (`marketing-nav` client, `hero-section` server, `chaos-stage` client lazy-loaded `ssr: false`, `dashboard-preview` server, `features-section` server, `ai-section` server, `pricing-section` client owning the Monthly/Yearly `useState`, `cta-section` server, `marketing-footer` server, `reveal` client wrapper).
+- Style with **Tailwind v4 utilities + shadcn primitives only** — no `homepage.css` / `.module.css`. Reuse existing `globals.css` tokens (`bg-background`/`bg-card`/`bg-muted`/`text-muted-foreground`/`border-border`) instead of porting `--bg-1` / `--fg-dim`. shadcn `Button` (`default`/`outline`/`ghost`) + `Badge` (Pro Feature, Most Popular, Save 25%).
+- Use **live-app item-type colors** (not the prototype's spec values) so feature cards visually match the dashboard: prompt `#8b5cf6` (purple), command `#f97316` (orange), note `#fde047` (yellow). Single source of truth: import from `prisma/seed.ts` or extract into `src/lib/system-type-colors.ts` (check before creating).
+- Move keyframes (`arrow-pulse`, `tag-in`, `.reveal` opacity+translateY transition) from `prototypes/homepage/styles.css` into `src/app/globals.css` under `@layer utilities`, wrapped in a `@media (prefers-reduced-motion: reduce)` no-op.
+- Port `ChaosIcon` rAF loop + pointer-repel verbatim into `chaos-stage.tsx` with `useEffect` setup/teardown, `ResizeObserver` bounds tracking, `visibilitychange` pause, and reduced-motion static-spawn fallback. Define the 8 `CHAOS_ICONS` (inline SVG strings + color + name) as a module-level const.
+- Export `metadata` from `src/app/page.tsx` (title: `"DevStash — One hub for all your dev knowledge"` + the prototype's description).
+- Match prototype responsive breakpoints in Tailwind defaults: `lg:` 3-col features + 3-col hero visual, `md:` and below features 2-col + AI single-col + hero stacks vertically with arrow rotated 90° (`md:rotate-0`), nav links hide below `md:`, `sm:` features + pricing single-col + footer 2-col with brand spanning full width.
+- Anchor links land correctly under the fixed nav (`scroll-mt-20` on section headings).
+- Live-verify in browser at desktop + mobile: chaos icons animate/repel/pause-on-hidden-tab, nav backdrop intensifies past 20px scroll, pricing toggle swaps `$8 ↔ $6` + billed note, signed-in session swaps every CTA correctly.
+- `npm run test:run` + `npm run build` still pass.
+
 ## Notes
+
+- **Marketing-only scope** — no new server actions, db helpers, or API routes. The prototype files at `prototypes/homepage/` stay in the repo for reference; do not delete them.
+- Page renders for both anonymous and authenticated visitors. Auth-aware swaps: nav Sign In + Get Started → single "Go to dashboard"; hero "Start for Free" → "Open dashboard"; pricing Free "Start free" → "Open dashboard"; CTA "Get DevStash Free" → `/dashboard`.
+- **Pro CTA limitation**: real billing isn't wired yet — Pro card "Upgrade to Pro" points to `/register` for anonymous AND `/settings#billing` placeholder for authenticated. If `/settings#billing` doesn't exist, point both to `/register` and leave a `// TODO` comment.
+- Footer Resources + Company columns are `#` placeholders for now with `// TODO: real links when these routes exist`. Product column has real hash links (`#features`, `#pricing`, `#ai`, `#`).
+- **Pricing toggle**: `useState<"monthly" | "yearly">` driving mapped strings — **not** JSX-conditional swap; keep both prices rendered via state-driven text so the structure stays stable.
+- **Reveal**: per-component `IntersectionObserver` is fine for ~16 elements; add `is-visible` class. A single shared observer via `useRef` would be ideal but not required.
+- Anything purely presentational (icons, headings, lists, badges) stays in **server** components — only the 4 interactive surfaces are client.
+- Gradient text ("Developer Knowledge") keeps `linear-gradient(135deg, #3b82f6 0%, #6366f1 50%, #f59e0b 100%)` via inline `style` + `bg-clip-text text-transparent`.
+- Per-card accent colors use inline `style={{ borderTopColor: color }}` or `style={{ ['--accent' as string]: color }}` + `border-t-[3px]` (Tailwind v4 arbitrary properties), not config-extended utilities.
+- Hero CTA "See Features →" → `#features` always (anonymous + authenticated).
+- Out of scope: real billing/upgrade flow, Changelog/Docs/Blog/Roadmap/Support/About/Privacy/Terms/Contact pages, newsletter signup, social proof/testimonials, light-mode visual polish, OG image.
+- Per `coding-standards.md` Testing section, components are excluded from Vitest — **no new tests required**, just verify in-browser + `npm run test:run` (existing 280 tests) + `npm run build` still pass.
 
 ## History
 
