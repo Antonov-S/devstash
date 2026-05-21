@@ -1,5 +1,6 @@
 import { Pin } from "lucide-react";
 
+import { QuickFavoriteButton } from "@/components/items/quick-favorite-button";
 import { Badge } from "@/components/ui/badge";
 import type { ItemWithMeta } from "@/lib/db/items";
 import { formatDateShort } from "@/lib/format-date";
@@ -27,12 +28,22 @@ export function ItemCard({ item }: { item: ItemWithMeta }) {
       )}
 
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-2">
           <h3 className="truncate text-[15px] font-medium leading-snug">
             {item.title}
           </h3>
+          <QuickFavoriteButton
+            itemId={item.id}
+            initialFavorite={item.isFavorite}
+            label={item.title}
+            className={
+              item.isFavorite
+                ? "shrink-0"
+                : "shrink-0 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100"
+            }
+          />
           {item.isPinned && (
-            <Pin className="size-3.5 shrink-0 text-muted-foreground" />
+            <Pin className="ml-1 size-3.5 shrink-0 text-muted-foreground" />
           )}
         </div>
         {item.description && (

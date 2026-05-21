@@ -4,22 +4,25 @@ import { Check, Copy, Pencil, Pin, Star, Trash2, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { PendingButton } from "@/components/ui/pending-button";
-import type { ItemWithMeta } from "@/lib/db/items";
 
 export function ViewActionBar({
-  cardItem,
   isFavorite,
   favoritePending,
   onToggleFavorite,
+  isPinned,
+  pinPending,
+  onTogglePin,
   disabled,
   onCopy,
   onEdit,
   onDelete
 }: {
-  cardItem: ItemWithMeta;
   isFavorite: boolean;
   favoritePending: boolean;
   onToggleFavorite: () => void;
+  isPinned: boolean;
+  pinPending: boolean;
+  onTogglePin: () => void;
   disabled: boolean;
   onCopy: () => void;
   onEdit: () => void;
@@ -46,10 +49,15 @@ export function ViewActionBar({
       <Button
         variant="ghost"
         size="sm"
-        aria-pressed={cardItem.isPinned}
-        disabled={disabled}
+        aria-pressed={isPinned}
+        aria-label={isPinned ? "Unpin item" : "Pin item"}
+        onClick={onTogglePin}
+        disabled={disabled || pinPending}
       >
-        <Pin aria-hidden />
+        <Pin
+          className={isPinned ? "fill-current text-foreground" : undefined}
+          aria-hidden
+        />
         Pin
       </Button>
       <Button variant="ghost" size="sm" onClick={onCopy} disabled={disabled}>

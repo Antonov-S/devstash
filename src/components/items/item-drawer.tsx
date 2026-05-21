@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import {
   deleteItemAction,
   setItemFavoriteAction,
+  setItemPinnedAction,
   updateItemAction
 } from "@/actions/items";
 import { DeleteItemDialog } from "@/components/items/delete-item-dialog";
@@ -55,6 +56,8 @@ export function ItemDrawer({ cardItem, open, onOpenChange }: Props) {
   const [deleting, startDeleting] = useTransition();
   const [isFavorite, setIsFavorite] = useState(cardItem.isFavorite);
   const [favoritePending, startToggleFavorite] = useTransition();
+  const [isPinned, setIsPinned] = useState(cardItem.isPinned);
+  const [pinPending, startTogglePin] = useTransition();
 
   useEffect(() => {
     if (!open || detail) return;
@@ -93,6 +96,10 @@ export function ItemDrawer({ cardItem, open, onOpenChange }: Props) {
   useEffect(() => {
     setIsFavorite(cardItem.isFavorite);
   }, [cardItem.id, cardItem.isFavorite]);
+
+  useEffect(() => {
+    setIsPinned(cardItem.isPinned);
+  }, [cardItem.id, cardItem.isPinned]);
 
   const Icon = iconMap[cardItem.itemType.icon] ?? null;
   const typeName = (detail?.itemType.name ?? cardItem.itemType.name).toLowerCase();
@@ -164,6 +171,21 @@ export function ItemDrawer({ cardItem, open, onOpenChange }: Props) {
     });
   }
 
+  function handleTogglePin() {
+    const next = !isPinned;
+    const previous = isPinned;
+    setIsPinned(next);
+    startTogglePin(async () => {
+      const result = await setItemPinnedAction(cardItem.id, next);
+      if (!result.success) {
+        setIsPinned(previous);
+        toast.error(result.error);
+        return;
+      }
+      router.refresh();
+    });
+  }
+
   function handleDelete() {
     if (!detail) return;
     startDeleting(async () => {
@@ -227,10 +249,12 @@ export function ItemDrawer({ cardItem, open, onOpenChange }: Props) {
 
           {mode === "view" ? (
             <ViewActionBar
-              cardItem={cardItem}
               isFavorite={isFavorite}
               favoritePending={favoritePending}
               onToggleFavorite={handleToggleFavorite}
+              isPinned={isPinned}
+              pinPending={pinPending}
+              onTogglePin={handleTogglePin}
               disabled={loading || !detail}
               onCopy={handleCopy}
               onEdit={handleStartEdit}

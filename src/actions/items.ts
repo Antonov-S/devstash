@@ -8,6 +8,7 @@ import {
   createItemForUser,
   deleteItemForUser,
   setItemFavoriteForUser,
+  setItemPinnedForUser,
   updateItemForUser,
   type ItemDetail
 } from "@/lib/db/items";
@@ -278,6 +279,39 @@ export async function setItemFavoriteAction(
   } catch (error) {
     console.error("setItemFavoriteAction failed", error);
     return { success: false, error: "Could not update favorite. Please try again." };
+  }
+}
+
+export type SetItemPinnedResult =
+  | { success: true; isPinned: boolean }
+  | { success: false; error: string };
+
+export async function setItemPinnedAction(
+  itemId: string,
+  isPinned: boolean
+): Promise<SetItemPinnedResult> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, error: "You are not signed in." };
+  }
+
+  if (typeof itemId !== "string" || !itemId) {
+    return { success: false, error: "Invalid item id" };
+  }
+
+  try {
+    const updated = await setItemPinnedForUser(
+      session.user.id,
+      itemId,
+      isPinned
+    );
+    if (!updated) {
+      return { success: false, error: "Item not found" };
+    }
+    return { success: true, isPinned };
+  } catch (error) {
+    console.error("setItemPinnedAction failed", error);
+    return { success: false, error: "Could not update pin. Please try again." };
   }
 }
 

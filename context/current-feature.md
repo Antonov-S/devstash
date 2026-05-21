@@ -1,12 +1,27 @@
-# Current Feature
+# Current Feature: Pinned Items
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
+- Add `toggleItemPin` (or `setItemPinnedAction`) server action mirroring the existing favorite-toggle pattern
+- Wire up the existing static Pin button in `ItemDrawer` action bar with optimistic update + rollback + `router.refresh()` + sonner toast
+- Pinned items sort to the top of all item listings (dashboard pinned section already exists; ensure other surfaces respect `isPinned` order)
+- Items only — no pin support for collections
+- `Pin` indicator on `ItemCard` (and other card surfaces) stays as a static badge — no new click target there
+
 ## Notes
+
+- Spec: `context/features/pinned-spec.md`
+- Follow the favorite-toggle pattern (commit `0477a56` / history entry "Favorite toggle"):
+  - Action in `src/actions/items.ts` returning `{ success, data | error }`, `auth()`-gated, delegates to db helper
+  - DB helper in `src/lib/db/items.ts` using ownership-scoped `prisma.item.updateMany({ where: { id, userId }, data: { isPinned } })`
+  - Drawer wires `ViewActionBar` Pin button with `isPinned` / `pinPending` / `onTogglePin` props + `aria-pressed`
+  - Optimistic update + previous-value rollback on error + `router.refresh()` on success
+- Pinned-items dashboard section already uses `getPinnedItemsForUser` — should keep working automatically once items can be pinned
+- Vitest coverage to add: action tests (no session, empty id, not-found, success true, success false, generic-error) + db helper tests (scoping shape, no-match returns false, `isPinned=false` passthrough)
 
 ## History
 

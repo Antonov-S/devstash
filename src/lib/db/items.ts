@@ -138,7 +138,11 @@ export async function getRecentItemsForUser(
 ): Promise<ItemWithMeta[]> {
   const rows = await prisma.item.findMany({
     where: { userId },
-    orderBy: [{ lastUsedAt: { sort: "desc", nulls: "last" } }, { updatedAt: "desc" }],
+    orderBy: [
+      { isPinned: "desc" },
+      { lastUsedAt: { sort: "desc", nulls: "last" } },
+      { updatedAt: "desc" }
+    ],
     take: limit,
     select: itemSelect
   });
@@ -175,7 +179,11 @@ export async function getItemsForUserByTypeId(
   const [rows, totalCount] = await Promise.all([
     prisma.item.findMany({
       where,
-      orderBy: [{ lastUsedAt: { sort: "desc", nulls: "last" } }, { updatedAt: "desc" }],
+      orderBy: [
+        { isPinned: "desc" },
+        { lastUsedAt: { sort: "desc", nulls: "last" } },
+        { updatedAt: "desc" }
+      ],
       skip,
       take,
       select: itemSelect
@@ -195,7 +203,11 @@ export async function getItemsForUserByCollectionId(
   const [rows, totalCount] = await Promise.all([
     prisma.item.findMany({
       where,
-      orderBy: [{ lastUsedAt: { sort: "desc", nulls: "last" } }, { updatedAt: "desc" }],
+      orderBy: [
+        { isPinned: "desc" },
+        { lastUsedAt: { sort: "desc", nulls: "last" } },
+        { updatedAt: "desc" }
+      ],
       skip,
       take,
       select: itemSelect
@@ -308,6 +320,18 @@ export async function setItemFavoriteForUser(
   const result = await prisma.item.updateMany({
     where: { id: itemId, userId },
     data: { isFavorite }
+  });
+  return result.count > 0;
+}
+
+export async function setItemPinnedForUser(
+  userId: string,
+  itemId: string,
+  isPinned: boolean
+): Promise<boolean> {
+  const result = await prisma.item.updateMany({
+    where: { id: itemId, userId },
+    data: { isPinned }
   });
   return result.count > 0;
 }
