@@ -8,7 +8,8 @@ vi.mock("@/lib/db/items", () => ({
   createItemForUser: vi.fn(),
   updateItemForUser: vi.fn(),
   deleteItemForUser: vi.fn(),
-  setItemFavoriteForUser: vi.fn()
+  setItemFavoriteForUser: vi.fn(),
+  setItemPinnedForUser: vi.fn()
 }));
 
 vi.mock("@/lib/db/collections", () => ({
@@ -25,6 +26,7 @@ import {
   createItemForUser,
   deleteItemForUser,
   setItemFavoriteForUser,
+  setItemPinnedForUser,
   updateItemForUser
 } from "@/lib/db/items";
 import { keyFromPublicUrl } from "@/lib/r2";
@@ -32,6 +34,7 @@ import {
   createItemAction,
   deleteItemAction,
   setItemFavoriteAction,
+  setItemPinnedAction,
   updateItemAction
 } from "@/actions/items";
 
@@ -40,6 +43,9 @@ const mockedCreate = createItemForUser as unknown as ReturnType<typeof vi.fn>;
 const mockedUpdate = updateItemForUser as unknown as ReturnType<typeof vi.fn>;
 const mockedDelete = deleteItemForUser as unknown as ReturnType<typeof vi.fn>;
 const mockedSetFavorite = setItemFavoriteForUser as unknown as ReturnType<
+  typeof vi.fn
+>;
+const mockedSetPinned = setItemPinnedForUser as unknown as ReturnType<
   typeof vi.fn
 >;
 const mockedVerifyCollections =
@@ -676,6 +682,76 @@ describe("setItemFavoriteAction", () => {
     expect(result).toEqual({
       success: false,
       error: "Could not update favorite. Please try again."
+    });
+
+    errSpy.mockRestore();
+  });
+});
+
+describe("setItemPinnedAction", () => {
+  beforeEach(() => {
+    mockedAuth.mockReset();
+    mockedSetPinned.mockReset();
+  });
+
+  it("rejects when there is no session", async () => {
+    mockedAuth.mockResolvedValue(null);
+
+    const result = await setItemPinnedAction("item_1", true);
+
+    expect(result).toEqual({ success: false, error: "You are not signed in." });
+    expect(mockedSetPinned).not.toHaveBeenCalled();
+  });
+
+  it("rejects when itemId is empty", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+
+    const result = await setItemPinnedAction("", true);
+
+    expect(result).toEqual({ success: false, error: "Invalid item id" });
+    expect(mockedSetPinned).not.toHaveBeenCalled();
+  });
+
+  it("returns 'Item not found' when the db reports nothing was updated", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+    mockedSetPinned.mockResolvedValue(false);
+
+    const result = await setItemPinnedAction("item_missing", true);
+
+    expect(result).toEqual({ success: false, error: "Item not found" });
+    expect(mockedSetPinned).toHaveBeenCalledWith("user_1", "item_missing", true);
+  });
+
+  it("returns success and echoes isPinned when the row was updated", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+    mockedSetPinned.mockResolvedValue(true);
+
+    const result = await setItemPinnedAction("item_1", true);
+
+    expect(result).toEqual({ success: true, isPinned: true });
+    expect(mockedSetPinned).toHaveBeenCalledWith("user_1", "item_1", true);
+  });
+
+  it("forwards a false toggle through to the db helper", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+    mockedSetPinned.mockResolvedValue(true);
+
+    const result = await setItemPinnedAction("item_1", false);
+
+    expect(result).toEqual({ success: true, isPinned: false });
+    expect(mockedSetPinned).toHaveBeenCalledWith("user_1", "item_1", false);
+  });
+
+  it("returns a generic error when the db function throws", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+    mockedSetPinned.mockRejectedValue(new Error("db down"));
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const result = await setItemPinnedAction("item_1", true);
+
+    expect(result).toEqual({
+      success: false,
+      error: "Could not update pin. Please try again."
     });
 
     errSpy.mockRestore();

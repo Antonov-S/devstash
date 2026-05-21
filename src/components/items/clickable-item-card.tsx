@@ -5,7 +5,6 @@ import { useState } from "react";
 import { ItemCard } from "@/components/dashboard/item-card";
 import { ItemDrawer } from "@/components/items/item-drawer";
 import { QuickCopyButton } from "@/components/items/quick-copy-button";
-import { QuickFavoriteButton } from "@/components/items/quick-favorite-button";
 import type { ItemWithMeta } from "@/lib/db/items";
 
 const TYPES_WITH_CONTENT_COPY = new Set([
@@ -26,27 +25,29 @@ export function ClickableItemCard({ item }: { item: ItemWithMeta }) {
   const [open, setOpen] = useState(false);
   const copyText = getCopyText(item);
 
+  function handleKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
+    // Only react when the wrapper itself receives the key — not bubbled from
+    // an inner control like the favorite button.
+    if (event.target !== event.currentTarget) return;
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      setOpen(true);
+    }
+  }
+
   return (
     <>
       <div className="group relative">
-        <button
-          type="button"
+        <div
+          role="button"
+          tabIndex={0}
           onClick={() => setOpen(true)}
-          className="block w-full rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          onKeyDown={handleKeyDown}
+          className="block w-full cursor-pointer rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           aria-label={`Open ${item.title}`}
         >
           <ItemCard item={item} />
-        </button>
-        <QuickFavoriteButton
-          itemId={item.id}
-          initialFavorite={item.isFavorite}
-          label={item.title}
-          className={
-            item.isFavorite
-              ? "absolute top-3 right-3"
-              : "absolute top-3 right-3 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100"
-          }
-        />
+        </div>
         {copyText && (
           <QuickCopyButton
             text={copyText}

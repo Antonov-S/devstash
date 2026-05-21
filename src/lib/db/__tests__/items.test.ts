@@ -39,7 +39,9 @@ import {
   getItemsForUserByCollectionId,
   getItemsForUserByTypeId,
   getPinnedItemsForUser,
+  getRecentItemsForUser,
   setItemFavoriteForUser,
+  setItemPinnedForUser,
   updateItemForUser
 } from "@/lib/db/items";
 
@@ -570,6 +572,29 @@ describe("getPinnedItemsForUser", () => {
   });
 });
 
+describe("getRecentItemsForUser", () => {
+  beforeEach(() => {
+    mockedFindMany.mockReset();
+    mockedFindMany.mockResolvedValue([]);
+  });
+
+  it("sorts pinned items first, then by lastUsedAt and updatedAt, with default take: 10", async () => {
+    await getRecentItemsForUser("user_1");
+
+    expect(mockedFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userId: "user_1" },
+        orderBy: [
+          { isPinned: "desc" },
+          { lastUsedAt: { sort: "desc", nulls: "last" } },
+          { updatedAt: "desc" }
+        ],
+        take: 10
+      })
+    );
+  });
+});
+
 describe("getFavoriteItemsForUser", () => {
   beforeEach(() => {
     mockedFindMany.mockReset();
@@ -622,6 +647,17 @@ describe("getItemsForUserByTypeId", () => {
     });
     expect(result.totalCount).toBe(42);
     expect(result.items).toEqual([]);
+  });
+
+  it("sorts pinned items first, then by lastUsedAt and updatedAt", async () => {
+    await getItemsForUserByTypeId("user_1", "type_1");
+
+    const arg = mockedFindMany.mock.calls[0][0];
+    expect(arg.orderBy).toEqual([
+      { isPinned: "desc" },
+      { lastUsedAt: { sort: "desc", nulls: "last" } },
+      { updatedAt: "desc" }
+    ]);
   });
 
   it("forwards explicit skip and take options", async () => {
@@ -683,6 +719,17 @@ describe("getItemsForUserByCollectionId", () => {
     expect(totalCount).toBe(5);
   });
 
+  it("sorts pinned items first, then by lastUsedAt and updatedAt", async () => {
+    await getItemsForUserByCollectionId("user_1", "coll_1");
+
+    const arg = mockedFindMany.mock.calls[0][0];
+    expect(arg.orderBy).toEqual([
+      { isPinned: "desc" },
+      { lastUsedAt: { sort: "desc", nulls: "last" } },
+      { updatedAt: "desc" }
+    ]);
+  });
+
   it("forwards explicit skip and take options", async () => {
     await getItemsForUserByCollectionId("user_1", "coll_1", {
       skip: 42,
@@ -739,6 +786,43 @@ describe("setItemFavoriteForUser", () => {
     expect(mockedItemUpdateMany).toHaveBeenCalledWith({
       where: { id: "item_1", userId: "user_1" },
       data: { isFavorite: false }
+    });
+  });
+});
+
+describe("setItemPinnedForUser", () => {
+  beforeEach(() => {
+    mockedItemUpdateMany.mockReset();
+  });
+
+  it("scopes the update by id + userId and returns true when a row was updated", async () => {
+    mockedItemUpdateMany.mockResolvedValue({ count: 1 });
+
+    const result = await setItemPinnedForUser("user_1", "item_1", true);
+
+    expect(mockedItemUpdateMany).toHaveBeenCalledWith({
+      where: { id: "item_1", userId: "user_1" },
+      data: { isPinned: true }
+    });
+    expect(result).toBe(true);
+  });
+
+  it("returns false when no row matched (wrong owner or missing id)", async () => {
+    mockedItemUpdateMany.mockResolvedValue({ count: 0 });
+
+    const result = await setItemPinnedForUser("user_1", "item_missing", true);
+
+    expect(result).toBe(false);
+  });
+
+  it("forwards isPinned=false through to the data payload", async () => {
+    mockedItemUpdateMany.mockResolvedValue({ count: 1 });
+
+    await setItemPinnedForUser("user_1", "item_1", false);
+
+    expect(mockedItemUpdateMany).toHaveBeenCalledWith({
+      where: { id: "item_1", userId: "user_1" },
+      data: { isPinned: false }
     });
   });
 });
