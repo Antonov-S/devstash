@@ -1,12 +1,25 @@
-# Current Feature
+# Current Feature: Homepage Mockup
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
+- Create a standalone marketing homepage prototype at `prototypes/homepage/` (`index.html`, `styles.css`, `script.js`) — separate from the Next.js app
+- Build a hero section with a "chaos to order" concept: animated chaos container (left), pulsing arrow (center), DevStash dashboard preview (right)
+- Implement chaos icon animation using `requestAnimationFrame` — 8 scattered-knowledge icons (Notion, GitHub, Slack, VS Code, browser tabs, terminal, text file, bookmark) that drift, bounce off walls, and repel from the mouse cursor
+- Render the 7 marketing sections: fixed Navigation, Hero text + visual, 6-card Features grid, AI Section (two-column with Pro badge + code editor mockup), Pricing (Free vs Pro with monthly/yearly toggle), CTA, Footer
+- Use the spec's dark theme palette with item-type accent colors (snippet `#3b82f6`, prompt `#f59e0b`, command `#06b6d4`, note `#22c55e`, file `#64748b`, image `#ec4899`, url `#6366f1`)
+- Wire scroll-triggered fade-ins on sections, opacity-on-scroll on the navbar, and CSS pulse on the arrow
+- Responsive: chaos/arrow/dashboard stacks vertically on mobile with the arrow rotated 90° to point down; single-column grids on mobile
+
 ## Notes
+
+- **Output target:** `prototypes/homepage/` (static HTML/CSS/JS) — this is a marketing mockup, NOT integrated into the Next.js app at `src/app/page.tsx`
+- **Color palette differs from the live app's system-type colors** — the spec uses prompt=amber `#f59e0b` and command=cyan `#06b6d4`, whereas the app uses prompt=purple `#8b5cf6` and command=orange `#f97316`. Use the spec values for the marketing page.
+- Pricing copy must match the live monetization tiers from `project-overview.md`: Free = 50 items / 3 collections / $0; Pro = $8/month or $72/year with unlimited + AI features
+- Spec source: [homepage-mockup-spec.md](context/features/homepage-mockup-spec.md)
 
 ## History
 
