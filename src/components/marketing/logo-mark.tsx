@@ -9,7 +9,7 @@ export function DevStashLogoMark({ className }: { className?: string }) {
         className
       )}
       style={{
-        background: "linear-gradient(135deg, #3b82f6, #6366f1)"
+        background: "linear-gradient(135deg, #60a5fa, #3b82f6)"
       }}
     >
       <svg

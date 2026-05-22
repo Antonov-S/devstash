@@ -1,12 +1,26 @@
-# Current Feature
+# Current Feature: Visual polish — fonts, logo, accent, hero mockup
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
+- Adopt a modern sans-serif font (Inter / Geist / SF Pro Display / General Sans) **across the entire app** (marketing homepage + authenticated dashboard) — get explicit visual approval on the font choice before implementing.
+- Replace the dashboard `TopBar` logo with the homepage logo mark (`LogoMark` from `src/components/marketing/logo-mark.tsx`); drop the old top-bar logo.
+- Swap the purple accent on homepage text and buttons for the blue used by the `snippet` icon type (`#3b82f6` — `SYSTEM_TYPE_COLORS.snippet` in `src/lib/constants.ts`).
+- Lighten the homepage Features section background slightly so it visually separates from the sections above and below it.
+- Tighten the hero dashboard mockup item cards — remove or reduce empty space, add another row of items so the preview feels fuller, and drop the type-name footer from each item card.
+
 ## Notes
+
+- Purely visual — no functional, routing, data, or API changes.
+- Font scope: global. Wire it in via `src/app/layout.tsx` / `globals.css` so both the marketing homepage and the authenticated app pick it up automatically.
+- Dashboard `TopBar` lives at `src/components/dashboard/top-bar.tsx`.
+- Marketing homepage entry point is `src/app/page.tsx`; supporting components under `src/components/marketing/`.
+- Hero "dashboard mockup" is `DashboardPreview` in `src/components/marketing/dashboard-preview.tsx`.
+- Blue source of truth: `SYSTEM_TYPE_COLORS.snippet` in `src/lib/constants.ts`.
+- Pause for explicit font approval before touching code — present sample options.
 
 ## History
 

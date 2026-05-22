@@ -24,7 +24,7 @@ export function HeroSection({ isAuthenticated }: Props) {
               className="bg-clip-text text-transparent"
               style={{
                 backgroundImage:
-                  "linear-gradient(135deg, #3b82f6 0%, #6366f1 50%, #f59e0b 100%)"
+                  "linear-gradient(135deg, #60a5fa 0%, #3b82f6 50%, #f59e0b 100%)"
               }}
             >
               Developer Knowledge
