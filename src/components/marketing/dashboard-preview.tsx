@@ -2,41 +2,22 @@ import { SYSTEM_TYPE_COLORS } from "@/lib/constants";
 
 type DashCard = {
   title: string;
-  meta: string;
   accent: string;
 };
 
 const DASH_CARDS: DashCard[] = [
-  {
-    title: "useDebounce hook",
-    meta: "snippet · ts",
-    accent: SYSTEM_TYPE_COLORS.snippet
-  },
-  {
-    title: "Code review prompt",
-    meta: "prompt",
-    accent: SYSTEM_TYPE_COLORS.prompt
-  },
-  {
-    title: "docker prune all",
-    meta: "command",
-    accent: SYSTEM_TYPE_COLORS.command
-  },
-  {
-    title: "Sprint planning",
-    meta: "note",
-    accent: SYSTEM_TYPE_COLORS.note
-  },
-  {
-    title: "shadcn/ui",
-    meta: "link",
-    accent: SYSTEM_TYPE_COLORS.link
-  },
-  {
-    title: "architecture.png",
-    meta: "image",
-    accent: SYSTEM_TYPE_COLORS.image
-  }
+  { title: "useDebounce hook", accent: SYSTEM_TYPE_COLORS.snippet },
+  { title: "Code review prompt", accent: SYSTEM_TYPE_COLORS.prompt },
+  { title: "docker prune all", accent: SYSTEM_TYPE_COLORS.command },
+  { title: "Sprint planning", accent: SYSTEM_TYPE_COLORS.note },
+  { title: "shadcn/ui", accent: SYSTEM_TYPE_COLORS.link },
+  { title: "architecture.png", accent: SYSTEM_TYPE_COLORS.image },
+  { title: "useThrottle hook", accent: SYSTEM_TYPE_COLORS.snippet },
+  { title: "git rebase -i", accent: SYSTEM_TYPE_COLORS.command },
+  { title: "API design notes", accent: SYSTEM_TYPE_COLORS.note },
+  { title: "Refactor prompt", accent: SYSTEM_TYPE_COLORS.prompt },
+  { title: "Tailwind v4 docs", accent: SYSTEM_TYPE_COLORS.link },
+  { title: "schema.prisma", accent: SYSTEM_TYPE_COLORS.file }
 ];
 
 const SIDE_NAV = [
@@ -64,7 +45,7 @@ export function DashboardPreview() {
             <span
               aria-hidden="true"
               className="inline-flex size-5.5 items-center justify-center rounded-[5px] text-white"
-              style={{ background: "linear-gradient(135deg, #3b82f6, #6366f1)" }}
+              style={{ background: "linear-gradient(135deg, #60a5fa, #3b82f6)" }}
             >
               <svg
                 viewBox="0 0 24 24"
@@ -139,14 +120,11 @@ export function DashboardPreview() {
             {DASH_CARDS.map((card) => (
               <div
                 key={card.title}
-                className="flex min-h-16 flex-col justify-between gap-1.5 rounded-lg border border-border bg-card px-2.5 py-2"
+                className="rounded-lg border border-border bg-card px-2.5 py-2"
                 style={{ borderTop: `3px solid ${card.accent}` }}
               >
                 <div className="overflow-hidden text-ellipsis whitespace-nowrap text-[11.5px] font-semibold text-foreground">
                   {card.title}
-                </div>
-                <div className="text-[10px] text-muted-foreground">
-                  {card.meta}
                 </div>
               </div>
             ))}

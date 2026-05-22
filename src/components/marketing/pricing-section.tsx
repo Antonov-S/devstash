@@ -231,7 +231,7 @@ export function PricingSection({ isAuthenticated }: Props) {
             <span
               className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-[0.08em] text-white"
               style={{
-                background: "linear-gradient(135deg, #3b82f6, #6366f1)"
+                background: "linear-gradient(135deg, #60a5fa, #3b82f6)"
               }}
             >
               Most Popular

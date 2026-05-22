@@ -134,7 +134,7 @@ export function FeaturesSection() {
   return (
     <section
       id="features"
-      className="scroll-mt-20 border-t border-border py-18 sm:py-25"
+      className="scroll-mt-20 border-y border-border bg-card/40 py-18 sm:py-25"
     >
       <div className="mx-auto max-w-300 px-6">
         <Reveal className="mx-auto mb-9 max-w-180 text-center sm:mb-14">

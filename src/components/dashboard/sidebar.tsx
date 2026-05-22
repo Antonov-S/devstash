@@ -21,6 +21,7 @@ import {
   SidebarMenuItem,
   SidebarSeparator
 } from "@/components/ui/sidebar";
+import { DevStashLogoMark } from "@/components/marketing/logo-mark";
 import {
   type CollectionWithMeta,
   getAllCollectionsForUser
@@ -62,14 +63,13 @@ export async function DashboardSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="h-14 justify-center border-b border-sidebar-border px-4">
-        <Link href="/dashboard" className="flex items-center gap-2">
-          <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary text-[11px] font-bold text-primary-foreground">
-            DS
-          </span>
-          <span className="text-sm font-semibold group-data-[collapsible=icon]:hidden">
-            DevStash
-          </span>
+      <SidebarHeader className="h-14 justify-center border-b border-sidebar-border px-4 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:px-2">
+        <Link
+          href="/dashboard"
+          className="hidden items-center justify-center group-data-[collapsible=icon]:inline-flex"
+          aria-label="DevStash"
+        >
+          <DevStashLogoMark />
         </Link>
       </SidebarHeader>
 

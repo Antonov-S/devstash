@@ -44,7 +44,7 @@ export function AiSection() {
       className="scroll-mt-20 border-t border-border py-18 sm:py-25"
       style={{
         background:
-          "linear-gradient(180deg, transparent, rgba(99, 102, 241, 0.04))"
+          "linear-gradient(180deg, transparent, rgba(59, 130, 246, 0.04))"
       }}
     >
       <div className="mx-auto grid max-w-300 grid-cols-1 items-center gap-10 px-6 lg:grid-cols-[1fr_1.1fr] lg:gap-14">
