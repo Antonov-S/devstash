@@ -1,12 +1,45 @@
-# Current Feature
+# Current Feature: TopBar Mobile Oversaturation Fix
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
+- Hide the DevStash logo mark + wordmark on mobile (below `sm`). Both visible at `sm` and up.
+- Replace the separate `NewCollectionDialog` + `NewItemDialog` triggers in the TopBar with a single primary "+" dropdown button, visible at all sizes. Dropdown contains two items: **New Item** and **New Collection** — selecting either opens the existing dialog (no behavior change inside the dialogs themselves).
+- Keep the Favorites star icon unchanged at all sizes.
+- Below `sm`, swap the full-width `SearchTrigger` pill for an icon-only Search button (`size-9`, no placeholder text, no ⌘K kbd) that still opens the Cmd+K command palette.
+- At `sm` and above, behavior stays the same — search renders as the full pill with placeholder + ⌘K hint.
+- No regression on the dashboard, items pages, favorites, settings, or any other surface that mounts the TopBar.
+
 ## Notes
+
+**Source:** UI review by ui-reviewer agent identified that at 390px the TopBar action cluster (Favorites + "New Collection" + "New Item" both with labels) squeezed the centered search bar to ~50–80px effective width. This feature implements the user-approved fix from that report.
+
+**Scope deliberately limited:**
+
+- Homepage mobile nav (review issue #1) is explicitly out of scope — user decided a hamburger would re-introduce oversaturation on the marketing page.
+- Other review findings tracked separately as "easy wins" — not part of this feature.
+
+**Affected files (expected):**
+
+- `src/components/dashboard/top-bar.tsx` — hide logo, swap pair of triggers for new dropdown, keep favorites + search wiring.
+- `src/components/search/search-trigger.tsx` — responsive presentational swap (icon-only below sm, full pill from sm up). One button, CSS-driven swap; no second component.
+- `src/components/items/new-item-dialog.tsx` — accept optional controlled `open` + `onOpenChange` props (fall back to internal state) so the dropdown menu can open it without nesting a `DialogTrigger` inside a `DropdownMenuItem`.
+- `src/components/collections/new-collection-dialog.tsx` — same controlled-props pattern as above.
+- `src/components/dashboard/top-bar-create-menu.tsx` *(new)* — client component owning both dialog `open` states + the `DropdownMenu` shell, rendered inside the TopBar.
+
+**Pattern notes:**
+
+- The two dialogs currently accept a `trigger` prop and own their `open` state. Naively passing a `DropdownMenuItem` as the trigger doesn't sequence cleanly (menu close vs. dialog open). Controlled props are the cleanest fix and preserve every existing call-site (no other surface passes a custom `trigger`).
+- `DropdownMenu` primitive already exists at `src/components/ui/dropdown-menu.tsx` (base-ui) and is used by `SidebarUserMenu` + `CollectionCardMenu` — same pattern.
+
+**Testing:**
+
+- No new server actions or db helpers, so no Vitest additions required per `coding-standards.md` Testing section (components excluded).
+- Existing 280 Vitest tests + `next build` must still pass.
+- Live-verify via Playwright MCP at mobile (390×800) and desktop (1440×900): dropdown opens, both menu items open the right dialog, dialogs still create successfully, logo hidden below sm + visible from sm, search button is icon-only below sm + full pill from sm, Cmd+K shortcut still opens palette on both presentations, no console errors.
 
 ## History
 

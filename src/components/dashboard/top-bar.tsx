@@ -1,10 +1,12 @@
 import { Star } from "lucide-react";
 import Link from "next/link";
 
-import { NewCollectionDialog } from "@/components/collections/new-collection-dialog";
-import { NewItemDialog } from "@/components/items/new-item-dialog";
+import { TopBarCreateMenu } from "@/components/dashboard/top-bar-create-menu";
 import { DevStashLogoMark } from "@/components/marketing/logo-mark";
-import { SearchTrigger } from "@/components/search/search-trigger";
+import {
+  SearchTrigger,
+  SearchTriggerIcon
+} from "@/components/search/search-trigger";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 
 export function TopBar() {
@@ -14,19 +16,22 @@ export function TopBar() {
 
       <Link
         href="/dashboard"
-        className="inline-flex shrink-0 items-center gap-2 text-[15px] font-semibold tracking-tight"
+        className="hidden shrink-0 items-center gap-2 text-[15px] font-semibold tracking-tight sm:inline-flex"
       >
         <DevStashLogoMark />
-        <span className="hidden sm:inline">DevStash</span>
+        <span>DevStash</span>
       </Link>
 
-      <div className="flex min-w-0 flex-1 items-center justify-center">
+      <div className="hidden min-w-0 flex-1 items-center justify-center sm:flex">
         <div className="w-full max-w-md">
           <SearchTrigger />
         </div>
       </div>
 
-      <div className="flex shrink-0 items-center gap-2">
+      <div className="flex-1 sm:hidden" aria-hidden />
+
+      <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+        <SearchTriggerIcon className="sm:hidden" />
         <Link
           href="/favorites"
           aria-label="Favorites"
@@ -34,8 +39,7 @@ export function TopBar() {
         >
           <Star className="size-4" />
         </Link>
-        <NewCollectionDialog />
-        <NewItemDialog />
+        <TopBarCreateMenu />
       </div>
     </header>
   );

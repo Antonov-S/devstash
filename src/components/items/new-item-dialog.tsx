@@ -68,15 +68,24 @@ const DEFAULT_TYPE: CreateItemType = "snippet";
 type NewItemDialogProps = {
   initialType?: CreateItemType;
   trigger?: React.ReactElement;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 };
 
 export function NewItemDialog({
   initialType,
-  trigger
+  trigger,
+  open: openProp,
+  onOpenChange
 }: NewItemDialogProps = {}) {
   const router = useRouter();
   const baseType = initialType ?? DEFAULT_TYPE;
-  const [open, setOpen] = useState(false);
+  const controlled = openProp !== undefined;
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlled ? openProp : internalOpen;
+  const setOpen = controlled
+    ? (next: boolean) => onOpenChange?.(next)
+    : setInternalOpen;
   const [type, setType] = useState<CreateItemType>(baseType);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -163,7 +172,7 @@ export function NewItemDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger render={triggerNode} />
+      {!controlled && <DialogTrigger render={triggerNode} />}
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>New item</DialogTitle>
