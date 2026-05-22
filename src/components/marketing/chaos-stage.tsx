@@ -151,6 +151,7 @@ export function ChaosStage() {
       el.style.color = spec.color;
       el.style.transformOrigin = "50% 50%";
       el.setAttribute("title", spec.name);
+      el.setAttribute("aria-hidden", "true");
       el.innerHTML = spec.svg;
       stage.appendChild(el);
       created.push(el);
@@ -220,7 +221,8 @@ export function ChaosStage() {
   return (
     <div
       ref={stageRef}
-      aria-hidden="true"
+      role="img"
+      aria-label="Scattered developer knowledge sources"
       className="relative min-h-[280px] flex-1 cursor-crosshair overflow-hidden rounded-2xl border border-dashed border-[#26262e] bg-[#0f0f12] sm:min-h-[360px]"
       style={{
         backgroundImage:

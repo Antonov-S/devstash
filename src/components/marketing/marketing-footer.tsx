@@ -58,7 +58,9 @@ export function MarketingFooter() {
             <li>
               <a
                 href="#"
-                className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                aria-disabled="true"
+                tabIndex={-1}
+                className="cursor-not-allowed text-sm text-muted-foreground opacity-50 pointer-events-none"
               >
                 Changelog
               </a>
@@ -75,7 +77,9 @@ export function MarketingFooter() {
               <li key={label}>
                 <a
                   href="#"
-                  className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                  aria-disabled="true"
+                  tabIndex={-1}
+                  className="cursor-not-allowed text-sm text-muted-foreground opacity-50 pointer-events-none"
                 >
                   {label}
                 </a>
@@ -93,7 +97,9 @@ export function MarketingFooter() {
               <li key={label}>
                 <a
                   href="#"
-                  className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                  aria-disabled="true"
+                  tabIndex={-1}
+                  className="cursor-not-allowed text-sm text-muted-foreground opacity-50 pointer-events-none"
                 >
                   {label}
                 </a>

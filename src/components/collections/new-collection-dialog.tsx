@@ -23,11 +23,22 @@ import { PendingButton } from "@/components/ui/pending-button";
 
 type NewCollectionDialogProps = {
   trigger?: React.ReactElement;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 };
 
-export function NewCollectionDialog({ trigger }: NewCollectionDialogProps = {}) {
+export function NewCollectionDialog({
+  trigger,
+  open: openProp,
+  onOpenChange
+}: NewCollectionDialogProps = {}) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const controlled = openProp !== undefined;
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlled ? openProp : internalOpen;
+  const setOpen = controlled
+    ? (next: boolean) => onOpenChange?.(next)
+    : setInternalOpen;
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [pending, startTransition] = useTransition();
@@ -77,7 +88,7 @@ export function NewCollectionDialog({ trigger }: NewCollectionDialogProps = {}) 
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger render={triggerNode} />
+      {!controlled && <DialogTrigger render={triggerNode} />}
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>New collection</DialogTitle>

@@ -5,6 +5,7 @@ import { ChangePasswordDialog } from "@/components/settings/change-password-dial
 import { DeleteAccountDialog } from "@/components/settings/delete-account-dialog";
 import { EditorPreferencesForm } from "@/components/settings/editor-preferences-form";
 import { getUserProfileById } from "@/lib/db/users";
+import { cn } from "@/lib/utils";
 
 export const metadata = {
   title: "Settings · DevStash"
@@ -36,7 +37,12 @@ export default async function SettingsPage() {
           </p>
         </div>
 
-        <div className="flex flex-col items-start gap-3 rounded-lg border border-border p-4">
+        <div
+          className={cn(
+            "flex flex-col items-start gap-3 rounded-lg border border-border p-4",
+            !profile.hasPassword && "opacity-70"
+          )}
+        >
           <div>
             <h3 className="text-sm font-medium text-foreground">Password</h3>
             <p className="mt-0.5 text-xs text-muted-foreground">

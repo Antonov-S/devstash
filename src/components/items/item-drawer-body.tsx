@@ -18,6 +18,13 @@ export function ItemDrawerBody({
   showsLanguage: boolean;
   showsMarkdown: boolean;
 }) {
+  const contentSectionTitle =
+    detail.contentType === "FILE"
+      ? "File"
+      : detail.contentType === "URL"
+        ? "Link"
+        : "Content";
+
   return (
     <div className="flex flex-col gap-6">
       {detail.description && (
@@ -28,7 +35,7 @@ export function ItemDrawerBody({
         </Section>
       )}
 
-      <Section title="Content">
+      <Section title={contentSectionTitle}>
         <ItemContent
           detail={detail}
           showsLanguage={showsLanguage}
