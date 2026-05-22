@@ -2,7 +2,6 @@ import { Star } from "lucide-react";
 import Link from "next/link";
 
 import { TopBarCreateMenu } from "@/components/dashboard/top-bar-create-menu";
-import { DevStashLogoMark } from "@/components/marketing/logo-mark";
 import {
   SearchTrigger,
   SearchTriggerIcon
@@ -13,14 +12,6 @@ export function TopBar() {
   return (
     <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border bg-background px-3 sm:gap-3 sm:px-4">
       <SidebarTrigger className="size-9 shrink-0" />
-
-      <Link
-        href="/dashboard"
-        className="hidden shrink-0 items-center gap-2 text-[15px] font-semibold tracking-tight sm:inline-flex"
-      >
-        <DevStashLogoMark />
-        <span>DevStash</span>
-      </Link>
 
       <div className="hidden min-w-0 flex-1 items-center justify-center sm:flex">
         <div className="w-full max-w-md">

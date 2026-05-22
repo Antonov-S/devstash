@@ -66,10 +66,11 @@ export async function DashboardSidebar() {
       <SidebarHeader className="h-14 justify-center border-b border-sidebar-border px-4 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:px-2">
         <Link
           href="/dashboard"
-          className="hidden items-center justify-center group-data-[collapsible=icon]:inline-flex"
+          className="inline-flex items-center gap-2 text-[15px] font-semibold tracking-tight"
           aria-label="DevStash"
         >
           <DevStashLogoMark />
+          <span className="group-data-[collapsible=icon]:hidden">DevStash</span>
         </Link>
       </SidebarHeader>
 

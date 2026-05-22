@@ -1,12 +1,22 @@
-# Current Feature
+# Current Feature: Homepage top nav on sign-in / sign-up
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
+- Render the marketing/homepage top navigation (`MarketingNav`) on `/sign-in`, `/register`, `/forgot-password`, and `/reset-password` (scope confirmed: all four auth pages).
+- Preserve the existing auth-card layout (centered `max-w-md` rounded-2xl card with ambient radial-gradient backdrop) — the nav sits above, not in place of, the card.
+- Keep the nav fully functional (logo → `/`, Features/Pricing/AI anchors, auth-aware CTA: "Sign In" + "Get Started" when signed out, "Go to dashboard" when signed in).
+- No visual regression on the auth card at desktop + mobile breakpoints; ensure the card never overlaps the fixed nav on short viewports.
+
 ## Notes
+
+- All four target pages live under `src/app/(auth)/` with a shared `layout.tsx` — single-file edit to that layout covers all of them. The `(auth)` group also contains `verify-email`, which will pick up the nav too (intentional — consistency win, no regression).
+- All four pages already redirect authenticated users to `/dashboard` in their `page.tsx`, but the layout still calls `auth()` to thread the correct `isAuthenticated` state into `MarketingNav` so the rendered CTAs are accurate if the redirect timing ever changes.
+- `MarketingNav` is `fixed inset-x-0 top-0 z-50`, so layout needs top padding (≈ `pt-20 sm:pt-24`) to keep the centered card from overlapping the nav on short viewports.
+- Components are out of scope for Vitest per `coding-standards.md`, so no test additions expected; verify with `npm run test:run` and `npm run build`.
 
 ## History
 
