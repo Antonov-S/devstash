@@ -159,7 +159,7 @@ describe("createCheckoutSessionAction", () => {
     expect(payload.billing_address_collection).toBe("auto");
     expect(payload.automatic_tax).toEqual({ enabled: false });
     expect(payload.success_url).toBe(
-      "https://example.com/settings?checkout=success"
+      "https://example.com/checkout/success"
     );
     expect(payload.cancel_url).toBe(
       "https://example.com/settings?checkout=cancelled"

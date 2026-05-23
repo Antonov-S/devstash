@@ -57,7 +57,7 @@ export async function createCheckoutSessionAction(
       allow_promotion_codes: true,
       billing_address_collection: "auto",
       automatic_tax: { enabled: false },
-      success_url: `${baseUrl}/settings?checkout=success`,
+      success_url: `${baseUrl}/checkout/success`,
       cancel_url: `${baseUrl}/settings?checkout=cancelled`,
       subscription_data: { metadata: { userId: session.user.id } }
     });
