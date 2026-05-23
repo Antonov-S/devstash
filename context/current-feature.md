@@ -1,12 +1,36 @@
-# Current Feature
+# Current Feature: Welcome to Pro Page Improvements
 
 ## Status
 
-Not Started
+In Progress
+
+## Decisions (from /feature start)
+
+- **Persistence:** localStorage (no schema migration, v1 scope). Key + items live in `src/lib/constants.ts` per the codebase convention to keep all tunables centralized.
+- **"Try AI Tagging" affordance:** render as a visibly **disabled** "Coming soon" button + non-actionable checklist item. Keeps the full Pro story visible without dead-linking to a 404 since `/api/ai/*` isn't built yet.
 
 ## Goals
 
+- **Progress-driven onboarding checklist** — replace the static `PRO_FEATURES` bullets on `/checkout/success` with an interactive 5-item checklist (Create your first Snippet / Add a Prompt / Upload a File or Image / Organize items into a Collection / Try AI auto-tagging on an item) with a "N / 5 completed" progress bar above it; checklist state persists across reloads (localStorage or user profile).
+- **CTA hierarchy** — restructure the two equal-weight CTAs into: primary `Start adding items` → main creation flow, secondary `Go to Dashboard` (ghost/outline), tertiary muted text link `Manage subscription`.
+- **Personalized welcome** — render `Welcome to Pro, {name}!` when `session.user.name` is available, fall back to `Welcome to Pro!` otherwise.
+- **Quick-start shortcuts** — horizontal row of 3–4 icon + label buttons (New Snippet, New Prompt, Upload File, Try AI Tagging) below the feature list, each navigating to its creation flow.
+- **Success animation** — lightweight, dismissable confetti / success animation that plays once on page load and finishes in under 2 s; pure CSS keyframes or <30-line JS, no heavy libraries.
+- **"What's next" tip** — rotating tip surfaced from a static array (e.g. `💡 Tip: Use Ctrl+K to search across all your items instantly.`), rotated per page load.
+- **Accessibility & keyboard navigation** — Tab order: heading → checklist items → CTAs; `aria-label` on icon-only buttons; if the surface is rendered as an overlay, trap focus and set `role="dialog"` + `aria-modal="true"`.
+- **Mobile responsiveness** — CTAs stack vertically under 480 px; checklist items have ≥44 px tap targets; animation disabled under `prefers-reduced-motion: reduce`.
+
 ## Notes
+
+- **Surface to edit:** the existing `/checkout/success` page lives at [src/app/(dashboard)/checkout/success/page.tsx](src/app/(dashboard)/checkout/success/page.tsx) — it's a server component inside the `(dashboard)` route group, `auth()`-gated, that currently renders a centered card with a `PartyPopper` icon, the shared `PRO_FEATURES` bullets, and two equal CTAs. The page is reached via Stripe's `success_url` after Checkout (see `createCheckoutSessionAction` in [src/actions/billing.ts](src/actions/billing.ts)).
+- **Not actually a modal** — despite the spec saying "modal/page", the surface is a full page rendered inside the dashboard chrome. `role="dialog"` + focus trap only apply if we end up wrapping the content in an overlay; for the page itself those a11y bits don't apply. Flag this when scoping the a11y work.
+- **Server vs client split** — interactive checklist, confetti, rotating tip, and localStorage reads all need a client component. Keep the page itself a server component for `auth()` + session lookup, then hand the user name + everything else to a single client island.
+- **Persistence choice** — localStorage is the simpler default and keeps Phase 1 scope small; user-profile persistence would require a schema migration. Recommend localStorage for v1 unless cross-device parity is needed.
+- **"Try AI Tagging"** — the AI features (`/api/ai/*`) aren't built yet per the project history. The quick-start button + checklist item for AI tagging should land as a disabled/coming-soon affordance rather than dead-link to a 404, OR be dropped from v1 — decide at start time.
+- **`PRO_FEATURES` constant** — currently exported from [src/lib/constants.ts](src/lib/constants.ts) and shared with `UpgradePromptDialog` + `UpgradePromptPage`. Don't delete it; just stop using it on the success page.
+- **Confetti policy** — per spec, no heavy libs. Stick to a CSS-keyframe approach (absolutely-positioned animated spans) or a <30-line canvas snippet — must respect `prefers-reduced-motion`.
+- **`success_url` stability** — the URL is currently `${baseUrl}/checkout/success` and asserted at [src/actions/__tests__/billing.test.ts:161-163](src/actions/__tests__/billing.test.ts#L161-L163). Don't change the route.
+- **Testing scope reminder** — per `coding-standards.md`, components are out of Vitest scope. Any new server-side helper (e.g. an onboarding-checklist items list) is testable; the React island is not.
 
 ## History
 

@@ -1,15 +1,23 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
-import { PartyPopper, Sparkles } from "lucide-react";
+import { PartyPopper } from "lucide-react";
 
 import { auth } from "@/auth";
-import { buttonVariants } from "@/components/ui/button";
-import { PRO_FEATURES } from "@/lib/constants";
-import { cn } from "@/lib/utils";
+import { ConfettiBurst } from "@/components/checkout/confetti-burst";
+import { OnboardingChecklist } from "@/components/checkout/onboarding-checklist";
+import { QuickStartShortcuts } from "@/components/checkout/quick-start-shortcuts";
+import { RotatingTip } from "@/components/checkout/rotating-tip";
+import { WelcomeCtaGroup } from "@/components/checkout/welcome-cta-group";
 
 export const dynamic = "force-dynamic";
 
 export const metadata = { title: "Welcome to Pro · DevStash" };
+
+function firstName(name: string | null | undefined) {
+  if (!name) return null;
+  const trimmed = name.trim();
+  if (!trimmed) return null;
+  return trimmed.split(/\s+/)[0];
+}
 
 export default async function CheckoutSuccessPage() {
   const session = await auth();
@@ -17,9 +25,13 @@ export default async function CheckoutSuccessPage() {
     redirect("/sign-in?callbackUrl=/checkout/success");
   }
 
+  const greeting = firstName(session.user.name);
+  const heading = greeting ? `Welcome to Pro, ${greeting}!` : "Welcome to Pro!";
+
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6">
-      <div className="mx-auto flex w-full max-w-xl flex-col items-center gap-6 rounded-2xl border border-border bg-card p-10 text-center">
+      <ConfettiBurst />
+      <div className="mx-auto flex w-full max-w-xl flex-col items-center gap-6 rounded-2xl border border-border bg-card p-6 text-center sm:p-10">
         <span
           className="flex size-14 items-center justify-center rounded-full bg-primary/10"
           aria-hidden
@@ -27,36 +39,16 @@ export default async function CheckoutSuccessPage() {
           <PartyPopper className="size-6 text-primary" />
         </span>
         <div className="flex flex-col gap-2">
-          <h1 className="text-2xl font-semibold">Welcome to Pro!</h1>
+          <h1 className="text-2xl font-semibold">{heading}</h1>
           <p className="text-sm text-muted-foreground">
-            Your subscription is active. Here&apos;s what you&apos;ve unlocked:
+            Your subscription is active. Take a few quick steps to make the
+            most of it.
           </p>
         </div>
-        <ul className="flex w-full flex-col gap-2 text-left text-sm">
-          {PRO_FEATURES.map((feature) => (
-            <li key={feature} className="flex items-start gap-2">
-              <Sparkles
-                aria-hidden
-                className="mt-0.5 size-4 shrink-0 text-primary"
-              />
-              <span>{feature}</span>
-            </li>
-          ))}
-        </ul>
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <Link
-            href="/dashboard"
-            className={cn(buttonVariants({ variant: "default" }))}
-          >
-            Go to Dashboard
-          </Link>
-          <Link
-            href="/settings#billing"
-            className={cn(buttonVariants({ variant: "outline" }))}
-          >
-            Manage subscription
-          </Link>
-        </div>
+        <OnboardingChecklist />
+        <QuickStartShortcuts />
+        <WelcomeCtaGroup />
+        <RotatingTip />
       </div>
     </div>
   );

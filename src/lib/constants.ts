@@ -21,6 +21,38 @@ export const PRO_FEATURES = [
   "Export as JSON or ZIP"
 ] as const;
 
+export const ONBOARDING_STORAGE_KEY = "devstash:welcome-to-pro:checklist:v1";
+
+export type OnboardingChecklistItemId =
+  | "snippet"
+  | "prompt"
+  | "upload"
+  | "collection"
+  | "ai";
+
+export type OnboardingChecklistItem = {
+  id: OnboardingChecklistItemId;
+  label: string;
+  comingSoon?: boolean;
+};
+
+export const ONBOARDING_CHECKLIST_ITEMS: readonly OnboardingChecklistItem[] = [
+  { id: "snippet", label: "Create your first Snippet" },
+  { id: "prompt", label: "Add a Prompt" },
+  { id: "upload", label: "Upload a File or Image" },
+  { id: "collection", label: "Organize items into a Collection" },
+  { id: "ai", label: "Try AI auto-tagging on an item", comingSoon: true }
+];
+
+export const PRO_TIPS = [
+  "Use Ctrl+K (or ⌘K) to search across all your items instantly.",
+  "Drag a file straight onto the New File dialog to upload it.",
+  "Pin items to the top of every list so they're one glance away.",
+  "Add an item to multiple collections — no copies needed.",
+  "Favorite collections show up first in the sidebar.",
+  "Markdown works in notes and prompts — try a checklist or table."
+] as const;
+
 export const SYSTEM_TYPE_COLORS: Record<SystemTypeName, string> = {
   snippet: "#3b82f6",
   prompt: "#8b5cf6",

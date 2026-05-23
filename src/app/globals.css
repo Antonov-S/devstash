@@ -217,6 +217,10 @@
     animation: tag-in 380ms ease both;
   }
 
+  .confetti-piece {
+    animation: confetti-fall 1700ms cubic-bezier(0.2, 0.6, 0.4, 1) forwards;
+  }
+
   @keyframes arrow-pulse {
     0%,
     100% {
@@ -240,6 +244,21 @@
     }
   }
 
+  @keyframes confetti-fall {
+    0% {
+      transform: translate3d(0, -10px, 0) rotate(0deg);
+      opacity: 0;
+    }
+    10% {
+      opacity: 1;
+    }
+    100% {
+      transform: translate3d(var(--confetti-x, 0px), 120vh, 0)
+        rotate(var(--confetti-rot, 360deg));
+      opacity: 0;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .marketing-reveal {
       opacity: 1;
@@ -255,6 +274,11 @@
       animation: none;
       opacity: 1;
       transform: none;
+    }
+
+    .confetti-piece {
+      animation: none;
+      display: none;
     }
   }
 }
