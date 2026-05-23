@@ -3,6 +3,7 @@
 import { z } from "zod";
 
 import { auth } from "@/auth";
+import { checkCollectionCapacity, getUserIsPro } from "@/lib/billing";
 import {
   createCollectionForUser,
   deleteCollectionForUser,
@@ -51,6 +52,14 @@ export async function createCollectionAction(
       success: false,
       error: first?.message ?? "Invalid input"
     };
+  }
+
+  // Always re-read isPro from the DB — session.user.isPro can lag a Stripe
+  // downgrade until the JWT refreshes on the next request.
+  const isPro = await getUserIsPro(session.user.id);
+  const capacity = await checkCollectionCapacity(session.user.id, isPro);
+  if (!capacity.ok) {
+    return { success: false, error: capacity.reason };
   }
 
   try {

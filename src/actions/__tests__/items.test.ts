@@ -20,7 +20,13 @@ vi.mock("@/lib/r2", () => ({
   keyFromPublicUrl: vi.fn()
 }));
 
+vi.mock("@/lib/billing", () => ({
+  getUserIsPro: vi.fn(),
+  checkItemCapacity: vi.fn()
+}));
+
 import { auth } from "@/auth";
+import { checkItemCapacity, getUserIsPro } from "@/lib/billing";
 import { verifyCollectionsOwnedByUser } from "@/lib/db/collections";
 import {
   createItemForUser,
@@ -51,6 +57,10 @@ const mockedSetPinned = setItemPinnedForUser as unknown as ReturnType<
 const mockedVerifyCollections =
   verifyCollectionsOwnedByUser as unknown as ReturnType<typeof vi.fn>;
 const mockedKeyFromPublicUrl = keyFromPublicUrl as unknown as ReturnType<
+  typeof vi.fn
+>;
+const mockedGetUserIsPro = getUserIsPro as unknown as ReturnType<typeof vi.fn>;
+const mockedCheckItemCapacity = checkItemCapacity as unknown as ReturnType<
   typeof vi.fn
 >;
 
@@ -233,6 +243,12 @@ describe("createItemAction", () => {
     mockedCreate.mockReset();
     mockedKeyFromPublicUrl.mockReset();
     mockedVerifyCollections.mockReset();
+    mockedGetUserIsPro.mockReset();
+    mockedCheckItemCapacity.mockReset();
+    // Default to Pro + unlimited capacity so the existing happy-path cases
+    // don't need to opt in. Free-tier rejection cases override below.
+    mockedGetUserIsPro.mockResolvedValue(true);
+    mockedCheckItemCapacity.mockResolvedValue({ ok: true });
   });
 
   it("rejects when there is no session", async () => {
@@ -555,6 +571,93 @@ describe("createItemAction", () => {
     });
 
     errSpy.mockRestore();
+  });
+
+  it("rejects a Free user at the item cap", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+    mockedGetUserIsPro.mockResolvedValue(false);
+    mockedCheckItemCapacity.mockResolvedValue({
+      ok: false,
+      reason: "Free plan is limited to 50 items. Upgrade to Pro for unlimited."
+    });
+
+    const result = await createItemAction({
+      type: "snippet",
+      title: "Hi",
+      tags: []
+    });
+
+    expect(result).toEqual({
+      success: false,
+      error: "Free plan is limited to 50 items. Upgrade to Pro for unlimited."
+    });
+    expect(mockedCheckItemCapacity).toHaveBeenCalledWith("user_1", false);
+    expect(mockedCreate).not.toHaveBeenCalled();
+  });
+
+  it("rejects a Free user creating a file item", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+    mockedGetUserIsPro.mockResolvedValue(false);
+    mockedKeyFromPublicUrl.mockReturnValue("uploads/user_1/abc.pdf");
+
+    const result = await createItemAction({
+      type: "file",
+      title: "Report",
+      fileUrl: "https://files.example.com/uploads/user_1/abc.pdf",
+      fileName: "report.pdf",
+      fileSize: 1024,
+      tags: []
+    });
+
+    expect(result).toEqual({
+      success: false,
+      error: "File and image items require Pro."
+    });
+    // Pro-only gate runs before the capacity check.
+    expect(mockedCheckItemCapacity).not.toHaveBeenCalled();
+    expect(mockedCreate).not.toHaveBeenCalled();
+  });
+
+  it("rejects a Free user creating an image item", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+    mockedGetUserIsPro.mockResolvedValue(false);
+    mockedKeyFromPublicUrl.mockReturnValue("uploads/user_1/logo.png");
+
+    const result = await createItemAction({
+      type: "image",
+      title: "Logo",
+      fileUrl: "https://files.example.com/uploads/user_1/logo.png",
+      fileName: "logo.png",
+      fileSize: 1024,
+      tags: []
+    });
+
+    expect(result).toEqual({
+      success: false,
+      error: "File and image items require Pro."
+    });
+    expect(mockedCreate).not.toHaveBeenCalled();
+  });
+
+  it("lets a Pro user create a file item past the Free cap", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+    mockedGetUserIsPro.mockResolvedValue(true);
+    mockedCheckItemCapacity.mockResolvedValue({ ok: true });
+    mockedKeyFromPublicUrl.mockReturnValue("uploads/user_1/abc.pdf");
+    mockedCreate.mockResolvedValue(sampleDetail);
+
+    const result = await createItemAction({
+      type: "file",
+      title: "Report",
+      fileUrl: "https://files.example.com/uploads/user_1/abc.pdf",
+      fileName: "report.pdf",
+      fileSize: 1024,
+      tags: []
+    });
+
+    expect(result.success).toBe(true);
+    expect(mockedCheckItemCapacity).toHaveBeenCalledWith("user_1", true);
+    expect(mockedCreate).toHaveBeenCalledOnce();
   });
 });
 

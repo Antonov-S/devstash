@@ -153,7 +153,19 @@ export function NewItemDialog({
     startTransition(async () => {
       const result = await createItemAction(payload);
       if (!result.success) {
-        toast.error(result.error);
+        // Add an Upgrade CTA when the error is a Pro-gated rejection (capacity
+        // limit or Pro-only item type). Heuristic matches the action's error
+        // strings; see PRO_ONLY_ITEM_TYPES + checkItemCapacity in src/lib/billing.ts.
+        if (result.error.includes("Pro")) {
+          toast.error(result.error, {
+            action: {
+              label: "Upgrade",
+              onClick: () => router.push("/settings#billing")
+            }
+          });
+        } else {
+          toast.error(result.error);
+        }
         return;
       }
       toast.success("Item created");

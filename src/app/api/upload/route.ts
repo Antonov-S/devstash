@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 
 import { auth } from "@/auth";
+import { getUserIsPro } from "@/lib/billing";
 import { uploadObjectToR2 } from "@/lib/r2";
 import {
   UPLOAD_CONSTRAINTS,
@@ -21,6 +22,17 @@ export async function POST(request: Request) {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Re-read from DB so a downgrade reflects immediately, even before the
+  // user's JWT refreshes. Stops a Free user from uploading via a tampered
+  // client.
+  const isPro = await getUserIsPro(session.user.id);
+  if (!isPro) {
+    return NextResponse.json(
+      { error: "File uploads require Pro." },
+      { status: 403 }
+    );
   }
 
   let formData: FormData;
