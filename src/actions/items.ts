@@ -3,6 +3,8 @@
 import { z } from "zod";
 
 import { auth } from "@/auth";
+import { checkItemCapacity, getUserIsPro } from "@/lib/billing";
+import { PRO_ONLY_ITEM_TYPES } from "@/lib/constants";
 import { verifyCollectionsOwnedByUser } from "@/lib/db/collections";
 import {
   createItemForUser,
@@ -202,6 +204,17 @@ export async function createItemAction(
 
   const { type, ...fields } = parsed.data;
   const isFileType = FILE_TYPES.has(type);
+
+  // Always re-read isPro from the DB, never session.user.isPro — the JWT can
+  // carry a stale value across a Stripe downgrade until the next refresh.
+  const isPro = await getUserIsPro(session.user.id);
+  if (PRO_ONLY_ITEM_TYPES.has(type) && !isPro) {
+    return { success: false, error: "File and image items require Pro." };
+  }
+  const capacity = await checkItemCapacity(session.user.id, isPro);
+  if (!capacity.ok) {
+    return { success: false, error: capacity.reason };
+  }
 
   if (isFileType && fields.fileUrl) {
     // Make sure the client didn't supply a URL pointing at another user's R2

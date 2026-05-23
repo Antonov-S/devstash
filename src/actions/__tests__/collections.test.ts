@@ -11,7 +11,13 @@ vi.mock("@/lib/db/collections", () => ({
   setCollectionFavoriteForUser: vi.fn()
 }));
 
+vi.mock("@/lib/billing", () => ({
+  getUserIsPro: vi.fn(),
+  checkCollectionCapacity: vi.fn()
+}));
+
 import { auth } from "@/auth";
+import { checkCollectionCapacity, getUserIsPro } from "@/lib/billing";
 import {
   createCollectionForUser,
   deleteCollectionForUser,
@@ -38,6 +44,9 @@ const mockedUpdate = updateCollectionForUser as unknown as ReturnType<
 const mockedSetFavorite = setCollectionFavoriteForUser as unknown as ReturnType<
   typeof vi.fn
 >;
+const mockedGetUserIsPro = getUserIsPro as unknown as ReturnType<typeof vi.fn>;
+const mockedCheckCollectionCapacity =
+  checkCollectionCapacity as unknown as ReturnType<typeof vi.fn>;
 
 const signedIn = { user: { id: "user_1", email: "u@example.com" } };
 
@@ -56,6 +65,12 @@ describe("createCollectionAction", () => {
   beforeEach(() => {
     mockedAuth.mockReset();
     mockedCreate.mockReset();
+    mockedGetUserIsPro.mockReset();
+    mockedCheckCollectionCapacity.mockReset();
+    // Default Pro + unlimited so existing happy-path tests don't have to
+    // opt in — the Free-tier rejection case overrides below.
+    mockedGetUserIsPro.mockResolvedValue(true);
+    mockedCheckCollectionCapacity.mockResolvedValue({ ok: true });
   });
 
   it("rejects when there is no session", async () => {
@@ -123,6 +138,39 @@ describe("createCollectionAction", () => {
     });
 
     errSpy.mockRestore();
+  });
+
+  it("rejects a Free user at the collection cap", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+    mockedGetUserIsPro.mockResolvedValue(false);
+    mockedCheckCollectionCapacity.mockResolvedValue({
+      ok: false,
+      reason:
+        "Free plan is limited to 3 collections. Upgrade to Pro for unlimited."
+    });
+
+    const result = await createCollectionAction({ name: "Fourth" });
+
+    expect(result).toEqual({
+      success: false,
+      error:
+        "Free plan is limited to 3 collections. Upgrade to Pro for unlimited."
+    });
+    expect(mockedCheckCollectionCapacity).toHaveBeenCalledWith("user_1", false);
+    expect(mockedCreate).not.toHaveBeenCalled();
+  });
+
+  it("lets a Pro user create a collection past the Free cap", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+    mockedGetUserIsPro.mockResolvedValue(true);
+    mockedCheckCollectionCapacity.mockResolvedValue({ ok: true });
+    mockedCreate.mockResolvedValue(sampleCollection);
+
+    const result = await createCollectionAction({ name: "Fourth" });
+
+    expect(result.success).toBe(true);
+    expect(mockedCheckCollectionCapacity).toHaveBeenCalledWith("user_1", true);
+    expect(mockedCreate).toHaveBeenCalledOnce();
   });
 });
 

@@ -90,7 +90,9 @@ export async function DashboardSidebar() {
               {types.map((type) => {
                 const Icon = iconMap[type.icon];
                 const label = capitalize(pluralize(type.name));
-                const isPro = type.name === "file" || type.name === "image";
+                const isProType =
+                  type.name === "file" || type.name === "image";
+                const showProBadge = isProType && !sessionUser.isPro;
                 return (
                   <SidebarMenuItem key={type.id}>
                     <SidebarMenuButton
@@ -106,7 +108,7 @@ export async function DashboardSidebar() {
                       )}
                       <span className="truncate">{label}</span>
                       <span className="flex flex-1 justify-center group-data-[collapsible=icon]:hidden">
-                        {isPro && (
+                        {showProBadge && (
                           <Badge
                             variant="outline"
                             className="h-4 px-1.5 text-[10px] font-semibold tracking-wide text-sidebar-foreground/60"

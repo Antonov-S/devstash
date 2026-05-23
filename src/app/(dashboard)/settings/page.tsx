@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
+import { BillingCard } from "@/components/settings/billing-card";
 import { ChangePasswordDialog } from "@/components/settings/change-password-dialog";
 import { DeleteAccountDialog } from "@/components/settings/delete-account-dialog";
 import { EditorPreferencesForm } from "@/components/settings/editor-preferences-form";
@@ -53,6 +54,20 @@ export default async function SettingsPage() {
           </div>
           {profile.hasPassword ? <ChangePasswordDialog /> : null}
         </div>
+      </section>
+
+      <section
+        id="billing"
+        className="scroll-mt-20 rounded-xl bg-card p-6 ring-1 ring-foreground/10"
+      >
+        <div className="mb-6">
+          <h2 className="font-semibold">Billing</h2>
+          <p className="text-sm text-muted-foreground">
+            Manage your DevStash plan and subscription
+          </p>
+        </div>
+
+        <BillingCard isPro={session.user.isPro} />
       </section>
 
       <section className="rounded-xl bg-card p-6 ring-1 ring-foreground/10">

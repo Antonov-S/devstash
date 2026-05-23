@@ -95,9 +95,8 @@ export function PricingSection({ isAuthenticated }: Props) {
   const [billing, setBilling] = useState<Billing>("monthly");
   const pro = PRO_PRICE[billing];
 
-  // TODO: point Pro CTA at /settings#billing once billing is wired up.
   const freeHref = isAuthenticated ? "/dashboard" : "/register";
-  const proHref = "/register";
+  const proHref = isAuthenticated ? "/settings#billing" : "/register";
   const freeLabel = isAuthenticated ? "Open dashboard" : "Start free";
 
   return (
