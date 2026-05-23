@@ -106,14 +106,21 @@ export async function POST(request: Request) {
           break;
         }
 
+        // Re-fetch from Stripe instead of trusting the event-payload snapshot.
+        // A newly-created subscription often passes through `incomplete` before
+        // reaching `active`, and `subscription.created`/`updated` events arrive
+        // concurrently with `checkout.session.completed` — without re-fetching,
+        // a stale snapshot can race in and overwrite isPro=true back to false.
+        const current = await getStripe().subscriptions.retrieve(sub.id);
+
         // updateMany so retries that arrive before checkout.session.completed
         // has linked the customer to a user don't throw a Prisma P2025 — zero
         // matches is a non-error.
         await prisma.user.updateMany({
           where: { stripeCustomerId: customerId },
           data: {
-            isPro: isActiveStatus(sub.status),
-            stripeSubscriptionId: sub.id
+            isPro: isActiveStatus(current.status),
+            stripeSubscriptionId: current.id
           }
         });
         break;
