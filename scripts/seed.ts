@@ -189,62 +189,6 @@ Code:
     ]
   },
   {
-    name: "DevOps",
-    description: "Infrastructure and deployment resources",
-    items: [
-      {
-        title: "Multi-stage Dockerfile for Next.js",
-        type: "snippet",
-        language: "dockerfile",
-        description: "Production Dockerfile using Next.js standalone output.",
-        isFavorite: true,
-        tags: ["docker", "nextjs", "deployment"],
-        content: `# syntax=docker/dockerfile:1.7
-FROM node:20-alpine AS deps
-WORKDIR /app
-COPY package.json package-lock.json ./
-RUN npm ci
-
-FROM node:20-alpine AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
-RUN npm run build
-
-FROM node:20-alpine AS runner
-WORKDIR /app
-ENV NODE_ENV=production
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/public ./public
-EXPOSE 3000
-CMD ["node", "server.js"]
-`
-      },
-      {
-        title: "Deploy to Fly.io",
-        type: "command",
-        description: "Build, push, and roll out the app on Fly with health checks.",
-        tags: ["fly", "deployment", "ci-cd"],
-        content: "fly deploy --remote-only --strategy rolling --wait-timeout 300"
-      },
-      {
-        title: "Docker docs",
-        type: "link",
-        description: "Official Docker documentation.",
-        tags: ["docker", "docs", "reference"],
-        url: "https://docs.docker.com/"
-      },
-      {
-        title: "GitHub Actions docs",
-        type: "link",
-        description: "GitHub Actions workflow syntax and reference.",
-        tags: ["github", "ci-cd", "docs"],
-        url: "https://docs.github.com/en/actions"
-      }
-    ]
-  },
-  {
     name: "Terminal Commands",
     description: "Useful shell commands for everyday development",
     isFavorite: true,
@@ -278,42 +222,6 @@ CMD ["node", "server.js"]
         description: "Bumps every globally installed npm package to its latest version.",
         tags: ["npm", "packages"],
         content: "npm update -g"
-      }
-    ]
-  },
-  {
-    name: "Design Resources",
-    description: "UI/UX resources and references",
-    items: [
-      {
-        title: "Tailwind CSS docs",
-        type: "link",
-        description: "Tailwind CSS official documentation and reference.",
-        tags: ["tailwind", "css", "docs"],
-        url: "https://tailwindcss.com/docs"
-      },
-      {
-        title: "shadcn/ui",
-        type: "link",
-        description: "Copy-paste accessible React components built on Radix + Tailwind.",
-        isPinned: true,
-        isFavorite: true,
-        tags: ["react", "ui", "components"],
-        url: "https://ui.shadcn.com/"
-      },
-      {
-        title: "Radix UI Primitives",
-        type: "link",
-        description: "Unstyled, accessible UI primitives for React.",
-        tags: ["react", "accessibility", "ui"],
-        url: "https://www.radix-ui.com/primitives"
-      },
-      {
-        title: "Lucide icons",
-        type: "link",
-        description: "Beautiful, consistent open-source icon set.",
-        tags: ["icons", "ui", "design"],
-        url: "https://lucide.dev/"
       }
     ]
   }
