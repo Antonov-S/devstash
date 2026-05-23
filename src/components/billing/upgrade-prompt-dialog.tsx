@@ -13,6 +13,7 @@ import {
   DialogHeader,
   DialogTitle
 } from "@/components/ui/dialog";
+import { PRO_FEATURES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -25,13 +26,6 @@ type Props = {
 const DEFAULT_TITLE = "Upgrade to Pro";
 const DEFAULT_DESCRIPTION =
   "You've hit a Free plan limit. Upgrade to keep going.";
-
-const PRO_FEATURES = [
-  "Unlimited items and collections",
-  "File & image uploads",
-  "AI auto-tagging, summaries, and code explain",
-  "Export as JSON or ZIP"
-];
 
 export function UpgradePromptDialog({
   open,

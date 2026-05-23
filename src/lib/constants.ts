@@ -14,6 +14,13 @@ export const FREE_TIER_LIMITS = {
 
 export const PRO_ONLY_ITEM_TYPES = new Set<string>(["file", "image"]);
 
+export const PRO_FEATURES = [
+  "Unlimited items and collections",
+  "File & image uploads",
+  "AI auto-tagging, summaries, and code explain",
+  "Export as JSON or ZIP"
+] as const;
+
 export const SYSTEM_TYPE_COLORS: Record<SystemTypeName, string> = {
   snippet: "#3b82f6",
   prompt: "#8b5cf6",

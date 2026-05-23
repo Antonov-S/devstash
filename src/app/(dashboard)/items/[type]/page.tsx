@@ -3,12 +3,14 @@ import { notFound, redirect } from "next/navigation";
 
 import { auth } from "@/auth";
 import type { CreateItemType } from "@/actions/items";
+import { UpgradePromptPage } from "@/components/billing/upgrade-prompt-page";
 import { ClickableFileRow } from "@/components/items/clickable-file-row";
 import { ClickableImageCard } from "@/components/items/clickable-image-card";
 import { ClickableItemCard } from "@/components/items/clickable-item-card";
 import { NewItemDialog } from "@/components/items/new-item-dialog";
 import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/ui/pagination";
+import { PRO_ONLY_ITEM_TYPES } from "@/lib/constants";
 import {
   getItemsForUserByTypeId,
   getSystemItemTypeByName
@@ -66,6 +68,18 @@ export default async function ItemsByTypePage({
   const session = await auth();
   if (!session?.user?.id) redirect(`/sign-in?callbackUrl=/items/${slug}`);
   const userId = session.user.id;
+
+  if (PRO_ONLY_ITEM_TYPES.has(typeName) && !session.user.isPro) {
+    const plural = capitalize(slug);
+    return (
+      <div className="mx-auto flex max-w-6xl flex-col gap-6">
+        <UpgradePromptPage
+          title={`${plural} are a Pro feature`}
+          description={`Store and organize ${typeName === "image" ? "images" : "files"} alongside your snippets, prompts, and notes. Available on the Pro plan.`}
+        />
+      </div>
+    );
+  }
 
   const itemType = await getSystemItemTypeByName(typeName);
   if (!itemType) notFound();
