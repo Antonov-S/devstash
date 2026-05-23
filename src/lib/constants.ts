@@ -7,6 +7,13 @@ export const DASHBOARD_RECENT_ITEMS_LIMIT = 10;
 export const FAVORITES_ITEMS_LIMIT = 200;
 export const FAVORITES_COLLECTIONS_LIMIT = 200;
 
+export const FREE_TIER_LIMITS = {
+  items: 50,
+  collections: 3
+} as const;
+
+export const PRO_ONLY_ITEM_TYPES = new Set<string>(["file", "image"]);
+
 export const SYSTEM_TYPE_COLORS: Record<SystemTypeName, string> = {
   snippet: "#3b82f6",
   prompt: "#8b5cf6",
