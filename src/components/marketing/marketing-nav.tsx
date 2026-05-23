@@ -37,7 +37,7 @@ export function MarketingNav({ isAuthenticated }: Props) {
         <ul className="ml-2 hidden gap-5 md:flex">
           <li>
             <a
-              href="#features"
+              href="/#features"
               className="text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
               Features
@@ -45,7 +45,7 @@ export function MarketingNav({ isAuthenticated }: Props) {
           </li>
           <li>
             <a
-              href="#ai"
+              href="/#ai"
               className="text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
               AI
@@ -53,7 +53,7 @@ export function MarketingNav({ isAuthenticated }: Props) {
           </li>
           <li>
             <a
-              href="#pricing"
+              href="/#pricing"
               className="text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
               Pricing
