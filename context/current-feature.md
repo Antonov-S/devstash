@@ -1,12 +1,26 @@
-# Current Feature
+# Current Feature: Fix Checkout Success Page
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
+- Remove the "Create your first Snippet" and "Add a prompt" actions from the `/checkout/success` page (they're core features available to all users, not Pro benefits).
+- Update the collections checklist item — replace "Organize items into collections" with Pro-specific wording like "Create more collections" that communicates expanded limits (Free: 3 collections, Pro: unlimited).
+- Communicate that Pro also expands the item limit (Free: 50 items, Pro: unlimited) — short message, no new sections or layout changes.
+- Increase the confetti effect a bit (more pieces, longer duration, or more pronounced motion).
+- Enable the "Try AI auto-tagging on an item" action — visually active, clickable CTA, normal hover/cursor states (no `Coming soon` badge or disabled state).
+- Point the AI auto-tagging CTA at a non-existing route so it 404s — intentional placeholder, no backend logic or stub page.
+
 ## Notes
+
+- Spec file: `context/fixes/fix-success-page.md`.
+- Files in scope (likely): `src/app/(dashboard)/checkout/success/page.tsx`, `src/components/...` (onboarding checklist + quick-start shortcuts + confetti), and `src/lib/constants.ts` (`ONBOARDING_CHECKLIST_ITEMS`).
+- Keep existing visual style/layout intact — only content + interaction behavior changes.
+- Avoid adding new UI sections or changing spacing unnecessarily.
+- Both the checklist's AI item AND the quick-start shortcuts row currently mark AI as `Coming soon` — make sure both surfaces become active and navigate to the placeholder 404 route.
+- Components are out of scope for Vitest per `coding-standards.md`; no test additions expected unless constants change.
 
 ## History
 
