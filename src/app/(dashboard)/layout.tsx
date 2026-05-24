@@ -42,7 +42,7 @@ export default async function DashboardLayout({
           <SidebarProvider>
             <DashboardSidebar />
             <SidebarInset className="flex h-screen flex-col">
-              <TopBar />
+              <TopBar isPro={session?.user?.isPro ?? false} />
               <main className="flex-1 overflow-y-auto p-4 sm:p-6">{children}</main>
             </SidebarInset>
           </SidebarProvider>
