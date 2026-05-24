@@ -2,11 +2,24 @@
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
+Give free users a clear, low-friction path to upgrade:
+
+- Add a subtle ghost-variant "Upgrade" button in the dashboard top bar — only rendered for users where `session.user.isPro === false`.
+- Clicking the button navigates to a new `/upgrade` page (NOT directly to Stripe Checkout) so users can compare plans first.
+- The `/upgrade` page mirrors the homepage Pricing section visually — Pro features list, Monthly ($8/mo) vs Yearly ($72/yr) toggle.
+- From `/upgrade` the user picks a billing period and clicks an Upgrade button that calls the existing `createCheckoutSessionAction(period)` server action to redirect to Stripe Checkout.
+- Already-Pro users who land on `/upgrade` (bookmark, stale link) are redirected back to `/settings#billing` to avoid the dead-end.
+
 ## Notes
+
+- Reuse `createCheckoutSessionAction` from `src/actions/billing.ts` — no new server action needed.
+- Re-use the visual treatment from `src/components/marketing/pricing-section.tsx` (toggle, Pro card with "Most Popular" badge, feature checklist) but inside the dashboard chrome.
+- TopBar already runs inside `(dashboard)/layout.tsx` which calls `auth()` — pass `isPro` down as a prop instead of re-calling `auth()` inside the topbar.
+- Ghost variant on the button so it reads as secondary/subtle next to the existing icon buttons and the primary `+` create menu.
 
 ## History
 

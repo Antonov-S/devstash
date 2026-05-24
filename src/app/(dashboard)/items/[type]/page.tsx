@@ -3,7 +3,6 @@ import { notFound, redirect } from "next/navigation";
 
 import { auth } from "@/auth";
 import type { CreateItemType } from "@/actions/items";
-import { UpgradePromptPage } from "@/components/billing/upgrade-prompt-page";
 import { ClickableFileRow } from "@/components/items/clickable-file-row";
 import { ClickableImageCard } from "@/components/items/clickable-image-card";
 import { ClickableItemCard } from "@/components/items/clickable-item-card";
@@ -70,15 +69,7 @@ export default async function ItemsByTypePage({
   const userId = session.user.id;
 
   if (PRO_ONLY_ITEM_TYPES.has(typeName) && !session.user.isPro) {
-    const plural = capitalize(slug);
-    return (
-      <div className="mx-auto flex max-w-6xl flex-col gap-6">
-        <UpgradePromptPage
-          title={`${plural} are a Pro feature`}
-          description={`Store and organize ${typeName === "image" ? "images" : "files"} alongside your snippets, prompts, and notes. Available on the Pro plan.`}
-        />
-      </div>
-    );
+    redirect("/upgrade");
   }
 
   const itemType = await getSystemItemTypeByName(typeName);

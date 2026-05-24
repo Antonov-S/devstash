@@ -1,4 +1,4 @@
-import { Star } from "lucide-react";
+import { Sparkles, Star } from "lucide-react";
 import Link from "next/link";
 
 import { TopBarCreateMenu } from "@/components/dashboard/top-bar-create-menu";
@@ -6,9 +6,15 @@ import {
   SearchTrigger,
   SearchTriggerIcon
 } from "@/components/search/search-trigger";
+import { buttonVariants } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { cn } from "@/lib/utils";
 
-export function TopBar() {
+type Props = {
+  isPro: boolean;
+};
+
+export function TopBar({ isPro }: Props) {
   return (
     <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border bg-background px-3 sm:gap-3 sm:px-4">
       <SidebarTrigger className="size-9 shrink-0" />
@@ -23,6 +29,18 @@ export function TopBar() {
 
       <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
         <SearchTriggerIcon className="sm:hidden" />
+        {!isPro ? (
+          <Link
+            href="/upgrade"
+            className={cn(
+              buttonVariants({ variant: "ghost", size: "sm" }),
+              "h-9 gap-1.5 px-3 text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <Sparkles aria-hidden className="size-4" />
+            <span className="hidden sm:inline">Upgrade</span>
+          </Link>
+        ) : null}
         <Link
           href="/favorites"
           aria-label="Favorites"
