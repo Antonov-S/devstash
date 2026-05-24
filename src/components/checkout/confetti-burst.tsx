@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-const PIECE_COUNT = 60;
+const PIECE_COUNT = 100;
 const COLORS = [
   "#3b82f6",
   "#8b5cf6",
@@ -30,15 +30,15 @@ export function ConfettiBurst() {
     setPieces(
       Array.from({ length: PIECE_COUNT }, () => ({
         left: Math.random() * 100,
-        delay: Math.random() * 250,
-        duration: 1400 + Math.random() * 500,
-        drift: (Math.random() - 0.5) * 240,
-        rotation: 360 + Math.random() * 540,
+        delay: Math.random() * 400,
+        duration: 1900 + Math.random() * 900,
+        drift: (Math.random() - 0.5) * 340,
+        rotation: 360 + Math.random() * 720,
         color: COLORS[Math.floor(Math.random() * COLORS.length)],
-        size: 6 + Math.random() * 6
+        size: 7 + Math.random() * 7
       }))
     );
-    const cleanup = window.setTimeout(() => setPieces(null), 2000);
+    const cleanup = window.setTimeout(() => setPieces(null), 3200);
     return () => window.clearTimeout(cleanup);
   }, []);
 

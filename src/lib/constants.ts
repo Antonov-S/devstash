@@ -23,12 +23,7 @@ export const PRO_FEATURES = [
 
 export const ONBOARDING_STORAGE_KEY = "devstash:welcome-to-pro:checklist:v1";
 
-export type OnboardingChecklistItemId =
-  | "snippet"
-  | "prompt"
-  | "upload"
-  | "collection"
-  | "ai";
+export type OnboardingChecklistItemId = "upload" | "collection" | "ai";
 
 export type OnboardingChecklistItem = {
   id: OnboardingChecklistItemId;
@@ -37,11 +32,9 @@ export type OnboardingChecklistItem = {
 };
 
 export const ONBOARDING_CHECKLIST_ITEMS: readonly OnboardingChecklistItem[] = [
-  { id: "snippet", label: "Create your first Snippet" },
-  { id: "prompt", label: "Add a Prompt" },
   { id: "upload", label: "Upload a File or Image" },
-  { id: "collection", label: "Organize items into a Collection" },
-  { id: "ai", label: "Try AI auto-tagging on an item", comingSoon: true }
+  { id: "collection", label: "Create more than 3 collections" },
+  { id: "ai", label: "Try AI auto-tagging on an item" }
 ];
 
 export const PRO_TIPS = [
