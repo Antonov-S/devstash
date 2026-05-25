@@ -55,3 +55,55 @@ export const SYSTEM_TYPE_COLORS: Record<SystemTypeName, string> = {
   image: "#ec4899",
   link: "#10b981"
 };
+
+export type CodeLanguageOption = { value: string; label: string };
+
+export const DEFAULT_CODE_LANGUAGE = "plaintext";
+
+export const CODE_LANGUAGES: readonly CodeLanguageOption[] = [
+  { value: "plaintext", label: "Plain Text" },
+  { value: "c", label: "C" },
+  { value: "cpp", label: "C++" },
+  { value: "csharp", label: "C#" },
+  { value: "css", label: "CSS" },
+  { value: "dockerfile", label: "Dockerfile" },
+  { value: "go", label: "Go" },
+  { value: "graphql", label: "GraphQL" },
+  { value: "html", label: "HTML" },
+  { value: "java", label: "Java" },
+  { value: "javascript", label: "JavaScript" },
+  { value: "json", label: "JSON" },
+  { value: "kotlin", label: "Kotlin" },
+  { value: "lua", label: "Lua" },
+  { value: "markdown", label: "Markdown" },
+  { value: "php", label: "PHP" },
+  { value: "python", label: "Python" },
+  { value: "ruby", label: "Ruby" },
+  { value: "rust", label: "Rust" },
+  { value: "scss", label: "SCSS" },
+  { value: "shell", label: "Shell / Bash" },
+  { value: "sql", label: "SQL" },
+  { value: "swift", label: "Swift" },
+  { value: "typescript", label: "TypeScript" },
+  { value: "xml", label: "XML" },
+  { value: "yaml", label: "YAML" }
+];
+
+export const CODE_LANGUAGE_ALIASES: Record<string, string> = {
+  js: "javascript",
+  jsx: "javascript",
+  ts: "typescript",
+  tsx: "typescript",
+  py: "python",
+  rb: "ruby",
+  sh: "shell",
+  bash: "shell",
+  zsh: "shell",
+  yml: "yaml",
+  md: "markdown",
+  "c++": "cpp",
+  "c#": "csharp",
+  cs: "csharp",
+  golang: "go",
+  rs: "rust"
+};

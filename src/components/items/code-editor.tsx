@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { useEditorPreferences } from "@/components/editor/editor-preferences-context";
 import { MONACO_THEMES } from "@/components/editor/monaco-themes";
 import { Button } from "@/components/ui/button";
+import { CODE_LANGUAGE_ALIASES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 const MIN_HEIGHT = 80;
@@ -171,24 +172,5 @@ function normalizeLanguage(input?: string | null): string | undefined {
   if (!input) return undefined;
   const trimmed = input.trim().toLowerCase();
   if (!trimmed) return undefined;
-  return LANGUAGE_ALIASES[trimmed] ?? trimmed;
+  return CODE_LANGUAGE_ALIASES[trimmed] ?? trimmed;
 }
-
-const LANGUAGE_ALIASES: Record<string, string> = {
-  js: "javascript",
-  jsx: "javascript",
-  ts: "typescript",
-  tsx: "typescript",
-  py: "python",
-  rb: "ruby",
-  sh: "shell",
-  bash: "shell",
-  zsh: "shell",
-  yml: "yaml",
-  md: "markdown",
-  "c++": "cpp",
-  "c#": "csharp",
-  cs: "csharp",
-  golang: "go",
-  rs: "rust"
-};
