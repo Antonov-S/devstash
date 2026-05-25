@@ -6,22 +6,29 @@ export function Field({
   htmlFor,
   required,
   hint,
+  action,
   children
 }: {
   label: string;
   htmlFor?: string;
   required?: boolean;
   hint?: string;
+  action?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <Label htmlFor={htmlFor}>
           {label}
           {required && <span className="text-destructive"> *</span>}
         </Label>
-        {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
+        <div className="flex items-center gap-2">
+          {hint && (
+            <span className="text-xs text-muted-foreground">{hint}</span>
+          )}
+          {action}
+        </div>
       </div>
       {children}
     </div>

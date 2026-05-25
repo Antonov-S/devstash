@@ -19,6 +19,7 @@ import { CodeEditor } from "@/components/items/code-editor";
 import { CollectionsPicker } from "@/components/items/collections-picker";
 import { FileUpload, type UploadedFile } from "@/components/items/file-upload";
 import { Field, Textarea } from "@/components/items/_form-primitives";
+import { GenerateDescriptionButton } from "@/components/items/generate-description-button";
 import { LanguageSelect } from "@/components/items/language-select";
 import { MarkdownEditor } from "@/components/items/markdown-editor";
 import { SuggestTagsButton } from "@/components/items/suggest-tags-button";
@@ -249,7 +250,31 @@ export function NewItemDialog({
             />
           </Field>
 
-          <Field label="Description" htmlFor="new-description">
+          <Field
+            label="Description"
+            htmlFor="new-description"
+            action={
+              <GenerateDescriptionButton
+                getPayload={() => ({
+                  typeName: type,
+                  title,
+                  content: showsContent ? content : null,
+                  url: showsUrl ? url : null,
+                  language: showsLanguage ? language : null,
+                  fileName: showsUpload ? uploaded?.fileName ?? null : null,
+                  tags: parseTags(tags)
+                })}
+                onResult={setDescription}
+                disabled={
+                  pending ||
+                  (title.trim() === "" &&
+                    content.trim() === "" &&
+                    url.trim() === "" &&
+                    (uploaded?.fileName ?? "").trim() === "")
+                }
+              />
+            }
+          >
             <Textarea
               id="new-description"
               value={description}

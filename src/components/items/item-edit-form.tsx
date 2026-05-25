@@ -3,6 +3,7 @@
 import { CodeEditor } from "@/components/items/code-editor";
 import { CollectionsPicker } from "@/components/items/collections-picker";
 import { Field, Textarea } from "@/components/items/_form-primitives";
+import { GenerateDescriptionButton } from "@/components/items/generate-description-button";
 import { LanguageSelect } from "@/components/items/language-select";
 import { MarkdownEditor } from "@/components/items/markdown-editor";
 import { SuggestTagsButton } from "@/components/items/suggest-tags-button";
@@ -40,7 +41,8 @@ export function ItemEditForm({
   showsLanguage,
   showsMarkdown,
   showsUrl,
-  typeName
+  typeName,
+  fileName
 }: {
   edit: EditState;
   onChange: (next: EditState) => void;
@@ -50,6 +52,7 @@ export function ItemEditForm({
   showsMarkdown: boolean;
   showsUrl: boolean;
   typeName: string;
+  fileName?: string | null;
 }) {
   function update<K extends keyof EditState>(key: K, value: EditState[K]) {
     onChange({ ...edit, [key]: value });
@@ -68,7 +71,31 @@ export function ItemEditForm({
         />
       </Field>
 
-      <Field label="Description" htmlFor="edit-description">
+      <Field
+        label="Description"
+        htmlFor="edit-description"
+        action={
+          <GenerateDescriptionButton
+            getPayload={() => ({
+              typeName,
+              title: edit.title,
+              content: showsContent ? edit.content : null,
+              url: showsUrl ? edit.url : null,
+              language: showsLanguage ? edit.language : null,
+              fileName: fileName ?? null,
+              tags: parseTags(edit.tags)
+            })}
+            onResult={(next) => update("description", next)}
+            disabled={
+              disabled ||
+              (edit.title.trim() === "" &&
+                edit.content.trim() === "" &&
+                edit.url.trim() === "" &&
+                (fileName ?? "").trim() === "")
+            }
+          />
+        }
+      >
         <Textarea
           id="edit-description"
           value={edit.description}
