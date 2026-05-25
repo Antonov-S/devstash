@@ -103,6 +103,14 @@ export const AI_MAX_INPUT_CHARS = 2000;
 // Per-user, per-hour cap on the Suggest Tags action.
 export const AI_SUGGEST_TAGS_PER_HOUR = 20;
 
+// Per-user, per-hour cap on the Generate Description action.
+export const AI_GENERATE_DESCRIPTION_PER_HOUR = 20;
+
+// Shared blue accent for AI affordances (matches SYSTEM_TYPE_COLORS.snippet
+// and the homepage hero gradient). Keep the two AI buttons (Suggest tags,
+// Generate description) visually unified by referencing this single value.
+export const AI_ACCENT_COLOR = "#3b82f6";
+
 export const CODE_LANGUAGE_ALIASES: Record<string, string> = {
   js: "javascript",
   jsx: "javascript",

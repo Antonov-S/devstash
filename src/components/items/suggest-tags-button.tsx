@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Sparkles, X } from "lucide-react";
+import { Check, LoaderCircle, Sparkles, X } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -11,7 +11,6 @@ import {
 } from "@/actions/ai-tags";
 import { useIsPro } from "@/components/billing/is-pro-context";
 import { Button } from "@/components/ui/button";
-import { PendingButton } from "@/components/ui/pending-button";
 
 type Props = {
   getPayload: () => GenerateAutoTagsPayload;
@@ -76,17 +75,23 @@ export function SuggestTagsButton({
   return (
     <div className="flex flex-col gap-2">
       <div>
-        <PendingButton
+        {/* Uses AI_ACCENT_COLOR (#3b82f6 / SYSTEM_TYPE_COLORS.snippet) — matches
+            GenerateDescriptionButton so both AI buttons read as a unified set. */}
+        <button
           type="button"
-          variant="ghost"
-          size="sm"
-          pending={pending}
-          disabled={disabled}
           onClick={handleSuggest}
-          icon={<Sparkles aria-hidden className="size-4" />}
+          disabled={pending || disabled}
+          aria-label="Suggest tags with AI"
+          title="Suggest tags with AI"
+          className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-[#3b82f6] transition-colors outline-none hover:bg-[#3b82f6]/10 focus-visible:bg-[#3b82f6]/10 focus-visible:ring-2 focus-visible:ring-[#3b82f6]/40 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
         >
-          {pending ? "Suggesting…" : "Suggest tags"}
-        </PendingButton>
+          {pending ? (
+            <LoaderCircle className="size-3.5 animate-spin" aria-hidden />
+          ) : (
+            <Sparkles className="size-3.5" aria-hidden />
+          )}
+          <span>{pending ? "Suggesting…" : "Suggest tags"}</span>
+        </button>
       </div>
       {suggestions.length > 0 && (
         <ul

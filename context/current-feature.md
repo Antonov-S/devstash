@@ -1,12 +1,83 @@
-# Current Feature
+# Current Feature: AI Description Generator + Unified AI Button Styling
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
+- Add an icon button next to the Description field in both the **NewItemDialog** (create) and **ItemEditForm** (drawer edit mode) that generates a concise 1–2 sentence description for the current item.
+- Generation works from the **current in-form state** (title, content, URL, language, item type, tags) — no save required, no DB roundtrip for input.
+- Works for **all creatable item types**: snippet, prompt, command, note, link, file, image. Use whatever fields are available for the type (e.g. link → title + URL; snippet → title + content + language; image → title + filename).
+- Pro-gated like the existing AI auto-tagging (button hidden for free users via `useIsPro()` context).
+- Style the new generate-description button using the **blue accent from the homepage** (snippet blue `#3b82f6` / `SYSTEM_TYPE_COLORS.snippet`) so it visually stands out as the primary AI affordance.
+- Update the existing **Suggest tags** button on both create + edit surfaces to use the **same blue styling** so the two AI buttons read as a consistent set.
+
 ## Notes
+
+### Input truncation rule
+
+- **Truncate the user-provided content (title + content + URL + fileName + language + tags assembled into the prompt input) to ~2000 chars before sending to the model.** Matches the existing `AI_MAX_INPUT_CHARS = 2000` constant used by `generateAutoTags`. Hard cap applied server-side in the action, *before* the OpenAI call, to bound cost and latency. Truncation appends a marker (e.g. `…[truncated]`) so the model knows the input was cut.
+
+### Backend (new server action)
+
+- New `generateDescription` server action in `src/actions/ai-description.ts` mirroring `generateAutoTags` (`src/actions/ai-tags.ts`):
+  - `auth()` gate → real `getUserIsPro(session.user.id)` (NOT `session.user.isPro` — JWT lags Stripe downgrades by one request).
+  - Per-user rate-limit via `src/lib/rate-limit.ts` with a new entry (e.g. `aiGenerateDescription`, 20/h to match `aiSuggestTags`).
+  - Zod-validate the payload: `type` (one of the 7 item-type names), optional `title`, `content`, `url`, `language`, `fileName`, `tags`. Title OR content OR URL OR fileName must be present (`superRefine`).
+  - Truncate the assembled prompt input to `AI_MAX_INPUT_CHARS` (2000) — see "Input truncation rule" above.
+  - Use **Responses API** (`getOpenAI().responses.create({ model: AI_MODEL, instructions, input, text: { format: { type: "json_object" } } })`) — gpt-5-nano gotchas already documented: literal word "json" must appear in `input`, `chat.completions.create` returns empty for this model, structured-output helper burns tokens.
+  - Parse `response.output_text` into `{ description: string }` shape, with a `parseDescriptionResponse()` helper tolerating both `{"description": "..."}` and bare string responses.
+  - Normalize: trim, collapse whitespace, enforce 1–2 sentence cap (reject/truncate if model returns longer).
+  - Return `{ success, description } | { success, error }`.
+
+### New constants in `src/lib/constants.ts`
+
+- `AI_GENERATE_DESCRIPTION_PER_HOUR = 20` (mirrors `AI_SUGGEST_TAGS_PER_HOUR`).
+- Optionally a shared `AI_ACCENT_COLOR` or class string for the blue AI-button styling so both `SuggestTagsButton` and the new `GenerateDescriptionButton` reference one source of truth (per the constants-centralization rule).
+
+### Frontend (new component + 2 surfaces)
+
+- New `GenerateDescriptionButton` client component in `src/components/items/generate-description-button.tsx`:
+  - Returns `null` when `!isPro` (matches `SuggestTagsButton` pattern).
+  - `Sparkles` icon + label (icon-only on the Description row would be neat per the request — confirm: icon-only ghost button positioned at the end of the Description label row, similar to where `SuggestTagsButton` sits in the Tags row).
+  - Uses blue `#3b82f6` styling — likely via `text-[#3b82f6] hover:text-[#3b82f6]/80` or a new utility class so the icon pops on the dark card surface.
+  - Accepts `getPayload: () => GenerateDescriptionPayload` (read form state at click-time, not mount-time), `onResult: (description: string) => void`, `typeName: string`, `disabled?: boolean`.
+  - `useTransition` for in-flight spinner state.
+  - On success: calls `onResult(description)` so the parent overwrites the description input. Optional: confirm/diff UI if there's already a non-empty description — for v1, **overwrite** with a toast like "Description updated" so the user can undo via Ctrl+Z in the textarea (or just retype). User pushback during implementation may add a confirm dialog.
+  - On error: toast with Upgrade CTA when message contains `"Pro"`, plain `toast.error` otherwise.
+
+- Wired into **2 surfaces**:
+  - `NewItemDialog` (`src/components/items/new-item-dialog.tsx`) — render inline at the end of the Description `Field` label row. Accepts the click only when title/content/URL/fileName has something to work with (`disabled` derived from form state).
+  - `ItemEditForm` (`src/components/items/item-edit-form.tsx`) — same placement inside the Description field's label row. Reads `edit.title`, `edit.content`, `edit.url`, `detail.fileName`, `edit.tags`, etc. for the payload.
+
+### Unify "Suggest tags" button styling
+
+- Current `SuggestTagsButton` (`src/components/items/suggest-tags-button.tsx`) uses ghost variant + muted-foreground.
+- Update to use the same blue accent (`#3b82f6`) icon/text so both AI buttons match visually.
+- Single styling utility / class — pull from constants if a new `AI_ACCENT_*` export is added, otherwise inline the hex with a comment pointing to `SYSTEM_TYPE_COLORS.snippet`.
+
+### Testing
+
+- New Vitest coverage in `src/actions/__tests__/ai-description.test.ts` mirroring the existing `ai-tags.test.ts` (11 cases):
+  - No session, free user (gate fires before model + rate-limit), JWT-staleness check (`getUserIsPro` called with the session userId, NOT `session.user.isPro`).
+  - Rate-limit fail returns `rateLimitMessage` output AND verifies the `aiGenerateDescription` + `user:<id>` arguments.
+  - Empty payload (no title/content/url/fileName) Zod fail.
+  - `{"description": "..."}` parse + trim + whitespace collapse.
+  - Bare-string response parse.
+  - Long-content truncation: input > 2000 chars truncated with marker, `model === "gpt-5-nano"`, `text.format === json_object`, literal `"json"` in input.
+  - Empty `output_text` → error.
+  - Malformed JSON → error.
+  - OpenAI throw → "Could not generate description. Please try again." with `console.error` spied + restored.
+  - Optional: 1–2 sentence cap enforcement (model returns 5 sentences → truncate to 2).
+- Per `coding-standards.md` Testing section, the 2 new component additions (`GenerateDescriptionButton` + the unified-styling changes to `SuggestTagsButton`) are out of scope for Vitest.
+- `src/lib/openai.ts` already not unit-tested (thin SDK wrapper), exercised indirectly via mocked `getOpenAI()`.
+
+### Out of scope
+
+- AI summary feature (already in the 5-phase AI integration plan at `docs/ai-integration-plan.md` — that's a *different* "summarize an existing saved item" surface that lives on the item drawer's view mode, not the in-form description-input generator this feature ships).
+- Explain This Code / Prompt Optimizer (remaining AI surfaces in the broader plan).
+- Per-item-type custom prompt templates beyond what fits naturally in `instructions` + `input` for the Responses API.
 
 ## History
 

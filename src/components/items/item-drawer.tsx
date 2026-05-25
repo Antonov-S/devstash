@@ -290,6 +290,7 @@ export function ItemDrawer({ cardItem, open, onOpenChange }: Props) {
               showsMarkdown={showsMarkdown}
               showsUrl={showsUrl}
               typeName={typeName}
+              fileName={detail.fileName}
             />
           ) : detail ? (
             <ItemDrawerBody
