@@ -3,6 +3,8 @@ import "server-only";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 
+import { AI_SUGGEST_TAGS_PER_HOUR } from "@/lib/constants";
+
 type Window = `${number} ${"s" | "m" | "h"}`;
 
 export type LimiterName =
@@ -10,14 +12,16 @@ export type LimiterName =
   | "register"
   | "forgotPassword"
   | "resetPassword"
-  | "resendVerification";
+  | "resendVerification"
+  | "aiSuggestTags";
 
 const LIMITS: Record<LimiterName, { tokens: number; window: Window }> = {
   login: { tokens: 5, window: "15 m" },
   register: { tokens: 3, window: "1 h" },
   forgotPassword: { tokens: 3, window: "1 h" },
   resetPassword: { tokens: 5, window: "15 m" },
-  resendVerification: { tokens: 3, window: "15 m" }
+  resendVerification: { tokens: 3, window: "15 m" },
+  aiSuggestTags: { tokens: AI_SUGGEST_TAGS_PER_HOUR, window: "1 h" }
 };
 
 let cachedRedis: Redis | null = null;

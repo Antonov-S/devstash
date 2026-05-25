@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+import { IsProProvider } from "@/components/billing/is-pro-context";
 import { DashboardSidebar } from "@/components/dashboard/sidebar";
 import { TopBar } from "@/components/dashboard/top-bar";
 import { EditorPreferencesProvider } from "@/components/editor/editor-preferences-context";
@@ -35,19 +36,23 @@ export default async function DashboardLayout({
     ]);
   }
 
+  const isPro = session?.user?.isPro ?? false;
+
   return (
-    <EditorPreferencesProvider initial={editorPreferences}>
-      <UserCollectionsProvider collections={collections}>
-        <SearchPaletteProvider data={searchData}>
-          <SidebarProvider>
-            <DashboardSidebar />
-            <SidebarInset className="flex h-screen flex-col">
-              <TopBar isPro={session?.user?.isPro ?? false} />
-              <main className="flex-1 overflow-y-auto p-4 sm:p-6">{children}</main>
-            </SidebarInset>
-          </SidebarProvider>
-        </SearchPaletteProvider>
-      </UserCollectionsProvider>
-    </EditorPreferencesProvider>
+    <IsProProvider isPro={isPro}>
+      <EditorPreferencesProvider initial={editorPreferences}>
+        <UserCollectionsProvider collections={collections}>
+          <SearchPaletteProvider data={searchData}>
+            <SidebarProvider>
+              <DashboardSidebar />
+              <SidebarInset className="flex h-screen flex-col">
+                <TopBar isPro={isPro} />
+                <main className="flex-1 overflow-y-auto p-4 sm:p-6">{children}</main>
+              </SidebarInset>
+            </SidebarProvider>
+          </SearchPaletteProvider>
+        </UserCollectionsProvider>
+      </EditorPreferencesProvider>
+    </IsProProvider>
   );
 }

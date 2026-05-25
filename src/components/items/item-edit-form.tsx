@@ -5,8 +5,10 @@ import { CollectionsPicker } from "@/components/items/collections-picker";
 import { Field, Textarea } from "@/components/items/_form-primitives";
 import { LanguageSelect } from "@/components/items/language-select";
 import { MarkdownEditor } from "@/components/items/markdown-editor";
+import { SuggestTagsButton } from "@/components/items/suggest-tags-button";
 import { Input } from "@/components/ui/input";
 import type { ItemDetail } from "@/lib/db/items";
+import { parseTags } from "@/lib/utils";
 
 export type EditState = {
   title: string;
@@ -37,7 +39,8 @@ export function ItemEditForm({
   showsContent,
   showsLanguage,
   showsMarkdown,
-  showsUrl
+  showsUrl,
+  typeName
 }: {
   edit: EditState;
   onChange: (next: EditState) => void;
@@ -46,6 +49,7 @@ export function ItemEditForm({
   showsLanguage: boolean;
   showsMarkdown: boolean;
   showsUrl: boolean;
+  typeName: string;
 }) {
   function update<K extends keyof EditState>(key: K, value: EditState[K]) {
     onChange({ ...edit, [key]: value });
@@ -133,6 +137,23 @@ export function ItemEditForm({
           onChange={(e) => update("tags", e.target.value)}
           disabled={disabled}
           placeholder="react, hooks, auth"
+        />
+        <SuggestTagsButton
+          getPayload={() => ({
+            title: edit.title,
+            content: showsContent ? edit.content : null,
+            description: edit.description,
+            language: showsLanguage ? edit.language : null,
+            typeName
+          })}
+          existingTags={parseTags(edit.tags)}
+          onAccept={(tag) =>
+            update(
+              "tags",
+              edit.tags.trim() === "" ? tag : `${edit.tags}, ${tag}`
+            )
+          }
+          disabled={disabled || edit.title.trim() === ""}
         />
       </Field>
 

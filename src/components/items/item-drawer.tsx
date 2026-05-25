@@ -289,6 +289,7 @@ export function ItemDrawer({ cardItem, open, onOpenChange }: Props) {
               showsLanguage={showsLanguage}
               showsMarkdown={showsMarkdown}
               showsUrl={showsUrl}
+              typeName={typeName}
             />
           ) : detail ? (
             <ItemDrawerBody
