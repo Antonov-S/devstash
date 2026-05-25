@@ -1,12 +1,26 @@
-# Current Feature
+# Current Feature: Language Dropdown for Code Editor
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
+- Add a language selector dropdown above the content/code editor in both surfaces:
+  - `NewItemDialog` (new item creation modal)
+  - `ItemEditForm` (edit mode inside the item drawer)
+- Selecting a language updates the `CodeEditor`'s active language so Monaco applies syntax highlighting in real time as the user types
+- Persist the chosen language on the `Item.language` field (already on the Prisma schema) via the existing `createItemAction` / `updateItemAction` — no schema or action signature changes needed
+- Apply to the `snippet` and `command` item types only (the two types where the schema already surfaces `language` in `ItemDetail` and the existing UI exposes a Language field)
+
 ## Notes
+
+- `CodeEditor` (`src/components/editor/code-editor.tsx`) already accepts a `language` prop and routes it through the existing alias map (e.g. `ts → typescript`); the work is in the form layer, not the editor
+- Current UX has Language as a free-text `<input>` rendered **below** the content textarea/editor — this feature flips it to a dropdown rendered **above** the editor so the highlighting follows the selection
+- Use the existing base-ui `Select` primitive (`src/components/ui/select.tsx`) — same component the editor preferences form uses for theme/font-size/tab-size dropdowns, keeps visual consistency and avoids native `<select>` white-on-white popups
+- Centralize the language list + display labels in `src/lib/constants.ts` (per the codebase centralization rule) so both NewItemDialog and ItemEditForm read from the same source
+- Default selection when no language is set: pick a sensible fallback (likely `plaintext`) so the editor still loads cleanly on the create path before the user picks one
+- Non-code text types (prompt, note) plus link/file/image are out of scope — they don't use Monaco and don't have a language field
 
 ## History
 

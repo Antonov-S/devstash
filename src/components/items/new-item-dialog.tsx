@@ -19,6 +19,7 @@ import { CodeEditor } from "@/components/items/code-editor";
 import { CollectionsPicker } from "@/components/items/collections-picker";
 import { FileUpload, type UploadedFile } from "@/components/items/file-upload";
 import { Field, Textarea } from "@/components/items/_form-primitives";
+import { LanguageSelect } from "@/components/items/language-select";
 import { MarkdownEditor } from "@/components/items/markdown-editor";
 import { Button } from "@/components/ui/button";
 import { PendingButton } from "@/components/ui/pending-button";
@@ -257,6 +258,17 @@ export function NewItemDialog({
             />
           </Field>
 
+          {showsLanguage && (
+            <Field label="Language" htmlFor="new-language">
+              <LanguageSelect
+                id="new-language"
+                value={language}
+                onChange={setLanguage}
+                disabled={pending}
+              />
+            </Field>
+          )}
+
           {showsContent && (
             <Field label="Content" htmlFor="new-content">
               {showsLanguage ? (
@@ -282,18 +294,6 @@ export function NewItemDialog({
                   className="font-mono text-sm"
                 />
               )}
-            </Field>
-          )}
-
-          {showsLanguage && (
-            <Field label="Language" htmlFor="new-language">
-              <Input
-                id="new-language"
-                value={language}
-                onChange={(e) => setLanguage(e.target.value)}
-                disabled={pending}
-                placeholder="e.g. typescript"
-              />
             </Field>
           )}
 

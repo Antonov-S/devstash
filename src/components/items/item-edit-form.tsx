@@ -3,6 +3,7 @@
 import { CodeEditor } from "@/components/items/code-editor";
 import { CollectionsPicker } from "@/components/items/collections-picker";
 import { Field, Textarea } from "@/components/items/_form-primitives";
+import { LanguageSelect } from "@/components/items/language-select";
 import { MarkdownEditor } from "@/components/items/markdown-editor";
 import { Input } from "@/components/ui/input";
 import type { ItemDetail } from "@/lib/db/items";
@@ -73,6 +74,17 @@ export function ItemEditForm({
         />
       </Field>
 
+      {showsLanguage && (
+        <Field label="Language" htmlFor="edit-language">
+          <LanguageSelect
+            id="edit-language"
+            value={edit.language}
+            onChange={(next) => update("language", next)}
+            disabled={disabled}
+          />
+        </Field>
+      )}
+
       {showsContent && (
         <Field label="Content" htmlFor="edit-content">
           {showsLanguage ? (
@@ -98,18 +110,6 @@ export function ItemEditForm({
               className="font-mono text-sm"
             />
           )}
-        </Field>
-      )}
-
-      {showsLanguage && (
-        <Field label="Language" htmlFor="edit-language">
-          <Input
-            id="edit-language"
-            value={edit.language}
-            onChange={(e) => update("language", e.target.value)}
-            disabled={disabled}
-            placeholder="e.g. typescript"
-          />
         </Field>
       )}
 
