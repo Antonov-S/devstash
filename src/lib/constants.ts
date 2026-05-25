@@ -89,6 +89,20 @@ export const CODE_LANGUAGES: readonly CodeLanguageOption[] = [
   { value: "yaml", label: "YAML" }
 ];
 
+// AI
+//
+// gpt-5-nano is the cheapest current OpenAI model with the inputs we need.
+// IMPORTANT: this model only works with the Responses API — chat.completions
+// returns empty content. See src/lib/openai.ts.
+export const AI_MODEL = "gpt-5-nano" as const;
+
+// Hard cap on user-supplied content sent to the model. Items truncate at this
+// length before the call so a 50K-line snippet can't generate a $5 request.
+export const AI_MAX_INPUT_CHARS = 2000;
+
+// Per-user, per-hour cap on the Suggest Tags action.
+export const AI_SUGGEST_TAGS_PER_HOUR = 20;
+
 export const CODE_LANGUAGE_ALIASES: Record<string, string> = {
   js: "javascript",
   jsx: "javascript",

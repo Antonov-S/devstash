@@ -21,6 +21,7 @@ import { FileUpload, type UploadedFile } from "@/components/items/file-upload";
 import { Field, Textarea } from "@/components/items/_form-primitives";
 import { LanguageSelect } from "@/components/items/language-select";
 import { MarkdownEditor } from "@/components/items/markdown-editor";
+import { SuggestTagsButton } from "@/components/items/suggest-tags-button";
 import { Button } from "@/components/ui/button";
 import { PendingButton } from "@/components/ui/pending-button";
 import {
@@ -330,6 +331,20 @@ export function NewItemDialog({
               onChange={(e) => setTags(e.target.value)}
               disabled={pending}
               placeholder="react, hooks, auth"
+            />
+            <SuggestTagsButton
+              getPayload={() => ({
+                title,
+                content: showsContent ? content : null,
+                description,
+                language: showsLanguage ? language : null,
+                typeName: type
+              })}
+              existingTags={parseTags(tags)}
+              onAccept={(tag) =>
+                setTags((current) => (current.trim() === "" ? tag : `${current}, ${tag}`))
+              }
+              disabled={pending || titleEmpty}
             />
           </Field>
 
