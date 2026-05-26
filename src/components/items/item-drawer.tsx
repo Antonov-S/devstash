@@ -58,6 +58,7 @@ export function ItemDrawer({ cardItem, open, onOpenChange }: Props) {
   const [favoritePending, startToggleFavorite] = useTransition();
   const [isPinned, setIsPinned] = useState(cardItem.isPinned);
   const [pinPending, startTogglePin] = useTransition();
+  const [applyingOptimized, startApplyingOptimized] = useTransition();
 
   useEffect(() => {
     if (!open || detail) return;
@@ -186,6 +187,28 @@ export function ItemDrawer({ cardItem, open, onOpenChange }: Props) {
     });
   }
 
+  function handleApplyOptimized(newContent: string) {
+    if (!detail) return;
+    startApplyingOptimized(async () => {
+      const result = await updateItemAction(detail.id, {
+        title: detail.title,
+        description: detail.description,
+        content: newContent,
+        url: detail.url,
+        language: detail.language,
+        tags: detail.tags,
+        collectionIds: detail.collections.map((c) => c.id)
+      });
+      if (!result.success) {
+        toast.error(result.error);
+        return;
+      }
+      setDetail(result.data);
+      toast.success("Prompt updated");
+      router.refresh();
+    });
+  }
+
   function handleDelete() {
     if (!detail) return;
     startDeleting(async () => {
@@ -206,7 +229,7 @@ export function ItemDrawer({ cardItem, open, onOpenChange }: Props) {
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="flex w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-[max(32rem,33vw)]">
+      <SheetContent className="flex w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-[max(36rem,40vw)]">
         <SheetHeader className="gap-4 border-b border-border/60 px-6 py-5">
           <div className="flex items-start gap-3 pr-8">
             {Icon && (
@@ -297,6 +320,8 @@ export function ItemDrawer({ cardItem, open, onOpenChange }: Props) {
               detail={detail}
               showsLanguage={showsLanguage}
               showsMarkdown={showsMarkdown}
+              onApplyOptimized={handleApplyOptimized}
+              applyingOptimized={applyingOptimized}
             />
           ) : null}
         </div>

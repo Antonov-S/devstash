@@ -3,7 +3,10 @@
 import { Download, ExternalLink, FileIcon } from "lucide-react";
 
 import { CodeEditor, type ExplainContext } from "@/components/items/code-editor";
-import { MarkdownEditor } from "@/components/items/markdown-editor";
+import {
+  MarkdownEditor,
+  type OptimizeContext
+} from "@/components/items/markdown-editor";
 import { Badge } from "@/components/ui/badge";
 import type { ItemDetail } from "@/lib/db/items";
 import { formatDateLong } from "@/lib/format-date";
@@ -12,11 +15,15 @@ import { formatBytes } from "@/lib/upload-constraints";
 export function ItemDrawerBody({
   detail,
   showsLanguage,
-  showsMarkdown
+  showsMarkdown,
+  onApplyOptimized,
+  applyingOptimized
 }: {
   detail: ItemDetail;
   showsLanguage: boolean;
   showsMarkdown: boolean;
+  onApplyOptimized?: (newContent: string) => void;
+  applyingOptimized?: boolean;
 }) {
   const contentSectionTitle =
     detail.contentType === "FILE"
@@ -40,6 +47,8 @@ export function ItemDrawerBody({
           detail={detail}
           showsLanguage={showsLanguage}
           showsMarkdown={showsMarkdown}
+          onApplyOptimized={onApplyOptimized}
+          applyingOptimized={applyingOptimized}
         />
       </Section>
 
@@ -94,11 +103,15 @@ export function ItemDrawerBody({
 function ItemContent({
   detail,
   showsLanguage,
-  showsMarkdown
+  showsMarkdown,
+  onApplyOptimized,
+  applyingOptimized
 }: {
   detail: ItemDetail;
   showsLanguage: boolean;
   showsMarkdown: boolean;
+  onApplyOptimized?: (newContent: string) => void;
+  applyingOptimized?: boolean;
 }) {
   if (detail.contentType === "TEXT") {
     if (!detail.content) {
@@ -121,11 +134,19 @@ function ItemContent({
       );
     }
     if (showsMarkdown) {
+      const markdownTypeName = detail.itemType.name.toLowerCase();
+      const optimizeContext: OptimizeContext | undefined =
+        markdownTypeName === "prompt"
+          ? { typeName: "prompt", title: detail.title }
+          : undefined;
       return (
         <MarkdownEditor
           value={detail.content}
           readOnly
           ariaLabel="Item content"
+          optimizeContext={optimizeContext}
+          onApplyOptimized={onApplyOptimized}
+          applyingOptimized={applyingOptimized}
         />
       );
     }
