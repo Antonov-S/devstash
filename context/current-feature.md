@@ -1,12 +1,30 @@
-# Current Feature
+# Current Feature: AI Explain Code
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
+- Add `explainCode` server action with auth, Pro gating, Zod validation, and `aiExplainCode` rate limit (mirrors `generateAutoTags` / `generateDescription` pattern)
+- Use OpenAI `gpt-5-nano` via Responses API with `text.format: json_object` and the literal word "json" in input (existing gpt-5-nano gotchas apply)
+- Wire an "Explain" button (`Sparkles` icon) into the `CodeEditor` window-controls header next to the existing Copy button, only when in the item drawer for `snippet` / `command` types
+- Add Code / Explain tabs in the editor header after explanation is generated; toggle between Monaco view and rendered markdown in the same container
+- Render explanation as markdown (~200–300 words) covering what the code does and key concepts; not persisted to DB, regenerated each click
+- Loading state via `Loader2` spinner; toast errors for Pro gating, rate limit, and AI service failures
+- Free-user UI shows `Crown` icon + tooltip ("AI features require Pro subscription") instead of the active Explain button
+- Thread `isPro` from `useIsPro()` context down to `CodeEditor` (via `ItemDrawer` view-mode usage only)
+- Vitest coverage for the server action mirroring `ai-description.test.ts`
+
 ## Notes
+
+- Surface only in the read view of the item drawer — NOT in `NewItemDialog` or `ItemEditForm`
+- Only `snippet` and `command` item types (other types are already human-readable or non-code)
+- Explanations are ephemeral (no DB column added)
+- Reuse `MarkdownEditor` readonly mode (or its underlying `react-markdown` setup) for rendering
+- New constant `AI_EXPLAIN_CODE_PER_HOUR` in `src/lib/constants.ts`; new `aiExplainCode` entry in `src/lib/rate-limit.ts` `LIMITS`
+- See `docs/ai-integration-plan.md` for full architectural context
+- Spec: `context/features/ai-explain-spec.md`
 
 ## History
 

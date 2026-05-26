@@ -2,7 +2,7 @@
 
 import { Download, ExternalLink, FileIcon } from "lucide-react";
 
-import { CodeEditor } from "@/components/items/code-editor";
+import { CodeEditor, type ExplainContext } from "@/components/items/code-editor";
 import { MarkdownEditor } from "@/components/items/markdown-editor";
 import { Badge } from "@/components/ui/badge";
 import type { ItemDetail } from "@/lib/db/items";
@@ -105,12 +105,18 @@ function ItemContent({
       return <EmptyContent label="No content" />;
     }
     if (showsLanguage) {
+      const explainTypeName = detail.itemType.name.toLowerCase();
+      const explainContext: ExplainContext | undefined =
+        explainTypeName === "snippet" || explainTypeName === "command"
+          ? { typeName: explainTypeName, title: detail.title }
+          : undefined;
       return (
         <CodeEditor
           value={detail.content}
           language={detail.language}
           readOnly
           ariaLabel="Item content"
+          explainContext={explainContext}
         />
       );
     }
