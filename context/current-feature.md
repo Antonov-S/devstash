@@ -1,12 +1,28 @@
-# Current Feature
+# Current Feature: AI Optimize Prompt
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
+- Add a fourth AI surface (after auto-tag, description, explain code) that refines a saved prompt's text.
+- Show an "Optimize" button in the `MarkdownEditor` header on `prompt` items only — visually paired with the existing Explain affordance on snippets/commands.
+- Pro-gate consistently with the other AI features (real `getUserIsPro` DB read in the action; UI hides or renders disabled with the same `Crown` icon + Pro tooltip pattern).
+- When clicked, call a new `optimizePrompt` server action that returns a refined prompt; render it side-by-side or as a preview with **Use updated prompt** + **Discard** controls — do NOT auto-save.
+- Accepting the refined prompt updates the item's `content` via the existing edit pathway (`updateItemAction`) and refreshes the drawer.
+
 ## Notes
+
+- Surface lives on the **read** view of an item drawer, just like Explain — not on create/edit forms.
+- Item type is `prompt`, which renders via `MarkdownEditor` (not Monaco). Add an `optimizeContext?: { typeName: "prompt"; title?: string | null }` prop on `MarkdownEditor` mirroring `CodeEditor`'s `explainContext` shape so the button slot is reusable and TypeScript-narrowed.
+- New action `optimizePrompt` in `src/actions/ai-optimize-prompt.ts` mirrors `explainCode`/`generateDescription` exactly: `auth()` → real `getUserIsPro(session.user.id)` (NOT `session.user.isPro`) → per-user `aiOptimizePrompt` rate-limit → Zod parse (`typeName: z.literal("prompt")`, `content: z.string().min(1)`) → 2000-char `truncate()` → OpenAI Responses API with `text.format: json_object` + literal "json" in `input` (gpt-5-nano gotcha) → parse `{"prompt": "..."}` OR bare string → return `{ success, prompt } | { success, error }`.
+- New rate-limit entry `aiOptimizePrompt` in `src/lib/rate-limit.ts` (`tokens: AI_OPTIMIZE_PROMPT_PER_HOUR`, `window: "1 h"`) and new `AI_OPTIMIZE_PROMPT_PER_HOUR = 20` in `src/lib/constants.ts` per the centralization rule.
+- UX for the accept flow: simplest path is to render the refined prompt inline in the editor body (matching Explain's tab swap), with two header buttons — **Use this prompt** (primary, calls existing `updateItemAction` with the new content + closes the preview) and **Discard** (returns to original). Optionally show a small "Refined" badge in the header while in preview mode.
+- Saving the optimized prompt is a write — must call `updateItemAction` so all the normal Pro/capacity/ownership checks fire. Avoid adding a second `updateOptimizedPrompt` action.
+- Toast errors with the standard Upgrade CTA pattern when the error string contains `"Pro"` (route to `/upgrade`).
+- Spec lives at `context/features/ai-optimize-prompt-spec.md` (not yet written — create during `start`).
+- Tests: new `src/actions/__tests__/ai-optimize-prompt.test.ts` mirroring the existing `ai-explain.test.ts` pattern (no session, free-user gate, JWT staleness, rate-limit fail, empty-content Zod fail, parse both shapes, long-content truncation marker + json + format checks, empty/malformed/throw paths). Components stay out of Vitest scope.
 
 ## History
 

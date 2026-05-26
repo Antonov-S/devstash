@@ -109,6 +109,9 @@ export const AI_GENERATE_DESCRIPTION_PER_HOUR = 20;
 // Per-user, per-hour cap on the Explain Code action.
 export const AI_EXPLAIN_CODE_PER_HOUR = 20;
 
+// Per-user, per-hour cap on the Optimize Prompt action.
+export const AI_OPTIMIZE_PROMPT_PER_HOUR = 20;
+
 // Shared blue accent for AI affordances (matches SYSTEM_TYPE_COLORS.snippet
 // and the homepage hero gradient). Keep the two AI buttons (Suggest tags,
 // Generate description) visually unified by referencing this single value.

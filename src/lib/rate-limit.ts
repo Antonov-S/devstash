@@ -6,6 +6,7 @@ import { Redis } from "@upstash/redis";
 import {
   AI_EXPLAIN_CODE_PER_HOUR,
   AI_GENERATE_DESCRIPTION_PER_HOUR,
+  AI_OPTIMIZE_PROMPT_PER_HOUR,
   AI_SUGGEST_TAGS_PER_HOUR
 } from "@/lib/constants";
 
@@ -19,7 +20,8 @@ export type LimiterName =
   | "resendVerification"
   | "aiSuggestTags"
   | "aiGenerateDescription"
-  | "aiExplainCode";
+  | "aiExplainCode"
+  | "aiOptimizePrompt";
 
 const LIMITS: Record<LimiterName, { tokens: number; window: Window }> = {
   login: { tokens: 5, window: "15 m" },
@@ -32,7 +34,8 @@ const LIMITS: Record<LimiterName, { tokens: number; window: Window }> = {
     tokens: AI_GENERATE_DESCRIPTION_PER_HOUR,
     window: "1 h"
   },
-  aiExplainCode: { tokens: AI_EXPLAIN_CODE_PER_HOUR, window: "1 h" }
+  aiExplainCode: { tokens: AI_EXPLAIN_CODE_PER_HOUR, window: "1 h" },
+  aiOptimizePrompt: { tokens: AI_OPTIMIZE_PROMPT_PER_HOUR, window: "1 h" }
 };
 
 let cachedRedis: Redis | null = null;
