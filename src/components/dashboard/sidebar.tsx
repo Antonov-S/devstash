@@ -6,6 +6,7 @@ import {
   SidebarCollections,
   type SidebarCollection
 } from "@/components/dashboard/sidebar-collections";
+import { SidebarNavButton } from "@/components/dashboard/sidebar-nav-button";
 import { SidebarUserMenu } from "@/components/dashboard/sidebar-user-menu";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -17,7 +18,6 @@ import {
   SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
-  SidebarMenuButton,
   SidebarMenuItem,
   SidebarSeparator
 } from "@/components/ui/sidebar";
@@ -95,9 +95,9 @@ export async function DashboardSidebar() {
                 const showProBadge = isProType && !sessionUser.isPro;
                 return (
                   <SidebarMenuItem key={type.id}>
-                    <SidebarMenuButton
+                    <SidebarNavButton
                       className={menuButtonClass}
-                      render={<Link href={`/items/${pluralize(type.name)}`} />}
+                      href={`/items/${pluralize(type.name)}`}
                       tooltip={label}
                     >
                       {Icon && (
@@ -120,7 +120,7 @@ export async function DashboardSidebar() {
                       <span className="text-xs text-sidebar-foreground/60 group-data-[collapsible=icon]:hidden">
                         {type.itemCount}
                       </span>
-                    </SidebarMenuButton>
+                    </SidebarNavButton>
                   </SidebarMenuItem>
                 );
               })}

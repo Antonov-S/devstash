@@ -1,12 +1,30 @@
-# Current Feature
+# UI Review Fixes
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
+UI review fixes (three contained changes surfaced by a Playwright UI review):
+
+1. **Sidebar active-link highlighting** — the sidebar gives no visual indication of the current route. Confirmed live: every link in `src/components/dashboard/sidebar.tsx` / `src/components/dashboard/sidebar-collections.tsx` renders with `data-active="none"`, no `aria-current`, transparent background, weight 400 regardless of the active page.
+   - The `SidebarMenuButton` primitive (`src/components/ui/sidebar.tsx`) already supports an `isActive` prop but the callers never pass it.
+   - Read the current route with `usePathname()` (the sidebar/its menu items will need to be a client component), and pass `isActive={pathname === href}` to each `SidebarMenuButton` — use `pathname.startsWith(href)` for nested routes like `/collections/[id]`.
+   - Also set `aria-current="page"` on the active link for accessibility.
+
+2. **GitHub button missing on `/register`** — `src/components/auth/sign-in-form.tsx` renders the "OR CONTINUE WITH" divider + `GithubButton` (`githubSignInAction`), but `src/components/auth/register-form.tsx` has no GitHub option, so GitHub sign-ups dead-end and have to discover `/sign-in`.
+   - Port the same divider + `<form action={githubSignInAction}>` + `GithubButton` block from `sign-in-form.tsx` into `register-form.tsx`, matching its placement/styling.
+
+3. **"New Collection" button missing from the `/collections` page header** — creating a collection is only possible via the top-bar `+` menu and the empty state; a user with existing collections has no header affordance.
+   - Add a `NewCollectionDialog` trigger to the `/collections` page header (`src/app/(dashboard)/collections/page.tsx`), mirroring the "New [type]" button pattern used on `/items/[type]` pages (header as a `justify-between` flex with the button on the right).
+
 ## Notes
+
+- Source: live Playwright UI review (signed in as the demo user). Items 1 and 2 were confirmed in-browser; item 3 from page-structure review.
+- Follow the standard workflow in `context/ai-interaction.md`: branch → implement → test → commit (with permission) → merge → delete branch.
+- These are component/UI changes — out of Vitest scope per `coding-standards.md`. Still run `npm run test:run` + `npm run build` before committing.
+- During the review, `/items/[type]` routes 500'd in the dev server ("Jest worker encountered child process exceptions") — likely the known stale-Turbopack-worker artifact (dashboard rendered fine). Not part of this work, but worth confirming it's dev-only after a clean `.next` rebuild.
 
 ## History
 

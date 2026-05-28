@@ -59,6 +59,7 @@ export default async function CollectionsPage({
             </p>
           </div>
         </div>
+        {collections.length > 0 ? <NewCollectionDialog /> : null}
       </div>
 
       {collections.length > 0 ? (

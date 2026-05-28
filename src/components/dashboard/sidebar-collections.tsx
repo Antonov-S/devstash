@@ -1,15 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { ChevronDown, ChevronRight, Folder, Star } from "lucide-react";
 
+import { SidebarNavButton } from "@/components/dashboard/sidebar-nav-button";
 import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarMenu,
-  SidebarMenuButton,
   SidebarMenuItem
 } from "@/components/ui/sidebar";
 
@@ -71,15 +70,15 @@ export function SidebarCollections({
                 <SidebarMenu className={menuClass}>
                   {favorites.map((collection) => (
                     <SidebarMenuItem key={collection.id}>
-                      <SidebarMenuButton
+                      <SidebarNavButton
                         className={menuButtonClass}
-                        render={<Link href={`/collections/${collection.id}`} />}
+                        href={`/collections/${collection.id}`}
                         tooltip={collection.name}
                       >
                         <Folder className="size-4 shrink-0" />
                         <span className="flex-1 truncate">{collection.name}</span>
                         <Star className="size-3.5 shrink-0 fill-yellow-400 text-yellow-400 group-data-[collapsible=icon]:hidden" />
-                      </SidebarMenuButton>
+                      </SidebarNavButton>
                     </SidebarMenuItem>
                   ))}
                 </SidebarMenu>
@@ -96,9 +95,9 @@ export function SidebarCollections({
                 <SidebarMenu className={menuClass}>
                   {recents.map((collection) => (
                     <SidebarMenuItem key={collection.id}>
-                      <SidebarMenuButton
+                      <SidebarNavButton
                         className={menuButtonClass}
-                        render={<Link href={`/collections/${collection.id}`} />}
+                        href={`/collections/${collection.id}`}
                         tooltip={collection.name}
                       >
                         <span
@@ -113,7 +112,7 @@ export function SidebarCollections({
                         <span className="text-xs text-sidebar-foreground/60 group-data-[collapsible=icon]:hidden">
                           {collection.itemCount}
                         </span>
-                      </SidebarMenuButton>
+                      </SidebarNavButton>
                     </SidebarMenuItem>
                   ))}
                 </SidebarMenu>
@@ -125,14 +124,14 @@ export function SidebarCollections({
             <SidebarGroupContent>
               <SidebarMenu className={menuClass}>
                 <SidebarMenuItem>
-                  <SidebarMenuButton
+                  <SidebarNavButton
                     className={`${menuButtonClass} text-sidebar-foreground/70`}
-                    render={<Link href="/collections" />}
+                    href="/collections"
                     tooltip="View all collections"
                   >
                     <ChevronRight className="size-4 shrink-0" />
                     <span className="flex-1 truncate">View all collections</span>
-                  </SidebarMenuButton>
+                  </SidebarNavButton>
                 </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroupContent>
