@@ -11,17 +11,7 @@ import {
   updateCollectionForUser,
   type CollectionWithMeta
 } from "@/lib/db/collections";
-
-function normalizeOptional(value: string | null | undefined): string | null {
-  if (value == null) return null;
-  const trimmed = value.trim();
-  return trimmed.length === 0 ? null : trimmed;
-}
-
-const optionalTrimmedString = z
-  .union([z.string(), z.null()])
-  .optional()
-  .transform(normalizeOptional);
+import { optionalTrimmedString } from "@/lib/zod-fields";
 
 const createCollectionSchema = z.object({
   name: z

@@ -1,12 +1,36 @@
-# Current Feature
+# Refactor actions — AI runner + shared Zod fields
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
+Refactor the `src/actions/` folder to remove duplication (audit Findings 1 + 2). Pure internal refactor — no change to action signatures, return shapes, error strings, or runtime behavior. The existing Vitest suites (`src/actions/__tests__/ai-*.test.ts`, `items.test.ts`, `collections.test.ts`) are the regression net and must keep passing unchanged.
+
+### Finding 1 — Collapse the four near-identical AI actions
+
+`ai-tags.ts`, `ai-description.ts`, `ai-explain.ts`, and `ai-optimize-prompt.ts` are ~85% identical (~560 lines total). Each repeats: a byte-identical `truncate()`, the same guard pipeline (`auth()` → "You are not signed in." → `getUserIsPro` → "AI features require Pro." → `rateLimit` → `rateLimitMessage` → `safeParse` first-issue error), the same OpenAI Responses-API call with the same two block comments (gpt-5-nano gotcha + the "json" literal note), a near-identical `parseXResponse()` (try/`JSON.parse`/catch handling `{key: …}` OR a bare shape), and the same `try/catch` + `console.error` + "Please try again." tail.
+
+Extract a shared runner so each action keeps only what is genuinely per-feature (its `SYSTEM_INSTRUCTIONS`, its Zod schema, its prompt-assembly lines, its limiter name, its parse callback, its error strings).
+
+- New `src/lib/ai/run-ai-action.ts` exporting a `runAiAction<T>(...)` helper that owns: the DB-backed Pro re-read (`getUserIsPro`, NOT `session.user.isPro` — the JWT lags a Stripe downgrade by one request), the per-user rate-limit, the `getOpenAI().responses.create(...)` call (model `AI_MODEL`, `text.format: { type: "json_object" }`), and the empty-output / parse-failure branch. Caller passes `{ userId, limiterName, instructions, input, parse, errors: { empty, failure } }` and the runner returns `{ success: true; data: T } | { success: false; error: string }`.
+- Shared `truncate()` lives in the same module (or `src/lib/ai/text.ts`).
+- Shared `parseJsonShape(text, key)` covers tags / explain / optimize directly (object-with-key OR bare value); description keeps its extra `normalizeDescription` 2-sentence cap as a wrapper around the parsed string.
+- Each action file: keep `"use server"`, keep its `auth()` + signed-in guard and `safeParse` at the top (so the action still owns its own input validation + the friendliest error), then delegate the Pro/rate-limit/OpenAI/parse core to `runAiAction`. **Every existing error string, limiter name, and the literal "json" word in `input` must be preserved verbatim** — the test suites assert on all of them (e.g. `expect(args.input.toLowerCase()).toContain("json")`, `model === "gpt-5-nano"`, `text.format === json_object`, exact rate-limit key `user:user_1`, exact "Could not …" strings).
+
+### Finding 2 — De-duplicate the Zod field builders
+
+`normalizeOptional` + `optionalTrimmedString` are defined verbatim in both `items.ts` (lines 19-28) and `collections.ts` (lines 15-24); `urlField` + `collectionIdsField` live only in `items.ts` but belong with them.
+
+- New `src/lib/zod-fields.ts` exporting `normalizeOptional`, `optionalTrimmedString`, `urlField`, `collectionIdsField`. (A dedicated zod-fields module rather than `constants.ts` — these are schema builders, not tunable constant values.)
+- `items.ts` and `collections.ts` import from it and drop their local copies.
+
 ## Notes
+
+- Out of scope (deferred): Finding 3 (auth/id-guard boilerplate via a `requireUserId()` helper) and Finding 4 (shared `ActionResult<T>` type + `firstIssue` extractor). Bundle those into a later focused pass if desired.
+- `src/lib/openai.ts` stays un-unit-tested per the existing `stripe.ts` precedent (thin SDK wrapper, exercised indirectly via the mocked `getOpenAI()` in action tests). The new `run-ai-action.ts` is exercised the same way through the four AI action test suites — no new test files strictly required, though a focused `run-ai-action` unit test would be welcome if it doesn't pull next-auth's `next/server` resolution into Vitest (the documented poison gotcha).
+- Verify with `npm run test:run` + `npm run build` before committing; do not commit without permission.
 
 ## History
 
