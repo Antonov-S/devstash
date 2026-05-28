@@ -15,41 +15,11 @@ import {
   type ItemDetail
 } from "@/lib/db/items";
 import { keyFromPublicUrl } from "@/lib/r2";
-
-function normalizeOptional(value: string | null | undefined): string | null {
-  if (value == null) return null;
-  const trimmed = value.trim();
-  return trimmed.length === 0 ? null : trimmed;
-}
-
-const optionalTrimmedString = z
-  .union([z.string(), z.null()])
-  .optional()
-  .transform(normalizeOptional);
-
-const urlField = z
-  .union([z.string(), z.null()])
-  .optional()
-  .transform(normalizeOptional)
-  .refine(
-    (value) => {
-      if (value === null) return true;
-      try {
-        new URL(value);
-        return true;
-      } catch {
-        return false;
-      }
-    },
-    { message: "Invalid URL" }
-  );
-
-const collectionIdsField = z
-  .array(z.string())
-  .optional()
-  .transform((ids) =>
-    (ids ?? []).map((id) => id.trim()).filter((id) => id.length > 0)
-  );
+import {
+  collectionIdsField,
+  optionalTrimmedString,
+  urlField
+} from "@/lib/zod-fields";
 
 const updateItemSchema = z.object({
   title: z
