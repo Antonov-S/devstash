@@ -285,6 +285,8 @@
 
 .markdown-preview {
   color: #e4e4e7;
+  /* Fallback base size; overridden inline so it tracks the user's editor
+     font-size preference. Child sizes below use `em` to scale with it. */
   font-size: 0.875rem;
   line-height: 1.625;
   word-wrap: break-word;
@@ -312,28 +314,28 @@
 }
 
 .markdown-preview h1 {
-  font-size: 1.5rem;
+  font-size: 1.7em;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   padding-bottom: 0.35rem;
 }
 
 .markdown-preview h2 {
-  font-size: 1.25rem;
+  font-size: 1.4em;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   padding-bottom: 0.3rem;
 }
 
 .markdown-preview h3 {
-  font-size: 1.075rem;
+  font-size: 1.2em;
 }
 
 .markdown-preview h4 {
-  font-size: 0.95rem;
+  font-size: 1.05em;
 }
 
 .markdown-preview h5,
 .markdown-preview h6 {
-  font-size: 0.875rem;
+  font-size: 1em;
   color: #d4d4d8;
 }
 
@@ -424,7 +426,7 @@
   padding: 0;
   border-radius: 0;
   color: #e4e4e7;
-  font-size: 0.8125rem;
+  font-size: 0.9em;
 }
 
 .markdown-preview hr {
@@ -437,7 +439,7 @@
   width: 100%;
   border-collapse: collapse;
   margin: 0 0 0.85rem;
-  font-size: 0.85rem;
+  font-size: 0.95em;
 }
 
 .markdown-preview th,

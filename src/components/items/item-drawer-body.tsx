@@ -56,7 +56,7 @@ export function ItemDrawerBody({
         <Section title="Tags">
           <div className="flex flex-wrap gap-1.5">
             {detail.tags.map((tag) => (
-              <Badge key={tag} variant="secondary" className="text-xs">
+              <Badge key={tag} variant="secondary" className="text-[13px]">
                 {tag}
               </Badge>
             ))}
@@ -71,7 +71,7 @@ export function ItemDrawerBody({
               <Badge
                 key={collection.id}
                 variant="outline"
-                className="text-xs"
+                className="text-[13px]"
               >
                 {collection.name}
               </Badge>
@@ -255,7 +255,7 @@ function Section({
 }) {
   return (
     <section className="flex flex-col gap-2">
-      <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+      <h3 className="text-[13px] font-medium uppercase tracking-wide text-muted-foreground">
         {title}
       </h3>
       {children}
