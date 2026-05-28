@@ -17,6 +17,7 @@ import { toast } from "sonner";
 
 import { optimizePrompt } from "@/actions/ai-optimize-prompt";
 import { useIsPro } from "@/components/billing/is-pro-context";
+import { useEditorPreferences } from "@/components/editor/editor-preferences-context";
 import { Button } from "@/components/ui/button";
 import { AI_ACCENT_COLOR } from "@/lib/constants";
 import { cn } from "@/lib/utils";
@@ -59,6 +60,7 @@ export function MarkdownEditor({
   const [copied, setCopied] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const isPro = useIsPro();
+  const { prefs } = useEditorPreferences();
   const [refined, setRefined] = useState<string | null>(null);
   const [optimizing, startOptimizing] = useTransition();
   const [compareTab, setCompareTab] = useState<CompareTab>("refined");
@@ -301,7 +303,7 @@ export function MarkdownEditor({
         style={{ maxHeight: MAX_HEIGHT }}
       >
         {inRefinedPreview ? (
-          <MarkdownPreview value={visibleCompareContent} />
+          <MarkdownPreview value={visibleCompareContent} fontSize={prefs.fontSize} />
         ) : tab === "write" && !readOnly ? (
           <textarea
             ref={textareaRef}
@@ -309,12 +311,12 @@ export function MarkdownEditor({
             onChange={(e) => onChange?.(e.target.value)}
             placeholder={placeholder}
             spellCheck={false}
-            className="devstash-scroll block w-full resize-none border-0 bg-transparent px-4 py-3 font-mono text-sm leading-relaxed text-zinc-100 outline-none placeholder:text-zinc-500"
-            style={{ minHeight: MIN_HEIGHT }}
+            className="devstash-scroll block w-full resize-none border-0 bg-transparent px-4 py-3 font-mono leading-relaxed text-zinc-100 outline-none placeholder:text-zinc-500"
+            style={{ minHeight: MIN_HEIGHT, fontSize: prefs.fontSize }}
             aria-label={ariaLabel}
           />
         ) : (
-          <MarkdownPreview value={value} />
+          <MarkdownPreview value={value} fontSize={prefs.fontSize} />
         )}
       </div>
     </div>
@@ -351,13 +353,19 @@ function TabButton({
   );
 }
 
-function MarkdownPreview({ value }: { value: string }) {
+function MarkdownPreview({
+  value,
+  fontSize
+}: {
+  value: string;
+  fontSize: number;
+}) {
   const trimmed = value?.trim() ?? "";
   if (!trimmed) {
     return (
       <p
-        className="px-4 py-3 text-sm text-zinc-500"
-        style={{ minHeight: MIN_HEIGHT }}
+        className="px-4 py-3 text-zinc-500"
+        style={{ minHeight: MIN_HEIGHT, fontSize }}
       >
         Nothing to preview yet.
       </p>
@@ -366,7 +374,7 @@ function MarkdownPreview({ value }: { value: string }) {
   return (
     <div
       className="markdown-preview px-4 py-3"
-      style={{ minHeight: MIN_HEIGHT }}
+      style={{ minHeight: MIN_HEIGHT, fontSize }}
     >
       <ReactMarkdown remarkPlugins={[remarkGfm]}>{value}</ReactMarkdown>
     </div>
