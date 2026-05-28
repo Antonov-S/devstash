@@ -13,6 +13,7 @@ import {
   IconField,
   PasswordField
 } from "@/components/auth/fields";
+import { GithubSignInForm } from "@/components/auth/github-sign-in";
 import { EMAIL_REGEX, MIN_PASSWORD_LENGTH } from "@/lib/auth-constants";
 
 type FieldErrors = Partial<
@@ -113,83 +114,87 @@ export function RegisterForm() {
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      noValidate
-      className="flex flex-col gap-4"
-      aria-busy={isPending}
-    >
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="name">Name</Label>
-        <IconField
-          id="name"
-          name="name"
-          type="text"
-          autoComplete="name"
-          required
-          aria-invalid={errors.name ? true : undefined}
-          placeholder="Your name"
-          icon={<User className="size-4" />}
-        />
-        <FieldError message={errors.name} />
-      </div>
-
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="email">Email</Label>
-        <EmailField
-          id="email"
-          name="email"
-          autoComplete="email"
-          required
-          aria-invalid={errors.email ? true : undefined}
-          placeholder="you@example.com"
-        />
-        <FieldError message={errors.email} />
-      </div>
-
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="password">Password</Label>
-        <PasswordField
-          id="password"
-          name="password"
-          autoComplete="new-password"
-          required
-          aria-invalid={errors.password ? true : undefined}
-          placeholder="At least 8 characters"
-        />
-        <FieldError message={errors.password} />
-      </div>
-
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="confirmPassword">Confirm password</Label>
-        <PasswordField
-          id="confirmPassword"
-          name="confirmPassword"
-          autoComplete="new-password"
-          required
-          aria-invalid={errors.confirmPassword ? true : undefined}
-          placeholder="Repeat your password"
-        />
-        <FieldError message={errors.confirmPassword} />
-      </div>
-
-      {errors.form ? (
-        <p
-          role="alert"
-          className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-        >
-          {errors.form}
-        </p>
-      ) : null}
-
-      <PendingButton
-        pending={isPending}
-        type="submit"
-        size="lg"
-        className="h-11 w-full text-sm font-medium"
+    <div className="flex flex-col gap-6">
+      <form
+        onSubmit={handleSubmit}
+        noValidate
+        className="flex flex-col gap-4"
+        aria-busy={isPending}
       >
-        Create account
-      </PendingButton>
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="name">Name</Label>
+          <IconField
+            id="name"
+            name="name"
+            type="text"
+            autoComplete="name"
+            required
+            aria-invalid={errors.name ? true : undefined}
+            placeholder="Your name"
+            icon={<User className="size-4" />}
+          />
+          <FieldError message={errors.name} />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="email">Email</Label>
+          <EmailField
+            id="email"
+            name="email"
+            autoComplete="email"
+            required
+            aria-invalid={errors.email ? true : undefined}
+            placeholder="you@example.com"
+          />
+          <FieldError message={errors.email} />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="password">Password</Label>
+          <PasswordField
+            id="password"
+            name="password"
+            autoComplete="new-password"
+            required
+            aria-invalid={errors.password ? true : undefined}
+            placeholder="At least 8 characters"
+          />
+          <FieldError message={errors.password} />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="confirmPassword">Confirm password</Label>
+          <PasswordField
+            id="confirmPassword"
+            name="confirmPassword"
+            autoComplete="new-password"
+            required
+            aria-invalid={errors.confirmPassword ? true : undefined}
+            placeholder="Repeat your password"
+          />
+          <FieldError message={errors.confirmPassword} />
+        </div>
+
+        {errors.form ? (
+          <p
+            role="alert"
+            className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+          >
+            {errors.form}
+          </p>
+        ) : null}
+
+        <PendingButton
+          pending={isPending}
+          type="submit"
+          size="lg"
+          className="h-11 w-full text-sm font-medium"
+        >
+          Create account
+        </PendingButton>
+      </form>
+
+      <GithubSignInForm />
 
       <p className="text-center text-sm text-muted-foreground">
         Already have an account?{" "}
@@ -200,6 +205,6 @@ export function RegisterForm() {
           Sign in
         </Link>
       </p>
-    </form>
+    </div>
   );
 }
