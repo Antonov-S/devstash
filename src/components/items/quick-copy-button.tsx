@@ -6,6 +6,8 @@ import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
 
+import { quickActionButtonClass } from "./quick-action-button";
+
 type Props = {
   text: string;
   label: string;
@@ -41,10 +43,7 @@ export function QuickCopyButton({ text, label, className }: Props) {
       onClick={handleClick}
       aria-label={label}
       title={label}
-      className={cn(
-        "inline-flex size-7 items-center justify-center rounded-md border border-border/60 bg-background/80 text-muted-foreground backdrop-blur-sm transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-        className
-      )}
+      className={cn(quickActionButtonClass, className)}
     >
       {copied ? (
         <Check className="size-3.5 text-emerald-500" aria-hidden />

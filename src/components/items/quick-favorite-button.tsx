@@ -1,12 +1,12 @@
 "use client";
 
 import { Star } from "lucide-react";
-import { useEffect, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
 
 import { setItemFavoriteAction } from "@/actions/items";
+import { useOptimisticToggle } from "@/hooks/use-optimistic-toggle";
 import { cn } from "@/lib/utils";
+
+import { quickActionButtonClass } from "./quick-action-button";
 
 type Props = {
   itemId: string;
@@ -21,29 +21,19 @@ export function QuickFavoriteButton({
   label,
   className
 }: Props) {
-  const router = useRouter();
-  const [isFavorite, setIsFavorite] = useState(initialFavorite);
-  const [pending, startTransition] = useTransition();
-
-  useEffect(() => {
-    setIsFavorite(initialFavorite);
-  }, [itemId, initialFavorite]);
+  const {
+    value: isFavorite,
+    pending,
+    toggle
+  } = useOptimisticToggle({
+    initial: initialFavorite,
+    action: (next) => setItemFavoriteAction(itemId, next)
+  });
 
   function handleClick(event: React.MouseEvent<HTMLButtonElement>) {
     event.stopPropagation();
     event.preventDefault();
-    const next = !isFavorite;
-    const previous = isFavorite;
-    setIsFavorite(next);
-    startTransition(async () => {
-      const result = await setItemFavoriteAction(itemId, next);
-      if (!result.success) {
-        setIsFavorite(previous);
-        toast.error(result.error);
-        return;
-      }
-      router.refresh();
-    });
+    toggle();
   }
 
   return (
@@ -57,7 +47,8 @@ export function QuickFavoriteButton({
       title={isFavorite ? "Remove from favorites" : "Add to favorites"}
       disabled={pending}
       className={cn(
-        "inline-flex size-7 items-center justify-center rounded-md border border-border/60 bg-background/80 text-muted-foreground backdrop-blur-sm transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed",
+        quickActionButtonClass,
+        "disabled:cursor-not-allowed",
         className
       )}
     >

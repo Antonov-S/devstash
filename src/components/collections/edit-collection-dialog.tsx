@@ -5,19 +5,14 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { updateCollectionAction } from "@/actions/collections";
-import { Field, Textarea } from "@/components/items/_form-primitives";
-import { Button } from "@/components/ui/button";
+import { CollectionFormFields } from "@/components/collections/collection-form-fields";
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { PendingButton } from "@/components/ui/pending-button";
 
 type EditCollectionDialogProps = {
   open: boolean;
@@ -83,50 +78,16 @@ export function EditCollectionDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form
+        <CollectionFormFields
+          idPrefix="edit-collection"
+          name={name}
+          onNameChange={setName}
+          description={description}
+          onDescriptionChange={setDescription}
+          pending={pending}
+          submitLabel="Save"
           onSubmit={handleSubmit}
-          className="flex flex-col gap-4"
-          aria-busy={pending}
-        >
-          <Field label="Name" htmlFor="edit-collection-name" required>
-            <Input
-              id="edit-collection-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              disabled={pending}
-              aria-invalid={nameEmpty ? true : undefined}
-              autoFocus
-              required
-            />
-          </Field>
-
-          <Field label="Description" htmlFor="edit-collection-description">
-            <Textarea
-              id="edit-collection-description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              disabled={pending}
-              rows={3}
-            />
-          </Field>
-
-          <DialogFooter className="pt-2">
-            <DialogClose
-              render={
-                <Button type="button" variant="outline" disabled={pending}>
-                  Cancel
-                </Button>
-              }
-            />
-            <PendingButton
-              type="submit"
-              pending={pending}
-              disabled={submitDisabled}
-            >
-              Save
-            </PendingButton>
-          </DialogFooter>
-        </form>
+        />
       </DialogContent>
     </Dialog>
   );

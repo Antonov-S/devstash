@@ -23,6 +23,8 @@ import {
   type EditState
 } from "@/components/items/item-edit-form";
 import { Badge } from "@/components/ui/badge";
+import { FormError } from "@/components/ui/form-error";
+import { useOptimisticToggle } from "@/hooks/use-optimistic-toggle";
 import {
   Sheet,
   SheetContent,
@@ -55,10 +57,22 @@ export function ItemDrawer({ cardItem, open, onOpenChange }: Props) {
   const [saving, startSaving] = useTransition();
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, startDeleting] = useTransition();
-  const [isFavorite, setIsFavorite] = useState(cardItem.isFavorite);
-  const [favoritePending, startToggleFavorite] = useTransition();
-  const [isPinned, setIsPinned] = useState(cardItem.isPinned);
-  const [pinPending, startTogglePin] = useTransition();
+  const {
+    value: isFavorite,
+    pending: favoritePending,
+    toggle: handleToggleFavorite
+  } = useOptimisticToggle({
+    initial: cardItem.isFavorite,
+    action: (next) => setItemFavoriteAction(cardItem.id, next)
+  });
+  const {
+    value: isPinned,
+    pending: pinPending,
+    toggle: handleTogglePin
+  } = useOptimisticToggle({
+    initial: cardItem.isPinned,
+    action: (next) => setItemPinnedAction(cardItem.id, next)
+  });
   const [applyingOptimized, startApplyingOptimized] = useTransition();
 
   useEffect(() => {
@@ -94,14 +108,6 @@ export function ItemDrawer({ cardItem, open, onOpenChange }: Props) {
       setEdit(null);
     }
   }, [open]);
-
-  useEffect(() => {
-    setIsFavorite(cardItem.isFavorite);
-  }, [cardItem.id, cardItem.isFavorite]);
-
-  useEffect(() => {
-    setIsPinned(cardItem.isPinned);
-  }, [cardItem.id, cardItem.isPinned]);
 
   const Icon = iconMap[cardItem.itemType.icon] ?? null;
   const typeName = (detail?.itemType.name ?? cardItem.itemType.name).toLowerCase();
@@ -154,36 +160,6 @@ export function ItemDrawer({ cardItem, open, onOpenChange }: Props) {
       setMode("view");
       setEdit(null);
       toast.success("Item updated");
-      router.refresh();
-    });
-  }
-
-  function handleToggleFavorite() {
-    const next = !isFavorite;
-    const previous = isFavorite;
-    setIsFavorite(next);
-    startToggleFavorite(async () => {
-      const result = await setItemFavoriteAction(cardItem.id, next);
-      if (!result.success) {
-        setIsFavorite(previous);
-        toast.error(result.error);
-        return;
-      }
-      router.refresh();
-    });
-  }
-
-  function handleTogglePin() {
-    const next = !isPinned;
-    const previous = isPinned;
-    setIsPinned(next);
-    startTogglePin(async () => {
-      const result = await setItemPinnedAction(cardItem.id, next);
-      if (!result.success) {
-        setIsPinned(previous);
-        toast.error(result.error);
-        return;
-      }
       router.refresh();
     });
   }
@@ -298,12 +274,7 @@ export function ItemDrawer({ cardItem, open, onOpenChange }: Props) {
           {loading && !detail ? (
             <ItemDrawerSkeleton />
           ) : error ? (
-            <p
-              role="alert"
-              className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-            >
-              {error}
-            </p>
+            <FormError>{error}</FormError>
           ) : detail && mode === "edit" && edit ? (
             <ItemEditForm
               edit={edit}

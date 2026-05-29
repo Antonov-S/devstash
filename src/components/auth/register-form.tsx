@@ -6,6 +6,7 @@ import Link from "next/link";
 import { User } from "lucide-react";
 import { toast } from "sonner";
 
+import { FormError } from "@/components/ui/form-error";
 import { Label } from "@/components/ui/label";
 import { PendingButton } from "@/components/ui/pending-button";
 import {
@@ -175,14 +176,7 @@ export function RegisterForm() {
           <FieldError message={errors.confirmPassword} />
         </div>
 
-        {errors.form ? (
-          <p
-            role="alert"
-            className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-          >
-            {errors.form}
-          </p>
-        ) : null}
+        <FormError>{errors.form}</FormError>
 
         <PendingButton
           pending={isPending}
