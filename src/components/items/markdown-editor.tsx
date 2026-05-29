@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Check, Eye, LoaderCircle, Pencil, Sparkles, X } from "lucide-react";
+import { Eye, Pencil } from "lucide-react";
 import { toast } from "sonner";
 
 import { optimizePrompt } from "@/actions/ai-optimize-prompt";
@@ -16,13 +16,14 @@ import {
   EditorCopyButton,
   EditorTabButton
 } from "@/components/items/editor-chrome";
-import { Button } from "@/components/ui/button";
-import { AI_ACCENT_COLOR } from "@/lib/constants";
+import {
+  OptimizedPromptCompareHeader,
+  type CompareTab
+} from "@/components/items/optimized-prompt-compare";
 import { toastActionError } from "@/lib/toast-error";
 import { cn } from "@/lib/utils";
 
 type Tab = "write" | "preview";
-type CompareTab = "original" | "refined";
 
 export type OptimizeContext = {
   typeName: "prompt";
@@ -155,89 +156,39 @@ export function MarkdownEditor({
             : "items-center justify-between"
         )}
       >
-        <div className="flex items-center gap-2">
-          {inRefinedPreview ? (
-            <div
-              role="tablist"
-              aria-label="Original or refined prompt"
-              className="flex items-center gap-0.5 rounded-md bg-[#0f0f0f] p-0.5"
-            >
-              <EditorTabButton
-                active={compareTab === "original"}
-                onClick={() => setCompareTab("original")}
-                icon={<Eye className="size-3.5" aria-hidden />}
-                label="Original"
-              />
-              <EditorTabButton
-                active={compareTab === "refined"}
-                onClick={() => setCompareTab("refined")}
-                icon={
-                  <Sparkles
-                    className="size-3.5"
-                    style={{ color: AI_ACCENT_COLOR }}
-                    aria-hidden
+        {inRefinedPreview ? (
+          <OptimizedPromptCompareHeader
+            compareTab={compareTab}
+            onCompareTabChange={setCompareTab}
+            applyingOptimized={applyingOptimized}
+            onDiscard={handleDiscard}
+            onApply={handleApply}
+          />
+        ) : (
+          <>
+            <div className="flex items-center gap-2">
+              <div
+                role="tablist"
+                aria-label="Markdown editor mode"
+                className="flex items-center gap-0.5 rounded-md bg-[#0f0f0f] p-0.5"
+              >
+                {!readOnly && (
+                  <EditorTabButton
+                    active={tab === "write"}
+                    onClick={() => setTab("write")}
+                    icon={<Pencil className="size-3.5" aria-hidden />}
+                    label="Write"
                   />
-                }
-                label="Refined"
-              />
-            </div>
-          ) : (
-            <div
-              role="tablist"
-              aria-label="Markdown editor mode"
-              className="flex items-center gap-0.5 rounded-md bg-[#0f0f0f] p-0.5"
-            >
-              {!readOnly && (
-                <EditorTabButton
-                  active={tab === "write"}
-                  onClick={() => setTab("write")}
-                  icon={<Pencil className="size-3.5" aria-hidden />}
-                  label="Write"
-                />
-              )}
-              <EditorTabButton
-                active={tab === "preview"}
-                onClick={() => setTab("preview")}
-                icon={<Eye className="size-3.5" aria-hidden />}
-                label="Preview"
-              />
-            </div>
-          )}
-        </div>
-        <div className="flex items-center justify-end gap-2">
-          {inRefinedPreview ? (
-            <>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={handleDiscard}
-                disabled={applyingOptimized}
-                aria-label="Discard"
-                title="Discard"
-                className="h-7 flex-1 gap-1.5 px-2 text-destructive hover:bg-destructive/10 hover:text-destructive sm:flex-initial sm:px-1.5"
-              >
-                <X className="size-3.5" aria-hidden />
-                <span className="sm:hidden">Discard</span>
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                onClick={handleApply}
-                disabled={applyingOptimized}
-                className="h-7 flex-1 gap-1.5 px-2 text-white sm:flex-initial"
-                style={{ backgroundColor: AI_ACCENT_COLOR }}
-              >
-                {applyingOptimized ? (
-                  <LoaderCircle className="size-3.5 animate-spin" aria-hidden />
-                ) : (
-                  <Check className="size-3.5" aria-hidden />
                 )}
-                Use this
-              </Button>
-            </>
-          ) : (
-            <>
+                <EditorTabButton
+                  active={tab === "preview"}
+                  onClick={() => setTab("preview")}
+                  icon={<Eye className="size-3.5" aria-hidden />}
+                  label="Preview"
+                />
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-2">
               {optimizeEnabled && (
                 <EditorAiButton
                   pending={optimizing}
@@ -251,9 +202,9 @@ export function MarkdownEditor({
                 onCopy={handleCopy}
                 ariaLabel="Copy markdown"
               />
-            </>
-          )}
-        </div>
+            </div>
+          </>
+        )}
       </div>
 
       <div
