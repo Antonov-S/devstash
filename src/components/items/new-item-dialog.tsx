@@ -171,7 +171,7 @@ export function NewItemDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       {!controlled && <DialogTrigger render={triggerNode} />}
-      <DialogContent className="max-w-lg">
+      <DialogContent className="flex max-w-lg flex-col overflow-y-hidden">
         <DialogHeader>
           <DialogTitle>New item</DialogTitle>
           <DialogDescription>
@@ -182,74 +182,76 @@ export function NewItemDialog({
 
         <form
           onSubmit={handleSubmit}
-          className="flex flex-col gap-4"
+          className="flex min-h-0 flex-1 flex-col gap-4"
           aria-busy={pending}
         >
-          <div className="flex flex-col gap-2">
-            <Label>Type</Label>
-            <div
-              role="radiogroup"
-              aria-label="Item type"
-              className="grid grid-cols-7 gap-1 rounded-lg border border-border/60 bg-muted/30 p-1"
-            >
-              {TYPE_OPTIONS.map((option) => {
-                const selected = type === option.value;
-                return (
-                  <button
-                    key={option.value}
-                    type="button"
-                    role="radio"
-                    aria-checked={selected}
-                    onClick={() => handleTypeChange(option.value)}
-                    disabled={pending}
-                    className={cn(
-                      "flex flex-col items-center justify-center gap-1.5 rounded-md px-2 py-2.5 text-xs font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-50",
-                      selected
-                        ? "bg-background text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground"
-                    )}
-                  >
-                    <option.Icon
-                      className="size-4"
-                      style={{ color: selected ? option.color : undefined }}
-                      aria-hidden
-                    />
-                    {option.label}
-                  </button>
-                );
-              })}
+          <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
+            <div className="flex flex-col gap-2">
+              <Label>Type</Label>
+              <div
+                role="radiogroup"
+                aria-label="Item type"
+                className="grid grid-cols-7 gap-1 rounded-lg border border-border/60 bg-muted/30 p-1"
+              >
+                {TYPE_OPTIONS.map((option) => {
+                  const selected = type === option.value;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      role="radio"
+                      aria-checked={selected}
+                      onClick={() => handleTypeChange(option.value)}
+                      disabled={pending}
+                      className={cn(
+                        "flex flex-col items-center justify-center gap-1.5 rounded-md px-2 py-2.5 text-xs font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-50",
+                        selected
+                          ? "bg-background text-foreground shadow-sm"
+                          : "text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      <option.Icon
+                        className="size-4"
+                        style={{ color: selected ? option.color : undefined }}
+                        aria-hidden
+                      />
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
 
-          <ItemFormFields
-            value={form}
-            onChange={setForm}
-            disabled={pending}
-            showsContent={showsContent}
-            showsLanguage={showsLanguage}
-            showsMarkdown={ITEM_TYPES_WITH_MARKDOWN.has(type)}
-            showsUrl={showsUrl}
-            typeName={type}
-            fileName={showsUpload ? uploaded?.fileName ?? null : null}
-            idPrefix="new"
-            titleAutoFocus
-            urlRequired
-            descriptionRows={2}
-            contentRows={6}
-            editorAriaLabel="New item content"
-            extraFields={
-              showsUpload ? (
-                <Field label={type === "image" ? "Image" : "File"} required>
-                  <FileUpload
-                    kind={type === "image" ? "image" : "file"}
-                    value={uploaded}
-                    onChange={setUploaded}
-                    disabled={pending}
-                  />
-                </Field>
-              ) : undefined
-            }
-          />
+            <ItemFormFields
+              value={form}
+              onChange={setForm}
+              disabled={pending}
+              showsContent={showsContent}
+              showsLanguage={showsLanguage}
+              showsMarkdown={ITEM_TYPES_WITH_MARKDOWN.has(type)}
+              showsUrl={showsUrl}
+              typeName={type}
+              fileName={showsUpload ? uploaded?.fileName ?? null : null}
+              idPrefix="new"
+              titleAutoFocus
+              urlRequired
+              descriptionRows={2}
+              contentRows={6}
+              editorAriaLabel="New item content"
+              extraFields={
+                showsUpload ? (
+                  <Field label={type === "image" ? "Image" : "File"} required>
+                    <FileUpload
+                      kind={type === "image" ? "image" : "file"}
+                      value={uploaded}
+                      onChange={setUploaded}
+                      disabled={pending}
+                    />
+                  </Field>
+                ) : undefined
+              }
+            />
+          </div>
 
           <DialogFooter className="pt-2">
             <DialogClose
