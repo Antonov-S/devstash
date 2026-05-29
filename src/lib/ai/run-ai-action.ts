@@ -1,6 +1,7 @@
 import "server-only";
 
-import { auth } from "@/auth";
+import { requireUserId } from "@/lib/actions/require-user";
+import { firstIssue, type ActionResult } from "@/lib/actions/result";
 import { getUserIsPro } from "@/lib/billing";
 import { AI_MAX_INPUT_CHARS } from "@/lib/constants";
 import { AI_MODEL, getOpenAI } from "@/lib/openai";
@@ -10,9 +11,7 @@ import {
   type LimiterName
 } from "@/lib/rate-limit";
 
-export type AiActionResult<T> =
-  | { success: true; data: T }
-  | { success: false; error: string };
+export type AiActionResult<T> = ActionResult<T>;
 
 /** Cap the model input so a huge item can't blow past token limits. */
 export function truncate(value: string): string {
@@ -82,27 +81,27 @@ export interface RunAiActionConfig<TParsed, TData> {
 export async function runAiAction<TParsed, TData>(
   config: RunAiActionConfig<TParsed, TData>
 ): Promise<AiActionResult<TData>> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, error: "You are not signed in." };
+  const authed = await requireUserId();
+  if (!authed.ok) {
+    return { success: false, error: authed.error };
   }
+  const { userId } = authed;
 
   // Always re-read isPro from the DB, never session.user.isPro — the JWT can
   // carry a stale value across a Stripe downgrade until the next refresh.
-  const isPro = await getUserIsPro(session.user.id);
+  const isPro = await getUserIsPro(userId);
   if (!isPro) {
     return { success: false, error: "AI features require Pro." };
   }
 
-  const limit = await rateLimit(config.limiterName, `user:${session.user.id}`);
+  const limit = await rateLimit(config.limiterName, `user:${userId}`);
   if (!limit.success) {
     return { success: false, error: rateLimitMessage(limit) };
   }
 
   const parsed = config.schema.safeParse(config.payload);
   if (!parsed.success) {
-    const first = parsed.error.issues[0];
-    return { success: false, error: first?.message ?? "Invalid input" };
+    return { success: false, error: firstIssue(parsed.error) };
   }
 
   const input = config.buildInput(parsed.data);

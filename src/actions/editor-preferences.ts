@@ -1,32 +1,30 @@
 "use server";
 
-import { auth } from "@/auth";
+import { requireUserId } from "@/lib/actions/require-user";
+import { firstIssue, type ActionResult } from "@/lib/actions/result";
 import { updateUserEditorPreferences } from "@/lib/db/users";
 import {
   editorPreferencesSchema,
   type EditorPreferences
 } from "@/lib/editor-preferences";
 
-export type UpdateEditorPreferencesResult =
-  | { success: true; data: EditorPreferences }
-  | { success: false; error: string };
+export type UpdateEditorPreferencesResult = ActionResult<EditorPreferences>;
 
 export async function updateEditorPreferencesAction(
   payload: unknown
 ): Promise<UpdateEditorPreferencesResult> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, error: "You are not signed in." };
+  const authed = await requireUserId();
+  if (!authed.ok) {
+    return { success: false, error: authed.error };
   }
 
   const parsed = editorPreferencesSchema.safeParse(payload);
   if (!parsed.success) {
-    const first = parsed.error.issues[0];
-    return { success: false, error: first?.message ?? "Invalid input" };
+    return { success: false, error: firstIssue(parsed.error) };
   }
 
   try {
-    const saved = await updateUserEditorPreferences(session.user.id, parsed.data);
+    const saved = await updateUserEditorPreferences(authed.userId, parsed.data);
     return { success: true, data: saved };
   } catch (error) {
     console.error("updateEditorPreferencesAction failed", error);
