@@ -1,17 +1,18 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import { Check, LoaderCircle, Sparkles, X } from "lucide-react";
+import { useState } from "react";
+import { Check, X } from "lucide-react";
 import { toast } from "sonner";
 
 import {
   generateAutoTags,
   type GenerateAutoTagsPayload
 } from "@/actions/ai-tags";
-import { useIsPro } from "@/components/billing/is-pro-context";
+import {
+  AiActionButton,
+  useAiAction
+} from "@/components/items/ai-action-button";
 import { Button } from "@/components/ui/button";
-import { toastActionError } from "@/lib/toast-error";
 
 type Props = {
   getPayload: () => GenerateAutoTagsPayload;
@@ -26,10 +27,8 @@ export function SuggestTagsButton({
   onAccept,
   disabled
 }: Props) {
-  const isPro = useIsPro();
-  const router = useRouter();
+  const { isPro, pending, run } = useAiAction();
   const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [pending, startTransition] = useTransition();
 
   if (!isPro) return null;
 
@@ -39,20 +38,18 @@ export function SuggestTagsButton({
 
   function handleSuggest() {
     const payload = getPayload();
-    startTransition(async () => {
-      const result = await generateAutoTags(payload);
-      if (!result.success) {
-        toastActionError(result.error, () => router.push("/upgrade"));
-        return;
+    run(
+      () => generateAutoTags(payload),
+      (result) => {
+        const fresh = result.tags.filter((tag) => !existingSet.has(tag));
+        if (fresh.length === 0) {
+          toast.message("No new tags to suggest.");
+          setSuggestions([]);
+          return;
+        }
+        setSuggestions(fresh);
       }
-      const fresh = result.tags.filter((tag) => !existingSet.has(tag));
-      if (fresh.length === 0) {
-        toast.message("No new tags to suggest.");
-        setSuggestions([]);
-        return;
-      }
-      setSuggestions(fresh);
-    });
+    );
   }
 
   function handleAccept(tag: string) {
@@ -67,29 +64,17 @@ export function SuggestTagsButton({
   return (
     <div className="flex flex-col gap-2">
       <div>
-        {/* Uses AI_ACCENT_COLOR (#3b82f6 / SYSTEM_TYPE_COLORS.snippet) — matches
-            GenerateDescriptionButton so both AI buttons read as a unified set. */}
-        <button
-          type="button"
+        <AiActionButton
           onClick={handleSuggest}
-          disabled={pending || disabled}
-          aria-label="Suggest tags with AI"
-          title="Suggest tags with AI"
-          className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-[#3b82f6] transition-colors outline-none hover:bg-[#3b82f6]/10 focus-visible:bg-[#3b82f6]/10 focus-visible:ring-2 focus-visible:ring-[#3b82f6]/40 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
-        >
-          {pending ? (
-            <LoaderCircle className="size-3.5 animate-spin" aria-hidden />
-          ) : (
-            <Sparkles className="size-3.5" aria-hidden />
-          )}
-          <span>{pending ? "Suggesting…" : "Suggest tags"}</span>
-        </button>
+          pending={pending}
+          idleLabel="Suggest tags"
+          pendingLabel="Suggesting…"
+          ariaLabel="Suggest tags with AI"
+          disabled={disabled}
+        />
       </div>
       {suggestions.length > 0 && (
-        <ul
-          className="flex flex-wrap gap-1.5"
-          aria-label="Suggested tags"
-        >
+        <ul className="flex flex-wrap gap-1.5" aria-label="Suggested tags">
           {suggestions.map((tag) => (
             <li
               key={tag}
