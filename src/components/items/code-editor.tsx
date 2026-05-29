@@ -3,13 +3,7 @@
 import { useRef, useState, useTransition } from "react";
 import Editor, { type OnMount, type BeforeMount } from "@monaco-editor/react";
 import type { editor } from "monaco-editor";
-import {
-  Check,
-  Copy,
-  Crown,
-  LoaderCircle,
-  Sparkles
-} from "lucide-react";
+import { LoaderCircle } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { toast } from "sonner";
@@ -18,13 +12,16 @@ import { explainCode } from "@/actions/ai-explain";
 import { useIsPro } from "@/components/billing/is-pro-context";
 import { useEditorPreferences } from "@/components/editor/editor-preferences-context";
 import { MONACO_THEMES } from "@/components/editor/monaco-themes";
-import { Button } from "@/components/ui/button";
-import { AI_ACCENT_COLOR, CODE_LANGUAGE_ALIASES } from "@/lib/constants";
+import {
+  EDITOR_MAX_HEIGHT,
+  EDITOR_MIN_HEIGHT,
+  EditorAiButton,
+  EditorCopyButton,
+  EditorTabButton
+} from "@/components/items/editor-chrome";
+import { CODE_LANGUAGE_ALIASES } from "@/lib/constants";
 import { toastActionError } from "@/lib/toast-error";
 import { cn } from "@/lib/utils";
-
-const MIN_HEIGHT = 80;
-const MAX_HEIGHT = 400;
 
 const BASE_OPTIONS: editor.IStandaloneEditorConstructionOptions = {
   fontFamily:
@@ -79,7 +76,7 @@ export function CodeEditor({
   explainContext
 }: Props) {
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
-  const [height, setHeight] = useState<number>(MIN_HEIGHT);
+  const [height, setHeight] = useState<number>(EDITOR_MIN_HEIGHT);
   const [copied, setCopied] = useState(false);
   const { prefs } = useEditorPreferences();
   const isPro = useIsPro();
@@ -102,7 +99,10 @@ export function CodeEditor({
     editorRef.current = instance;
     const updateHeight = () => {
       const contentHeight = instance.getContentHeight();
-      const next = Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, contentHeight));
+      const next = Math.min(
+        EDITOR_MAX_HEIGHT,
+        Math.max(EDITOR_MIN_HEIGHT, contentHeight)
+      );
       setHeight(next);
     };
     instance.onDidContentSizeChange(updateHeight);
@@ -165,12 +165,12 @@ export function CodeEditor({
               aria-label="Code or explanation"
               className="flex items-center gap-0.5 rounded-md bg-[#0f0f0f] p-0.5"
             >
-              <TabButton
+              <EditorTabButton
                 active={tab === "code"}
                 onClick={() => setTab("code")}
                 label="Code"
               />
-              <TabButton
+              <EditorTabButton
                 active={tab === "explain"}
                 onClick={() => setTab("explain")}
                 label="Explain"
@@ -191,62 +191,28 @@ export function CodeEditor({
             </span>
           )}
           {explainEnabled && (
-            isPro ? (
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                onClick={handleExplain}
-                disabled={explaining}
-                aria-label={explanation ? "Regenerate explanation" : "Explain code"}
-                title={explanation ? "Regenerate explanation" : "Explain code"}
-                className="hover:bg-transparent"
-                style={{ color: AI_ACCENT_COLOR }}
-              >
-                {explaining ? (
-                  <LoaderCircle className="size-3.5 animate-spin" aria-hidden />
-                ) : (
-                  <Sparkles className="size-3.5" aria-hidden />
-                )}
-              </Button>
-            ) : (
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                disabled
-                aria-label="AI features require Pro subscription"
-                title="AI features require Pro subscription"
-                className="cursor-not-allowed text-muted-foreground opacity-70 disabled:opacity-70"
-              >
-                <Crown className="size-3.5" aria-hidden />
-              </Button>
-            )
+            <EditorAiButton
+              pending={explaining}
+              disabled={explaining}
+              onClick={handleExplain}
+              ariaLabel={explanation ? "Regenerate explanation" : "Explain code"}
+            />
           )}
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            onClick={handleCopy}
-            aria-label="Copy code"
-            className="text-muted-foreground hover:text-foreground"
-          >
-            {copied ? (
-              <Check className="size-3.5 text-emerald-400" aria-hidden />
-            ) : (
-              <Copy className="size-3.5" aria-hidden />
-            )}
-          </Button>
+          <EditorCopyButton
+            copied={copied}
+            onCopy={handleCopy}
+            ariaLabel="Copy code"
+          />
         </div>
       </div>
       {showsTabs && tab === "explain" ? (
         <div
           className="devstash-scroll overflow-y-auto bg-[#1a1a1a]"
-          style={{ maxHeight: MAX_HEIGHT }}
+          style={{ maxHeight: EDITOR_MAX_HEIGHT }}
         >
           <div
             className="markdown-preview px-4 py-3"
-            style={{ minHeight: MIN_HEIGHT }}
+            style={{ minHeight: EDITOR_MIN_HEIGHT }}
           >
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
               {explanation ?? ""}
@@ -278,33 +244,6 @@ export function CodeEditor({
         />
       )}
     </div>
-  );
-}
-
-function TabButton({
-  active,
-  onClick,
-  label
-}: {
-  active: boolean;
-  onClick: () => void;
-  label: string;
-}) {
-  return (
-    <button
-      type="button"
-      role="tab"
-      aria-selected={active}
-      onClick={onClick}
-      className={cn(
-        "inline-flex items-center gap-1.5 rounded px-2 py-1 text-[11px] font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
-        active
-          ? "bg-[#2d2d2d] text-zinc-100"
-          : "text-zinc-400 hover:text-zinc-100"
-      )}
-    >
-      {label}
-    </button>
   );
 }
 
