@@ -1,101 +1,16 @@
-# Refactor Components — Dedupe + Centralize
+# Current Feature
 
 ## Status
 
-In Progress
+Not Started
 
 ## Goals
 
-Refactor `src/components/` to remove duplication and centralize shared values. Five
-scoped items from the components refactoring scan — three cheap constant/helper moves
-plus the two highest-value structural extractions. Pure internal refactor: no change to
-behavior, routing, props exposed to pages, or visible UI.
-
-### #A-3 — Consolidate the drifted `PRO_FEATURES` lists
-
-`PRO_FEATURES` is currently defined three times and the contents have drifted apart:
-
-- `src/lib/constants.ts:17` — 4-item `string[]` (used by `upgrade-prompt-dialog.tsx`)
-- `src/components/billing/upgrade-pricing-card.tsx:22` — 6-item `ReactNode[]`
-- `src/components/marketing/pricing-section.tsx:253-280` — 6 items hardcoded inline
-
-Settle on one source of truth in `src/lib/constants.ts` (matches the centralize-constants
-convention — see [[feedback_constants_centralization]]) and have all three call sites
-consume it. Reconcile the wording so the marketing page, the upgrade page, and the
-upgrade dialog all advertise the same Pro feature set.
-
-### #A-7 — Extract the Pro-error → Upgrade-toast helper
-
-The `if (result.error.includes("Pro")) toast.error(error, { action: { label: "Upgrade",
-... } })` pattern is repeated in 5 files:
-
-- `new-item-dialog.tsx:162` (routes to `/settings#billing`)
-- `suggest-tags-button.tsx:44` (routes to `/upgrade`)
-- `generate-description-button.tsx:36` (routes to `/upgrade`)
-- `code-editor.tsx:137` (routes to `/upgrade` via `window.location.assign`)
-- `markdown-editor.tsx:118` (routes to `/upgrade` via `window.location.assign`)
-
-Extract a single helper (e.g. `toastActionError(error, onUpgrade)` in `src/lib/`) that
-emits a plain error toast normally and an Upgrade-action toast when the error contains
-`"Pro"`. Note the destination drift (`/settings#billing` vs `/upgrade`) — standardize on
-`/upgrade` since that's the dedicated route, but confirm before changing the
-new-item-dialog destination.
-
-### #A-11 — Centralize the `TYPES_WITH_*` sets
-
-`TYPES_WITH_CONTENT` / `TYPES_WITH_LANGUAGE` / `TYPES_WITH_MARKDOWN` are redefined in:
-
-- `new-item-dialog.tsx:59-67` (also `TYPES_WITH_UPLOAD`)
-- `item-drawer.tsx:37-39`
-- `clickable-item-card.tsx:10` (the `TYPES_WITH_CONTENT_COPY` copy-text variant)
-
-Move the canonical sets into `src/lib/constants.ts` and import them everywhere. Keep the
-upload + copy-text variants as their own named constants alongside the others.
-
-### #A-1 — Extract a shared `ItemFormFields` component (highest value)
-
-`new-item-dialog.tsx:241-382` and `item-edit-form.tsx:61-194` render the same fields —
-Description (+`GenerateDescriptionButton`), Language (`LanguageSelect`), Content (the
-`CodeEditor` / `MarkdownEditor` / `Textarea` branch), URL, Tags (+`SuggestTagsButton`),
-Collections — with only `edit.x` vs local-state wiring differing. Extract a single
-`ItemFormFields` driven by a value-object + `onChange` (the existing `EditState` shape is
-a good basis; `new-item-dialog` will need a Title field + Type selector + file-upload that
-stay in the dialog, or move into the shared component behind flags). Both call sites
-should collapse to `<ItemFormFields value={...} onChange={...} shows... />`. Removes
-~130 duplicated lines. Title/Type-selector/FileUpload handling differs between create and
-edit, so decide during implementation whether those live inside the shared component
-(behind `mode`/`shows` flags) or stay at the call sites.
-
-### #A-2 — Extract shared pricing UI + `PRO_PRICE` (highest value)
-
-`marketing/pricing-section.tsx` (279 lines) and `billing/upgrade-pricing-card.tsx`
-(225 lines) duplicate: the `PRO_PRICE` table (byte-identical), the Monthly/Yearly billing
-toggle incl. the "Save 25%" badge, the Free/Pro card layout + radial-gradient Pro
-styling, the `FREE_FEATURES` list, and the Check/X icon components. They differ only in:
-marketing wraps everything in `Reveal` and uses `<Link>` CTAs (static), while the upgrade
-card uses plain divs + a `createCheckoutSessionAction` button.
-
-Move `PRO_PRICE` to `src/lib/constants.ts`. Extract shared pieces — at minimum a
-`BillingToggle` and a `PlanCard` (or a `PricingCards`) that accept the CTA as
-children/render-prop so each surface supplies its own (Link vs checkout button) and its
-own wrapper (Reveal vs div). Fold the Check/X icon variants together. Coordinate with
-#A-3 so the Pro feature list comes from the single constant.
+<!-- Run /feature load to populate goals -->
 
 ## Notes
 
-- **No behavior change.** This is a pure internal refactor — verify each touched surface
-  renders identically. Per `coding-standards.md` Testing section, components are out of
-  Vitest scope, so verification is `npm run build` + Playwright passes on the affected
-  surfaces (item create dialog, item drawer edit mode, `/`, `/upgrade`).
-- If any extracted logic lands in `src/lib/**` (e.g. the `toastActionError` helper, or
-  pure helpers pulled out of the forms), add Vitest coverage for those per the workflow.
-- Sequencing: do the cheap/safe moves first (#A-3, #A-7, #A-11 — pure relocations), then
-  the two structural extractions (#A-1, #A-2). Each is independently shippable; consider
-  one commit per item on the same branch.
-- Remaining scan findings deferred to a later branch: #A-4 (`ConfirmDeleteDialog`), #A-5
-  (`CollectionForm`), #A-6 (`AiActionButton`), #A-8 (editor chrome), #A-10
-  (`useOptimisticToggle`), #A-12 (quick-button shell), and the `file-upload.tsx` /
-  `markdown-editor.tsx` size splits.
+<!-- Additional context, constraints, or spec details go here -->
 
 ## History
 
@@ -176,3 +91,4 @@ own wrapper (Reveal vs div). Fold the Check/X icon variants together. Coordinate
 - Refactor actions (AI runner + shared Zod fields) — pure internal refactor of `src/actions/` removing duplication found in a scan, no change to action signatures/return shapes/error strings/runtime behavior; **Finding 1** — the four AI actions (`ai-tags.ts`, `ai-description.ts`, `ai-explain.ts`, `ai-optimize-prompt.ts`) were ~85% identical (~560 lines), each repeating a byte-identical `truncate()`, the same `auth() → getUserIsPro → rateLimit → safeParse` guard pipeline, the same `getOpenAI().responses.create({ model: AI_MODEL, instructions, input, text: { format: { type: "json_object" } } })` call with the same two gpt-5-nano block comments, a near-identical `parseXResponse()` (handling `{key: …}` OR a bare shape), and the same `try/catch` + `console.error` + "Please try again." tail; extracted the whole pipeline into new `src/lib/ai/run-ai-action.ts` exporting `runAiAction<TParsed, TData>(config)` (owns auth + the DB-backed Pro re-read via `getUserIsPro` NOT `session.user.isPro` + per-user `rateLimit` + `safeParse` + the OpenAI Responses call + the empty/parse-fail branch + the generic catch) plus shared `truncate()` and `extractJsonField(text, key)` (parses JSON, returns `obj[key]` for the object shape or the bare top-level value, `undefined` on invalid JSON); the schema is typed via a structural `Parseable<T>` interface (`safeParse(payload): {success;data} | {success;error:{issues}}`) so it sidesteps Zod 4's generic arity and accepts both `z.object` and `.superRefine` schemas; **call order is load-bearing and preserved exactly** (Pro check before rate-limit before validation before model) since the action test suites assert on it, and every test-asserted literal stays verbatim (the `"json"` prefix in `input`, `model === "gpt-5-nano"`, `text.format === json_object`, exact key `user:user_1`, the "Could not …"/"AI did not return …" strings); each AI action shrank to its own `SYSTEM_INSTRUCTIONS` + Zod schema + `buildInput` + `parse` callback + limiter name + error strings, then a thin wrapper that remaps the runner's generic `{ data }` to its named field (`tags`/`description`/`explanation`/`prompt`) — `ai-tags` keeps `normalizeTags` (returns `null` for an empty array so the empty-error path is unchanged), `ai-description` keeps `normalizeDescription` (whitespace-collapse + 2-sentence cap) as a wrapper around the parsed string, `ai-explain`/`ai-optimize` just trim; **Finding 2** — `normalizeOptional` + `optionalTrimmedString` were defined verbatim in both `items.ts` and `collections.ts` (and `urlField` + `collectionIdsField` only in `items.ts`), all four moved into new `src/lib/zod-fields.ts` (a schema-builder module, deliberately not `constants.ts`) and imported by both action files, dropping the local copies; the unrelated untracked `.claude/agents/refactor-scanner.md` was deliberately left out of the commit to keep it focused; no test files changed — the existing `ai-*.test.ts` / `items.test.ts` / `collections.test.ts` suites are the regression net (`run-ai-action.ts` is exercised indirectly through them, matching the `openai.ts`/`stripe.ts` no-direct-unit-test precedent); deferred to a later pass: Finding 3 (auth/id-guard boilerplate via a `requireUserId()` helper) + Finding 4 (shared `ActionResult<T>` type + `firstIssue` extractor); net −438/+357 lines across 9 files; 363 tests + `npm run build` pass unchanged — Completed
 - Refactor actions (requireUserId guard + ActionResult/firstIssue) — Findings 3 & 4 from the same refactor-scanner run as the AI-runner/Zod-fields refactor; pure internal refactor of `src/actions/`, no change to signatures, return shapes, error strings, or call order; **Finding 3** — every server action opened with the byte-identical `const session = await auth(); if (!session?.user?.id) return { …, error: "You are not signed in." }` preamble (plus reuse of `session.user.id` throughout), so extracted a new server-only `requireUserId()` helper into `src/lib/actions/require-user.ts` returning `{ ok: true; userId: string } | { ok: false; error: string }` (identity-only — deliberately resolves nothing else so it can't re-introduce a stale-Pro read); adopted at every inlined-guard call site: `src/lib/ai/run-ai-action.ts` (the shared AI pipeline), all 5 item actions + all 4 collection actions, `editor-preferences.ts`, `deleteAccountAction` (maps `authed.error` onto its `{ error }`-only result shape), and `createPortalSessionAction`; **the one deliberate exception is `createCheckoutSessionAction`**, which keeps `const session = await auth()` because it *also* guards on `session.user.email` (`!session?.user?.id || !session.user.email` → "You are not signed in.") and the billing test asserts the no-email case rejects *before* any DB/Stripe call — `requireUserId` discards email, so forcing it there would drop that guard; the JWT-staleness rule is preserved everywhere — write paths still call `getUserIsPro(userId)` (DB read), never `session.user.isPro`; **Finding 4** — the `{ success: true; data } | { success: false; error }` union was hand-written in every data-returning action and each `safeParse` failure repeated `parsed.error.issues[0]?.message ?? "Invalid input"`, so extracted `type ActionResult<T>` + `firstIssue(error, fallback = "Invalid input")` into `src/lib/actions/result.ts` (`firstIssue` takes a structural `IssueContainer` — `{ issues: Array<{ message?: string }> }` — rather than importing `ZodError`, mirroring the structural `Parseable` approach in `run-ai-action.ts` so it slots onto both the real Zod schemas and the runner's structural type); `ActionResult<T>` applied only where the shape matched exactly — `UpdateItemResult` + `CreateItemResult` (= `ActionResult<ItemDetail>`), `CreateCollectionResult` (= `ActionResult<CollectionWithMeta>`), `UpdateEditorPreferencesResult` (= `ActionResult<EditorPreferences>`), and `run-ai-action.ts`'s `AiActionResult<T>` aliased to `ActionResult<T>` (it was internal-only, no external importers); the intentionally-different result types were left untouched to avoid over-coupling — `SetItemFavoriteResult`/`SetItemPinnedResult`/`SetCollectionFavoriteResult` (`{ isFavorite }`/`{ isPinned }` on success), the bare `{ success: true }` delete results, and billing/account's `{ error }`-only shape; `firstIssue` adopted at all 6 `safeParse` failure sites (run-ai-action, items ×2, collections ×2, editor-preferences); no test files changed — the existing `items.test.ts` / `collections.test.ts` / `ai-*.test.ts` / `billing.test.ts` / `account.test.ts` suites are the regression net and the two new helper modules are exercised transitively through them (the tests mock `@/auth`, which `requireUserId` calls internally, so the mock applies transparently); the unrelated untracked `.claude/agents/refactor-scanner.md` was again left out of the commit; net +137/−105 lines across 8 files (2 new modules); 363 tests + `next build` pass unchanged (26 routes clean) — Completed
 - Refactor-scanner writes report to docs/audit-results — the previously-untracked `refactor-scanner` agent (`.claude/agents/refactor-scanner.md`) now **persists** its Markdown report to `docs/audit-results/` in addition to printing it inline (purely additive — the inline report is unchanged); added the `Write` tool to the agent's frontmatter `tools` line (was `Glob, Grep, Read` → `Glob, Grep, Read, Write`); reconciled the contradictory identity line ("You are **read-only**. You produce a report. You do not edit files.") to "You are **read-only toward source code** — you never edit the files you scan. The only file you write is your own report, which you save to `docs/audit-results/`" so the agent doesn't get conflicting instructions and refuse to write; defined a collision-safe filename convention `docs/audit-results/refactor-<folder-slug>-<YYYY-MM-DD>.md` where `<folder-slug>` is the normalized scan path with separators flattened (`src/components/items` → `components-items`, `src/actions` → `actions`, `src/app/api` → `app-api`) and a same-day re-run on the same folder checks with `Glob` first and appends a `-HHMM` time suffix to avoid clobbering the earlier run; the saved file begins with a self-describing header the inline version omits (`<!-- Machine-generated by the refactor-scanner agent. Do not edit by hand. -->` + a `> **Scan date:** … · **Folder scanned:** …` blockquote) so it's readable standalone; the `Write` tool auto-creates `docs/audit-results/` so no mkdir step is needed, and the agent ends its inline response by confirming the saved path; restructured the "Output Format" section into a "Saving the report file" subsection + a "Report body" subsection (the original report template is unchanged), and added a closing Self-Check reminder to both print AND save; **git-tracking decision** — `docs/audit-results/` is already tracked (it holds `AUTH_SECURITY_REVIEW.md` from the auth-auditor run) and nothing in `.gitignore` excludes it, so no `.gitignore` change was needed; the existing `AUTH_SECURITY_REVIEW.md` uses a `SCREAMING_SNAKE` name + `**Last audited:**` metadata block, but the kebab-case dated convention here is intentionally different — it's designed for repeatable per-folder scans where dated filenames prevent collisions; pure `.claude/agents/` config change, not application code, so no Vitest applies (verified by inspecting the edited agent file); the feature also added the agent file to git for the first time (it had been sitting untracked across several prior features) — Completed
+- Refactor components (dedupe + centralize) — pure internal refactor of `src/components/` driven by a components-folder scan; 5 scoped items with no behavior change except two intentional copy normalizations; **#A-3** consolidated the three drifted `PRO_FEATURES` definitions (4-item `string[]` in `constants.ts` used by the upgrade-prompt dialog, 6-item `ReactNode[]` local to `upgrade-pricing-card.tsx`, 6 hardcoded `<li>`s in `pricing-section.tsx`) into one canonical 6-item `string[]` in `src/lib/constants.ts` — the upgrade-prompt dialog now lists the same 6 features (was 4) and the bold on "Unlimited" in both pricing cards became plain text (consequence of sharing a plain-string constant rather than per-card `ReactNode`/markup); **#A-11** moved `ITEM_TYPES_WITH_CONTENT` / `_LANGUAGE` / `_MARKDOWN` / `_UPLOAD` into `constants.ts` (typed `Set<string>` to match the existing `PRO_ONLY_ITEM_TYPES` and support the lowercased-`string` callers), consumed by `new-item-dialog`, `item-drawer`, and `clickable-item-card` (whose byte-identical `TYPES_WITH_CONTENT_COPY` now just reuses `ITEM_TYPES_WITH_CONTENT`); **#A-7** extracted `toastActionError(error, onUpgrade?)` into `src/lib/toast-error.ts` (plain error toast normally, Upgrade-action toast when the error contains "Pro") with 4 Vitest cases, adopted at all 5 call sites (`new-item-dialog` → `router.push("/settings#billing")`, `suggest-tags-button` + `generate-description-button` → `router.push("/upgrade")`, `code-editor` + `markdown-editor` → `window.location.assign("/upgrade")`) — each site keeps its own navigation via the callback, so the existing destination drift is preserved and behavior is unchanged; **#A-1** extracted the shared `ItemFormFields` (`src/components/items/item-form-fields.tsx`) rendering Title → Description (+`GenerateDescriptionButton`) → Language → Content (CodeEditor / MarkdownEditor / plain Textarea) → URL → an `extraFields` slot → Tags (+`SuggestTagsButton`) → Collections, parameterized by `idPrefix` / `titleAutoFocus` / `urlRequired` / `descriptionRows` / `contentRows` / `editorAriaLabel` so create + edit keep their exact per-variant differences — `item-edit-form` is now a thin wrapper (still exports `EditState = ItemFormValue` + `detailToEditState` for the drawer) and `new-item-dialog` consolidated its 7 individual field `useState`s into one `form` object, keeping the create-only Type selector above `ItemFormFields` and the FileUpload in the `extraFields` slot (removed ~130 duplicated lines); **#A-2** moved `PRO_PRICE` + a `PricingPeriod` type into `constants.ts` and extracted a shared `BillingPeriodToggle` (`src/components/billing/billing-period-toggle.tsx` — the Monthly/Yearly buttons + "Save 25%" badge) consumed by both `marketing/pricing-section` (inside its `Reveal` tablist) and `billing/upgrade-pricing-card` (inside a plain `div` tablist) — the Free/Pro card bodies were deliberately NOT merged because they genuinely diverge (rounded-badge `CheckBadge`/`XBadge` vs bare-stroke `CheckIcon`/`XIcon`, `<Link>` CTA vs checkout-action `PendingButton` vs non-interactive "Current plan" chip, `Reveal` vs plain `div` wrappers) and unifying would force a visible change on one surface, violating the no-visual-change constraint; net −316 lines across the modified files plus 4 new files; 363 → 367 tests (+4 from the new `toast-error.test.ts`) + `next build` pass (26 routes); live-verified via Playwright on the running dev server — homepage `#pricing` renders the 6 Pro features and the toggle flips `$8 / month` → `$6 / month, billed yearly` (`$72 billed yearly`, `aria-selected` swapping), and the New-item dialog renders through `ItemFormFields` with the correct field order + `new-`prefixed ids + autofocused Title for snippet, URL\* required when switched to link, and the File\* upload slot when switched to file — 0 console errors; deferred to later branches: #A-4 (`ConfirmDeleteDialog`), #A-5 (`CollectionForm`), #A-6 (`AiActionButton`), #A-8 (shared editor chrome), #A-10 (`useOptimisticToggle`), #A-12 (quick-button shell), and the `file-upload.tsx` / `markdown-editor.tsx` size splits — Completed
