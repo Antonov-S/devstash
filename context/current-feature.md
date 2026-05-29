@@ -1,16 +1,101 @@
-# Current Feature
+# Refactor Components — Dedupe + Centralize
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
-<!-- Run /feature load to populate goals -->
+Refactor `src/components/` to remove duplication and centralize shared values. Five
+scoped items from the components refactoring scan — three cheap constant/helper moves
+plus the two highest-value structural extractions. Pure internal refactor: no change to
+behavior, routing, props exposed to pages, or visible UI.
+
+### #A-3 — Consolidate the drifted `PRO_FEATURES` lists
+
+`PRO_FEATURES` is currently defined three times and the contents have drifted apart:
+
+- `src/lib/constants.ts:17` — 4-item `string[]` (used by `upgrade-prompt-dialog.tsx`)
+- `src/components/billing/upgrade-pricing-card.tsx:22` — 6-item `ReactNode[]`
+- `src/components/marketing/pricing-section.tsx:253-280` — 6 items hardcoded inline
+
+Settle on one source of truth in `src/lib/constants.ts` (matches the centralize-constants
+convention — see [[feedback_constants_centralization]]) and have all three call sites
+consume it. Reconcile the wording so the marketing page, the upgrade page, and the
+upgrade dialog all advertise the same Pro feature set.
+
+### #A-7 — Extract the Pro-error → Upgrade-toast helper
+
+The `if (result.error.includes("Pro")) toast.error(error, { action: { label: "Upgrade",
+... } })` pattern is repeated in 5 files:
+
+- `new-item-dialog.tsx:162` (routes to `/settings#billing`)
+- `suggest-tags-button.tsx:44` (routes to `/upgrade`)
+- `generate-description-button.tsx:36` (routes to `/upgrade`)
+- `code-editor.tsx:137` (routes to `/upgrade` via `window.location.assign`)
+- `markdown-editor.tsx:118` (routes to `/upgrade` via `window.location.assign`)
+
+Extract a single helper (e.g. `toastActionError(error, onUpgrade)` in `src/lib/`) that
+emits a plain error toast normally and an Upgrade-action toast when the error contains
+`"Pro"`. Note the destination drift (`/settings#billing` vs `/upgrade`) — standardize on
+`/upgrade` since that's the dedicated route, but confirm before changing the
+new-item-dialog destination.
+
+### #A-11 — Centralize the `TYPES_WITH_*` sets
+
+`TYPES_WITH_CONTENT` / `TYPES_WITH_LANGUAGE` / `TYPES_WITH_MARKDOWN` are redefined in:
+
+- `new-item-dialog.tsx:59-67` (also `TYPES_WITH_UPLOAD`)
+- `item-drawer.tsx:37-39`
+- `clickable-item-card.tsx:10` (the `TYPES_WITH_CONTENT_COPY` copy-text variant)
+
+Move the canonical sets into `src/lib/constants.ts` and import them everywhere. Keep the
+upload + copy-text variants as their own named constants alongside the others.
+
+### #A-1 — Extract a shared `ItemFormFields` component (highest value)
+
+`new-item-dialog.tsx:241-382` and `item-edit-form.tsx:61-194` render the same fields —
+Description (+`GenerateDescriptionButton`), Language (`LanguageSelect`), Content (the
+`CodeEditor` / `MarkdownEditor` / `Textarea` branch), URL, Tags (+`SuggestTagsButton`),
+Collections — with only `edit.x` vs local-state wiring differing. Extract a single
+`ItemFormFields` driven by a value-object + `onChange` (the existing `EditState` shape is
+a good basis; `new-item-dialog` will need a Title field + Type selector + file-upload that
+stay in the dialog, or move into the shared component behind flags). Both call sites
+should collapse to `<ItemFormFields value={...} onChange={...} shows... />`. Removes
+~130 duplicated lines. Title/Type-selector/FileUpload handling differs between create and
+edit, so decide during implementation whether those live inside the shared component
+(behind `mode`/`shows` flags) or stay at the call sites.
+
+### #A-2 — Extract shared pricing UI + `PRO_PRICE` (highest value)
+
+`marketing/pricing-section.tsx` (279 lines) and `billing/upgrade-pricing-card.tsx`
+(225 lines) duplicate: the `PRO_PRICE` table (byte-identical), the Monthly/Yearly billing
+toggle incl. the "Save 25%" badge, the Free/Pro card layout + radial-gradient Pro
+styling, the `FREE_FEATURES` list, and the Check/X icon components. They differ only in:
+marketing wraps everything in `Reveal` and uses `<Link>` CTAs (static), while the upgrade
+card uses plain divs + a `createCheckoutSessionAction` button.
+
+Move `PRO_PRICE` to `src/lib/constants.ts`. Extract shared pieces — at minimum a
+`BillingToggle` and a `PlanCard` (or a `PricingCards`) that accept the CTA as
+children/render-prop so each surface supplies its own (Link vs checkout button) and its
+own wrapper (Reveal vs div). Fold the Check/X icon variants together. Coordinate with
+#A-3 so the Pro feature list comes from the single constant.
 
 ## Notes
 
-<!-- Additional context, constraints, or spec details go here -->
+- **No behavior change.** This is a pure internal refactor — verify each touched surface
+  renders identically. Per `coding-standards.md` Testing section, components are out of
+  Vitest scope, so verification is `npm run build` + Playwright passes on the affected
+  surfaces (item create dialog, item drawer edit mode, `/`, `/upgrade`).
+- If any extracted logic lands in `src/lib/**` (e.g. the `toastActionError` helper, or
+  pure helpers pulled out of the forms), add Vitest coverage for those per the workflow.
+- Sequencing: do the cheap/safe moves first (#A-3, #A-7, #A-11 — pure relocations), then
+  the two structural extractions (#A-1, #A-2). Each is independently shippable; consider
+  one commit per item on the same branch.
+- Remaining scan findings deferred to a later branch: #A-4 (`ConfirmDeleteDialog`), #A-5
+  (`CollectionForm`), #A-6 (`AiActionButton`), #A-8 (editor chrome), #A-10
+  (`useOptimisticToggle`), #A-12 (quick-button shell), and the `file-upload.tsx` /
+  `markdown-editor.tsx` size splits.
 
 ## History
 

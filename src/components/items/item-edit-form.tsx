@@ -1,25 +1,12 @@
 "use client";
 
-import { CodeEditor } from "@/components/items/code-editor";
-import { CollectionsPicker } from "@/components/items/collections-picker";
-import { Field, Textarea } from "@/components/items/_form-primitives";
-import { GenerateDescriptionButton } from "@/components/items/generate-description-button";
-import { LanguageSelect } from "@/components/items/language-select";
-import { MarkdownEditor } from "@/components/items/markdown-editor";
-import { SuggestTagsButton } from "@/components/items/suggest-tags-button";
-import { Input } from "@/components/ui/input";
+import {
+  ItemFormFields,
+  type ItemFormValue
+} from "@/components/items/item-form-fields";
 import type { ItemDetail } from "@/lib/db/items";
-import { parseTags } from "@/lib/utils";
 
-export type EditState = {
-  title: string;
-  description: string;
-  content: string;
-  url: string;
-  language: string;
-  tags: string;
-  collectionIds: string[];
-};
+export type EditState = ItemFormValue;
 
 export function detailToEditState(detail: ItemDetail): EditState {
   return {
@@ -54,143 +41,19 @@ export function ItemEditForm({
   typeName: string;
   fileName?: string | null;
 }) {
-  function update<K extends keyof EditState>(key: K, value: EditState[K]) {
-    onChange({ ...edit, [key]: value });
-  }
-
   return (
-    <div className="flex flex-col gap-4">
-      <Field label="Title" htmlFor="edit-title" required>
-        <Input
-          id="edit-title"
-          value={edit.title}
-          onChange={(e) => update("title", e.target.value)}
-          disabled={disabled}
-          aria-invalid={edit.title.trim() === "" ? true : undefined}
-          required
-        />
-      </Field>
-
-      <Field
-        label="Description"
-        htmlFor="edit-description"
-        action={
-          <GenerateDescriptionButton
-            getPayload={() => ({
-              typeName,
-              title: edit.title,
-              content: showsContent ? edit.content : null,
-              url: showsUrl ? edit.url : null,
-              language: showsLanguage ? edit.language : null,
-              fileName: fileName ?? null,
-              tags: parseTags(edit.tags)
-            })}
-            onResult={(next) => update("description", next)}
-            disabled={
-              disabled ||
-              (edit.title.trim() === "" &&
-                edit.content.trim() === "" &&
-                edit.url.trim() === "" &&
-                (fileName ?? "").trim() === "")
-            }
-          />
-        }
-      >
-        <Textarea
-          id="edit-description"
-          value={edit.description}
-          onChange={(e) => update("description", e.target.value)}
-          disabled={disabled}
-          rows={3}
-        />
-      </Field>
-
-      {showsLanguage && (
-        <Field label="Language" htmlFor="edit-language">
-          <LanguageSelect
-            id="edit-language"
-            value={edit.language}
-            onChange={(next) => update("language", next)}
-            disabled={disabled}
-          />
-        </Field>
-      )}
-
-      {showsContent && (
-        <Field label="Content" htmlFor="edit-content">
-          {showsLanguage ? (
-            <CodeEditor
-              value={edit.content}
-              language={edit.language}
-              onChange={(next) => update("content", next)}
-              ariaLabel="Edit item content"
-            />
-          ) : showsMarkdown ? (
-            <MarkdownEditor
-              value={edit.content}
-              onChange={(next) => update("content", next)}
-              ariaLabel="Edit item content"
-            />
-          ) : (
-            <Textarea
-              id="edit-content"
-              value={edit.content}
-              onChange={(e) => update("content", e.target.value)}
-              disabled={disabled}
-              rows={10}
-              className="font-mono text-sm"
-            />
-          )}
-        </Field>
-      )}
-
-      {showsUrl && (
-        <Field label="URL" htmlFor="edit-url">
-          <Input
-            id="edit-url"
-            type="url"
-            value={edit.url}
-            onChange={(e) => update("url", e.target.value)}
-            disabled={disabled}
-            placeholder="https://example.com"
-          />
-        </Field>
-      )}
-
-      <Field label="Tags" htmlFor="edit-tags" hint="Comma-separated">
-        <Input
-          id="edit-tags"
-          value={edit.tags}
-          onChange={(e) => update("tags", e.target.value)}
-          disabled={disabled}
-          placeholder="react, hooks, auth"
-        />
-        <SuggestTagsButton
-          getPayload={() => ({
-            title: edit.title,
-            content: showsContent ? edit.content : null,
-            description: edit.description,
-            language: showsLanguage ? edit.language : null,
-            typeName
-          })}
-          existingTags={parseTags(edit.tags)}
-          onAccept={(tag) =>
-            update(
-              "tags",
-              edit.tags.trim() === "" ? tag : `${edit.tags}, ${tag}`
-            )
-          }
-          disabled={disabled || edit.title.trim() === ""}
-        />
-      </Field>
-
-      <Field label="Collections">
-        <CollectionsPicker
-          selectedIds={edit.collectionIds}
-          onChange={(next) => update("collectionIds", next)}
-          disabled={disabled}
-        />
-      </Field>
-    </div>
+    <ItemFormFields
+      value={edit}
+      onChange={onChange}
+      disabled={disabled}
+      showsContent={showsContent}
+      showsLanguage={showsLanguage}
+      showsMarkdown={showsMarkdown}
+      showsUrl={showsUrl}
+      typeName={typeName}
+      fileName={fileName}
+      idPrefix="edit"
+      editorAriaLabel="Edit item content"
+    />
   );
 }

@@ -4,22 +4,13 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { buttonVariants } from "@/components/ui/button";
+import { BillingPeriodToggle } from "@/components/billing/billing-period-toggle";
 import { Reveal } from "@/components/marketing/reveal";
+import { PRO_FEATURES, PRO_PRICE, type PricingPeriod } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-
-type Billing = "monthly" | "yearly";
 
 type Props = {
   isAuthenticated: boolean;
-};
-
-const PRO_PRICE: Record<Billing, { amount: string; period: string; note: string }> = {
-  monthly: { amount: "$8", period: "/ month", note: "Billed monthly" },
-  yearly: {
-    amount: "$6",
-    period: "/ month, billed yearly",
-    note: "$72 billed yearly"
-  }
 };
 
 function Check({ className }: { className?: string }) {
@@ -92,7 +83,7 @@ const FREE_FEATURES: { label: string; muted?: boolean; icon: "check" | "x" }[] =
 ];
 
 export function PricingSection({ isAuthenticated }: Props) {
-  const [billing, setBilling] = useState<Billing>("monthly");
+  const [billing, setBilling] = useState<PricingPeriod>("monthly");
   const pro = PRO_PRICE[billing];
 
   const freeHref = isAuthenticated ? "/dashboard" : "/register";
@@ -125,52 +116,7 @@ export function PricingSection({ isAuthenticated }: Props) {
             aria-label="Billing period"
             className="inline-flex items-center gap-1 rounded-full border border-border bg-card p-1"
           >
-            <button
-              type="button"
-              role="tab"
-              aria-selected={billing === "monthly"}
-              onClick={() => setBilling("monthly")}
-              className={cn(
-                "inline-flex items-center gap-2 rounded-full px-4.5 py-2 text-sm font-medium transition-colors",
-                billing === "monthly"
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              Monthly
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={billing === "yearly"}
-              onClick={() => setBilling("yearly")}
-              className={cn(
-                "inline-flex items-center gap-2 rounded-full px-4.5 py-2 text-sm font-medium transition-colors",
-                billing === "yearly"
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              Yearly
-              <span
-                className="inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold"
-                style={
-                  billing === "yearly"
-                    ? {
-                        background: "rgba(255, 255, 255, 0.22)",
-                        color: "#fff",
-                        borderColor: "rgba(255, 255, 255, 0.3)"
-                      }
-                    : {
-                        background: "rgba(34, 197, 94, 0.2)",
-                        color: "#4ade80",
-                        borderColor: "rgba(34, 197, 94, 0.4)"
-                      }
-                }
-              >
-                Save 25%
-              </span>
-            </button>
+            <BillingPeriodToggle value={billing} onChange={setBilling} />
           </Reveal>
         </div>
 
@@ -251,32 +197,15 @@ export function PricingSection({ isAuthenticated }: Props) {
               {pro.note}
             </p>
             <ul className="flex flex-col gap-2.5">
-              <li className="flex items-center gap-2.5 text-sm">
-                <CheckBadge />
-                <span>
-                  <strong>Unlimited</strong> items & collections
-                </span>
-              </li>
-              <li className="flex items-center gap-2.5 text-sm">
-                <CheckBadge />
-                File & image uploads
-              </li>
-              <li className="flex items-center gap-2.5 text-sm">
-                <CheckBadge />
-                AI auto-tagging & summaries
-              </li>
-              <li className="flex items-center gap-2.5 text-sm">
-                <CheckBadge />
-                Explain code & prompt optimizer
-              </li>
-              <li className="flex items-center gap-2.5 text-sm">
-                <CheckBadge />
-                Export as JSON or ZIP
-              </li>
-              <li className="flex items-center gap-2.5 text-sm">
-                <CheckBadge />
-                Priority support
-              </li>
+              {PRO_FEATURES.map((feature) => (
+                <li
+                  key={feature}
+                  className="flex items-center gap-2.5 text-sm"
+                >
+                  <CheckBadge />
+                  {feature}
+                </li>
+              ))}
             </ul>
             <Link
               href={proHref}

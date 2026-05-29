@@ -5,19 +5,13 @@ import { useState } from "react";
 import { ItemCard } from "@/components/dashboard/item-card";
 import { ItemDrawer } from "@/components/items/item-drawer";
 import { QuickCopyButton } from "@/components/items/quick-copy-button";
+import { ITEM_TYPES_WITH_CONTENT } from "@/lib/constants";
 import type { ItemWithMeta } from "@/lib/db/items";
-
-const TYPES_WITH_CONTENT_COPY = new Set([
-  "snippet",
-  "prompt",
-  "command",
-  "note"
-]);
 
 function getCopyText(item: ItemWithMeta): string | null {
   const typeName = item.itemType.name.toLowerCase();
   if (typeName === "link") return item.url;
-  if (TYPES_WITH_CONTENT_COPY.has(typeName)) return item.content;
+  if (ITEM_TYPES_WITH_CONTENT.has(typeName)) return item.content;
   return null;
 }
 

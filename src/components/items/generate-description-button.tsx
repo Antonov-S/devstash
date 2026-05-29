@@ -10,6 +10,7 @@ import {
   type GenerateDescriptionPayload
 } from "@/actions/ai-description";
 import { useIsPro } from "@/components/billing/is-pro-context";
+import { toastActionError } from "@/lib/toast-error";
 
 type Props = {
   getPayload: () => GenerateDescriptionPayload;
@@ -33,16 +34,7 @@ export function GenerateDescriptionButton({
     startTransition(async () => {
       const result = await generateDescription(payload);
       if (!result.success) {
-        if (result.error.includes("Pro")) {
-          toast.error(result.error, {
-            action: {
-              label: "Upgrade",
-              onClick: () => router.push("/upgrade")
-            }
-          });
-        } else {
-          toast.error(result.error);
-        }
+        toastActionError(result.error, () => router.push("/upgrade"));
         return;
       }
       onResult(result.description);

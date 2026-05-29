@@ -20,6 +20,7 @@ import { useIsPro } from "@/components/billing/is-pro-context";
 import { useEditorPreferences } from "@/components/editor/editor-preferences-context";
 import { Button } from "@/components/ui/button";
 import { AI_ACCENT_COLOR } from "@/lib/constants";
+import { toastActionError } from "@/lib/toast-error";
 import { cn } from "@/lib/utils";
 
 const MIN_HEIGHT = 80;
@@ -116,14 +117,9 @@ export function MarkdownEditor({
         content: value
       });
       if (!result.success) {
-        toast.error(result.error, {
-          action: result.error.includes("Pro")
-            ? {
-                label: "Upgrade",
-                onClick: () => window.location.assign("/upgrade")
-              }
-            : undefined
-        });
+        toastActionError(result.error, () =>
+          window.location.assign("/upgrade")
+        );
         return;
       }
       if (result.prompt.trim() === value.trim()) {
