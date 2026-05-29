@@ -2,15 +2,33 @@
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
-<!-- Define what success looks like for the next feature. -->
+- **Image gallery quick-download (to implement)** — Add a small, hover-only Download icon button to each image card on `/items/images`, so users can save an image without opening the detail drawer. Must stay visually unobtrusive (gallery-appropriate overlay affordance, not a full meta footer) and must not trigger the card's open-drawer click.
+- **Dialog confirmation button reachability (already fixed)** — Tall dialogs (notably the New Item dialog with an image preview) pushed the footer's confirmation button off-screen; the only workaround was zooming the browser out, and it failed entirely on phones. Now fixed — documented below for the record.
 
 ## Notes
 
-<!-- Additional context, constraints, or spec details. -->
+### Image gallery quick-download — implementation plan
+
+- **Where:** the image cards rendered on `/items/images` via `ClickableImageCard` (`src/components/items/clickable-image-card.tsx`) wrapping `ImageThumbnailCard`. The list view (`/items/files`) is unchanged — it already exposes a download link because the meta *is* its content.
+- **Affordance:** a small icon button (`Download` from lucide) overlaid on the thumbnail, matching the existing overlay language (favorite/pin badges) — `size-7`/translucent backdrop, hidden by default and revealed on `group-hover` / `group-focus-within` / `[@media(hover:none)]` so it stays visible on touch viewports. Reuse `quickActionButtonClass` for the shell so it matches `QuickCopyButton` / `QuickFavoriteButton`.
+- **Corner placement:** top-right is taken by `QuickFavoriteButton`, so place download in a free corner (bottom-right preferred). Two overlay buttons on one card must not collide.
+- **Click isolation:** render the download control as an `<a href="/api/files/{id}" download={fileName}>` that is a **sibling** of the open-drawer `<button>` (not nested — nesting interactive elements is invalid HTML), and call `e.stopPropagation()` so the download click can't bubble up and open the drawer. This mirrors the sibling-anchor pattern already used in `ClickableFileRow`.
+- **Skip when no file:** guard on `item.fileUrl` so a card with a null `fileUrl` (broken/missing image) doesn't render a dead download link.
+- **Scope:** image cards only. Do **not** add a meta footer (type-icon + filename) to the gallery — the thumbnail is the content and the drawer already covers filename/size/download; a footer would clutter the grid and break its visual rhythm.
+- **Testing:** components are out of Vitest scope per `coding-standards.md`; verify the build + existing suite stay green, and live-verify via Playwright that the download click does **not** open the drawer (`dialogsOpen: 0`) while a plain card click still does.
+
+### Dialog confirmation button fix (already implemented)
+
+Root cause was the shared `DialogContent` primitive, not the image size (the `FileUpload` preview is already capped at `max-h-64` and the drawer image at `max-h-96`). `DialogContent` is vertically centered (`top-1/2 -translate-y-1/2`) but had **no max-height and no scroll**, so once a form's height exceeded the viewport it overflowed equally off the top and bottom, dropping the footer's confirm button below the fold with no way to reach it. The mobile browser chrome made it worse. Two additive, layout-only changes (no state/props/validation/submit/upload logic touched):
+
+1. **Global safety net** — `src/components/ui/dialog.tsx`: added `max-h-[calc(100dvh-2rem)] overflow-y-auto` to `DialogContent` so no dialog can ever trap its footer (also protects the collection + delete-confirm dialogs). `dvh` (not `vh`) tracks the dynamic mobile browser chrome.
+2. **Pinned footer for New Item** — `src/components/items/new-item-dialog.tsx`: the dialog now uses `flex flex-col overflow-y-hidden` (cleanly overriding the global `grid` / `overflow-y-auto` via tailwind-merge while inheriting `gap-4` + `max-h`), with the type selector + fields wrapped in a `flex-1 min-h-0 overflow-y-auto` region and the footer outside it — header and Create button stay fixed, only the fields scroll. Mirrors the existing item-drawer pattern (`SheetHeader` + `flex-1 overflow-y-auto` body).
+
+All 367 Vitest tests + `next build` pass. Not yet committed.
 
 ## History
 
