@@ -1,16 +1,30 @@
-# Current Feature
+# Current Feature: Professional README
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
-<!-- Define what success looks like for the next feature. -->
+- Create a polished, professional `README.md` at the project root that accurately represents DevStash
+- Lead with a clear one-line value proposition + concise description ("one fast, searchable, AI-enhanced hub for all dev knowledge")
+- Document the tech stack (Next.js 16 / React 19, TypeScript, Neon + Prisma 7, NextAuth v5, Cloudflare R2, OpenAI, Tailwind v4 + shadcn/ui, Stripe, Upstash Redis)
+- Cover key features: items (7 system types), collections, full-text + fuzzy command-palette search, auth (credentials + GitHub OAuth + email verification + password reset), file/image uploads, AI features (auto-tag, description, explain code, optimize prompt), Stripe Pro tier, favorites/pinning, pagination, editor preferences
+- Include a **"Development Journey" / "Project Development" section** that summarizes how the project was built, using short, condensed steps distilled from the `## History` section of this file (group the granular entries into readable phases — e.g. Foundation & Dashboard → Database → Auth → Items CRUD → Editors & Uploads → Organization (collections/favorites/pinning/search) → Pagination & Settings → Marketing site → Stripe Billing → AI Features → Refactors/Polish). Keep it skimmable, not a verbatim changelog dump.
+- Include getting-started: prerequisites, install, environment variables, database setup (Prisma migrate + seed), running dev/build, testing (Vitest)
+- Document project structure/conventions, npm scripts (dev/build/test/seed/wipe-demo), and an env-var reference
+- Use clean formatting: badges, ToC, code blocks, tables where helpful; render well on GitHub
+- Keep claims accurate to the actual codebase — do not invent features or overstate completeness
 
 ## Notes
 
-<!-- Additional context, constraints, or spec details. -->
+- Pure documentation task — no application code, no schema, no tests (a README is out of Vitest scope per `coding-standards.md`)
+- Source of truth for content: `context/project-overview.md`, `context/coding-standards.md`, `package.json` scripts/deps, `.env.example`, and the extensive `## History` section below
+- DevStash is far past the original spec snapshot — auth, AI (4 features), Stripe billing, favorites, pinning, search palette, pagination, editor prefs, and the marketing homepage are all built; the README should reflect the real current state
+- The Development Journey section should be derived from the History log but **summarized into short phases** — readers want the story of how it was built, not the full per-commit history
+- Dev convention: all users get Pro features during development; `isPro` is the gate. Free-tier limits (50 items, 3 collections, no file/image/AI) are enforced via capacity helpers
+- Mention the Neon dev/prod branch model only at a high level; do NOT expose internal branch IDs from CLAUDE.md
+- Follow the standard workflow: branch `feature/readme`, implement, build (no tests needed), commit after approval, merge, reset
 
 ## History
 
