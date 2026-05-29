@@ -2,7 +2,8 @@
 
 import { z } from "zod";
 
-import { auth } from "@/auth";
+import { requireUserId } from "@/lib/actions/require-user";
+import { firstIssue, type ActionResult } from "@/lib/actions/result";
 import { checkCollectionCapacity, getUserIsPro } from "@/lib/billing";
 import {
   createCollectionForUser,
@@ -23,37 +24,32 @@ const createCollectionSchema = z.object({
 
 export type CreateCollectionPayload = z.input<typeof createCollectionSchema>;
 
-export type CreateCollectionResult =
-  | { success: true; data: CollectionWithMeta }
-  | { success: false; error: string };
+export type CreateCollectionResult = ActionResult<CollectionWithMeta>;
 
 export async function createCollectionAction(
   payload: CreateCollectionPayload
 ): Promise<CreateCollectionResult> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, error: "You are not signed in." };
+  const authed = await requireUserId();
+  if (!authed.ok) {
+    return { success: false, error: authed.error };
   }
+  const { userId } = authed;
 
   const parsed = createCollectionSchema.safeParse(payload);
   if (!parsed.success) {
-    const first = parsed.error.issues[0];
-    return {
-      success: false,
-      error: first?.message ?? "Invalid input"
-    };
+    return { success: false, error: firstIssue(parsed.error) };
   }
 
   // Always re-read isPro from the DB — session.user.isPro can lag a Stripe
   // downgrade until the JWT refreshes on the next request.
-  const isPro = await getUserIsPro(session.user.id);
-  const capacity = await checkCollectionCapacity(session.user.id, isPro);
+  const isPro = await getUserIsPro(userId);
+  const capacity = await checkCollectionCapacity(userId, isPro);
   if (!capacity.ok) {
     return { success: false, error: capacity.reason };
   }
 
   try {
-    const created = await createCollectionForUser(session.user.id, parsed.data);
+    const created = await createCollectionForUser(userId, parsed.data);
     return { success: true, data: created };
   } catch (error) {
     console.error("createCollectionAction failed", error);
@@ -82,9 +78,9 @@ export async function updateCollectionAction(
   collectionId: string,
   payload: UpdateCollectionPayload
 ): Promise<UpdateCollectionResult> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, error: "You are not signed in." };
+  const authed = await requireUserId();
+  if (!authed.ok) {
+    return { success: false, error: authed.error };
   }
 
   if (typeof collectionId !== "string" || !collectionId) {
@@ -93,16 +89,12 @@ export async function updateCollectionAction(
 
   const parsed = updateCollectionSchema.safeParse(payload);
   if (!parsed.success) {
-    const first = parsed.error.issues[0];
-    return {
-      success: false,
-      error: first?.message ?? "Invalid input"
-    };
+    return { success: false, error: firstIssue(parsed.error) };
   }
 
   try {
     const updated = await updateCollectionForUser(
-      session.user.id,
+      authed.userId,
       collectionId,
       parsed.data
     );
@@ -127,9 +119,9 @@ export async function setCollectionFavoriteAction(
   collectionId: string,
   isFavorite: boolean
 ): Promise<SetCollectionFavoriteResult> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, error: "You are not signed in." };
+  const authed = await requireUserId();
+  if (!authed.ok) {
+    return { success: false, error: authed.error };
   }
 
   if (typeof collectionId !== "string" || !collectionId) {
@@ -138,7 +130,7 @@ export async function setCollectionFavoriteAction(
 
   try {
     const updated = await setCollectionFavoriteForUser(
-      session.user.id,
+      authed.userId,
       collectionId,
       isFavorite
     );
@@ -162,9 +154,9 @@ export type DeleteCollectionResult =
 export async function deleteCollectionAction(
   collectionId: string
 ): Promise<DeleteCollectionResult> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, error: "You are not signed in." };
+  const authed = await requireUserId();
+  if (!authed.ok) {
+    return { success: false, error: authed.error };
   }
 
   if (typeof collectionId !== "string" || !collectionId) {
@@ -172,7 +164,7 @@ export async function deleteCollectionAction(
   }
 
   try {
-    const deleted = await deleteCollectionForUser(session.user.id, collectionId);
+    const deleted = await deleteCollectionForUser(authed.userId, collectionId);
     if (!deleted) {
       return { success: false, error: "Collection not found" };
     }

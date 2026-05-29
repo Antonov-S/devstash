@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
+import { requireUserId } from "@/lib/actions/require-user";
 import { getBaseUrl } from "@/lib/base-url";
 import { prisma } from "@/lib/prisma";
 import {
@@ -82,13 +83,13 @@ export async function createCheckoutSessionAction(
 export async function createPortalSessionAction(): Promise<
   BillingActionResult | void
 > {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { error: "You are not signed in." };
+  const authed = await requireUserId();
+  if (!authed.ok) {
+    return { error: authed.error };
   }
 
   const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
+    where: { id: authed.userId },
     select: { stripeCustomerId: true }
   });
   if (!user?.stripeCustomerId) {

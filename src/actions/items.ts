@@ -2,7 +2,8 @@
 
 import { z } from "zod";
 
-import { auth } from "@/auth";
+import { requireUserId } from "@/lib/actions/require-user";
+import { firstIssue, type ActionResult } from "@/lib/actions/result";
 import { checkItemCapacity, getUserIsPro } from "@/lib/billing";
 import { PRO_ONLY_ITEM_TYPES } from "@/lib/constants";
 import { verifyCollectionsOwnedByUser } from "@/lib/db/collections";
@@ -40,18 +41,17 @@ const updateItemSchema = z.object({
 
 export type UpdateItemPayload = z.input<typeof updateItemSchema>;
 
-export type UpdateItemResult =
-  | { success: true; data: ItemDetail }
-  | { success: false; error: string };
+export type UpdateItemResult = ActionResult<ItemDetail>;
 
 export async function updateItemAction(
   itemId: string,
   payload: UpdateItemPayload
 ): Promise<UpdateItemResult> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, error: "You are not signed in." };
+  const authed = await requireUserId();
+  if (!authed.ok) {
+    return { success: false, error: authed.error };
   }
+  const { userId } = authed;
 
   if (typeof itemId !== "string" || !itemId) {
     return { success: false, error: "Invalid item id" };
@@ -59,17 +59,13 @@ export async function updateItemAction(
 
   const parsed = updateItemSchema.safeParse(payload);
   if (!parsed.success) {
-    const first = parsed.error.issues[0];
-    return {
-      success: false,
-      error: first?.message ?? "Invalid input"
-    };
+    return { success: false, error: firstIssue(parsed.error) };
   }
 
   const uniqueCollectionIds = Array.from(new Set(parsed.data.collectionIds));
   if (uniqueCollectionIds.length > 0) {
     const ownsAll = await verifyCollectionsOwnedByUser(
-      session.user.id,
+      userId,
       uniqueCollectionIds
     );
     if (!ownsAll) {
@@ -78,7 +74,7 @@ export async function updateItemAction(
   }
 
   try {
-    const updated = await updateItemForUser(session.user.id, itemId, {
+    const updated = await updateItemForUser(userId, itemId, {
       ...parsed.data,
       collectionIds: uniqueCollectionIds
     });
@@ -151,25 +147,20 @@ const createItemSchema = z
 
 export type CreateItemPayload = z.input<typeof createItemSchema>;
 
-export type CreateItemResult =
-  | { success: true; data: ItemDetail }
-  | { success: false; error: string };
+export type CreateItemResult = ActionResult<ItemDetail>;
 
 export async function createItemAction(
   payload: CreateItemPayload
 ): Promise<CreateItemResult> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, error: "You are not signed in." };
+  const authed = await requireUserId();
+  if (!authed.ok) {
+    return { success: false, error: authed.error };
   }
+  const { userId } = authed;
 
   const parsed = createItemSchema.safeParse(payload);
   if (!parsed.success) {
-    const first = parsed.error.issues[0];
-    return {
-      success: false,
-      error: first?.message ?? "Invalid input"
-    };
+    return { success: false, error: firstIssue(parsed.error) };
   }
 
   const { type, ...fields } = parsed.data;
@@ -177,11 +168,11 @@ export async function createItemAction(
 
   // Always re-read isPro from the DB, never session.user.isPro — the JWT can
   // carry a stale value across a Stripe downgrade until the next refresh.
-  const isPro = await getUserIsPro(session.user.id);
+  const isPro = await getUserIsPro(userId);
   if (PRO_ONLY_ITEM_TYPES.has(type) && !isPro) {
     return { success: false, error: "File and image items require Pro." };
   }
-  const capacity = await checkItemCapacity(session.user.id, isPro);
+  const capacity = await checkItemCapacity(userId, isPro);
   if (!capacity.ok) {
     return { success: false, error: capacity.reason };
   }
@@ -191,7 +182,7 @@ export async function createItemAction(
     // object. Uploads always land under `uploads/<userId>/...` so a key that
     // doesn't match the session user is either tampered or not from our bucket.
     const key = keyFromPublicUrl(fields.fileUrl);
-    const expectedPrefix = `uploads/${session.user.id}/`;
+    const expectedPrefix = `uploads/${userId}/`;
     if (!key || !key.startsWith(expectedPrefix)) {
       return { success: false, error: "Invalid file upload" };
     }
@@ -200,7 +191,7 @@ export async function createItemAction(
   const uniqueCollectionIds = Array.from(new Set(fields.collectionIds));
   if (uniqueCollectionIds.length > 0) {
     const ownsAll = await verifyCollectionsOwnedByUser(
-      session.user.id,
+      userId,
       uniqueCollectionIds
     );
     if (!ownsAll) {
@@ -209,7 +200,7 @@ export async function createItemAction(
   }
 
   try {
-    const created = await createItemForUser(session.user.id, {
+    const created = await createItemForUser(userId, {
       typeName: type,
       title: fields.title,
       description: fields.description,
@@ -240,9 +231,9 @@ export async function setItemFavoriteAction(
   itemId: string,
   isFavorite: boolean
 ): Promise<SetItemFavoriteResult> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, error: "You are not signed in." };
+  const authed = await requireUserId();
+  if (!authed.ok) {
+    return { success: false, error: authed.error };
   }
 
   if (typeof itemId !== "string" || !itemId) {
@@ -251,7 +242,7 @@ export async function setItemFavoriteAction(
 
   try {
     const updated = await setItemFavoriteForUser(
-      session.user.id,
+      authed.userId,
       itemId,
       isFavorite
     );
@@ -273,9 +264,9 @@ export async function setItemPinnedAction(
   itemId: string,
   isPinned: boolean
 ): Promise<SetItemPinnedResult> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, error: "You are not signed in." };
+  const authed = await requireUserId();
+  if (!authed.ok) {
+    return { success: false, error: authed.error };
   }
 
   if (typeof itemId !== "string" || !itemId) {
@@ -284,7 +275,7 @@ export async function setItemPinnedAction(
 
   try {
     const updated = await setItemPinnedForUser(
-      session.user.id,
+      authed.userId,
       itemId,
       isPinned
     );
@@ -305,9 +296,9 @@ export type DeleteItemResult =
 export async function deleteItemAction(
   itemId: string
 ): Promise<DeleteItemResult> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, error: "You are not signed in." };
+  const authed = await requireUserId();
+  if (!authed.ok) {
+    return { success: false, error: authed.error };
   }
 
   if (typeof itemId !== "string" || !itemId) {
@@ -315,7 +306,7 @@ export async function deleteItemAction(
   }
 
   try {
-    const deleted = await deleteItemForUser(session.user.id, itemId);
+    const deleted = await deleteItemForUser(authed.userId, itemId);
     if (!deleted) {
       return { success: false, error: "Item not found" };
     }
