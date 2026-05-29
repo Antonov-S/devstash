@@ -6,20 +6,16 @@ import { FolderPlus } from "lucide-react";
 import { toast } from "sonner";
 
 import { createCollectionAction } from "@/actions/collections";
-import { Field, Textarea } from "@/components/items/_form-primitives";
+import { CollectionFormFields } from "@/components/collections/collection-form-fields";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { PendingButton } from "@/components/ui/pending-button";
 
 type NewCollectionDialogProps = {
   trigger?: React.ReactElement;
@@ -97,50 +93,16 @@ export function NewCollectionDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form
+        <CollectionFormFields
+          idPrefix="new-collection"
+          name={name}
+          onNameChange={setName}
+          description={description}
+          onDescriptionChange={setDescription}
+          pending={pending}
+          submitLabel="Create"
           onSubmit={handleSubmit}
-          className="flex flex-col gap-4"
-          aria-busy={pending}
-        >
-          <Field label="Name" htmlFor="new-collection-name" required>
-            <Input
-              id="new-collection-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              disabled={pending}
-              aria-invalid={nameEmpty ? true : undefined}
-              autoFocus
-              required
-            />
-          </Field>
-
-          <Field label="Description" htmlFor="new-collection-description">
-            <Textarea
-              id="new-collection-description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              disabled={pending}
-              rows={3}
-            />
-          </Field>
-
-          <DialogFooter className="pt-2">
-            <DialogClose
-              render={
-                <Button type="button" variant="outline" disabled={pending}>
-                  Cancel
-                </Button>
-              }
-            />
-            <PendingButton
-              type="submit"
-              pending={pending}
-              disabled={submitDisabled}
-            >
-              Create
-            </PendingButton>
-          </DialogFooter>
-        </form>
+        />
       </DialogContent>
     </Dialog>
   );
