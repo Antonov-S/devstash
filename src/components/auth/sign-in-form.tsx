@@ -5,8 +5,10 @@ import { useFormStatus } from "react-dom";
 import Link from "next/link";
 import { toast } from "sonner";
 
+import { formErrorClass } from "@/components/ui/form-error";
 import { Label } from "@/components/ui/label";
 import { PendingButton } from "@/components/ui/pending-button";
+import { cn } from "@/lib/utils";
 import { credentialsSignInAction } from "@/actions/auth";
 import { GithubSignInForm } from "@/components/auth/github-sign-in";
 import { ResendVerificationButton } from "@/components/auth/resend-verification-button";
@@ -79,10 +81,7 @@ export function SignInForm({ callbackUrl }: { callbackUrl?: string }) {
         </div>
 
         {state?.error ? (
-          <div
-            role="alert"
-            className="flex flex-col gap-3 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-          >
+          <div role="alert" className={cn("flex flex-col gap-3", formErrorClass)}>
             <p>{state.error}</p>
             {state.code === "email_not_verified" ? (
               <ResendVerificationButton initialEmail={state.email} />

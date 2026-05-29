@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { FormError } from "@/components/ui/form-error";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { EMAIL_REGEX } from "@/lib/auth-constants";
@@ -99,14 +100,7 @@ export function ForgotPasswordForm() {
         />
       </div>
 
-      {status === "error" && errorMessage ? (
-        <p
-          role="alert"
-          className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-        >
-          {errorMessage}
-        </p>
-      ) : null}
+      <FormError>{status === "error" ? errorMessage : null}</FormError>
 
       <Button type="submit" size="lg" className="w-full" disabled={isPending}>
         {isPending ? "Sending…" : "Send reset link"}

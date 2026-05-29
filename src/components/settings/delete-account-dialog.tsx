@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { FormError } from "@/components/ui/form-error";
 import { PendingButton } from "@/components/ui/pending-button";
 import {
   Dialog,
@@ -94,14 +95,7 @@ export function DeleteAccountDialog({ email }: { email: string }) {
             />
           </div>
 
-          {error ? (
-            <p
-              role="alert"
-              className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-            >
-              {error}
-            </p>
-          ) : null}
+          <FormError>{error}</FormError>
 
           <DialogFooter className="pt-2">
             <DialogClose

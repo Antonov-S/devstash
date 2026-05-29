@@ -5,6 +5,7 @@ import { KeyRound } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { FieldError, FormError } from "@/components/ui/form-error";
 import { PendingButton } from "@/components/ui/pending-button";
 import {
   Dialog,
@@ -124,11 +125,7 @@ export function ChangePasswordDialog() {
               aria-invalid={errors.currentPassword ? true : undefined}
               placeholder="••••••••"
             />
-            {errors.currentPassword ? (
-              <p className="text-xs text-destructive">
-                {errors.currentPassword}
-              </p>
-            ) : null}
+            <FieldError message={errors.currentPassword} />
           </div>
 
           <div className="flex flex-col gap-2">
@@ -141,9 +138,7 @@ export function ChangePasswordDialog() {
               aria-invalid={errors.newPassword ? true : undefined}
               placeholder="At least 8 characters"
             />
-            {errors.newPassword ? (
-              <p className="text-xs text-destructive">{errors.newPassword}</p>
-            ) : null}
+            <FieldError message={errors.newPassword} />
           </div>
 
           <div className="flex flex-col gap-2">
@@ -156,21 +151,10 @@ export function ChangePasswordDialog() {
               aria-invalid={errors.confirmPassword ? true : undefined}
               placeholder="Repeat your new password"
             />
-            {errors.confirmPassword ? (
-              <p className="text-xs text-destructive">
-                {errors.confirmPassword}
-              </p>
-            ) : null}
+            <FieldError message={errors.confirmPassword} />
           </div>
 
-          {errors.form ? (
-            <p
-              role="alert"
-              className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-            >
-              {errors.form}
-            </p>
-          ) : null}
+          <FormError>{errors.form}</FormError>
 
           <DialogFooter className="pt-2">
             <DialogClose

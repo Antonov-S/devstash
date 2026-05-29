@@ -5,6 +5,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 
 import { Button, buttonVariants } from "@/components/ui/button";
+import { FieldError, FormError } from "@/components/ui/form-error";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MIN_PASSWORD_LENGTH } from "@/lib/auth-constants";
@@ -105,9 +106,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
           aria-invalid={errors.password ? true : undefined}
           placeholder="At least 8 characters"
         />
-        {errors.password ? (
-          <p className="text-xs text-destructive">{errors.password}</p>
-        ) : null}
+        <FieldError message={errors.password} />
       </div>
 
       <div className="flex flex-col gap-2">
@@ -121,19 +120,10 @@ export function ResetPasswordForm({ token }: { token: string }) {
           aria-invalid={errors.confirmPassword ? true : undefined}
           placeholder="Repeat your password"
         />
-        {errors.confirmPassword ? (
-          <p className="text-xs text-destructive">{errors.confirmPassword}</p>
-        ) : null}
+        <FieldError message={errors.confirmPassword} />
       </div>
 
-      {errors.form ? (
-        <p
-          role="alert"
-          className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-        >
-          {errors.form}
-        </p>
-      ) : null}
+      <FormError>{errors.form}</FormError>
 
       <Button type="submit" size="lg" className="w-full" disabled={isPending}>
         {isPending ? "Updating…" : "Update password"}
