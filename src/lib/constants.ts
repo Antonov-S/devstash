@@ -14,11 +14,44 @@ export const FREE_TIER_LIMITS = {
 
 export const PRO_ONLY_ITEM_TYPES = new Set<string>(["file", "image"]);
 
+// Item-type membership sets that decide which fields / editors an item type
+// renders. Keyed by the lowercased system type name. Single source of truth for
+// the new-item dialog, the item drawer, and the item card copy affordance.
+export const ITEM_TYPES_WITH_CONTENT = new Set<string>([
+  "snippet",
+  "prompt",
+  "command",
+  "note"
+]);
+export const ITEM_TYPES_WITH_LANGUAGE = new Set<string>(["snippet", "command"]);
+export const ITEM_TYPES_WITH_MARKDOWN = new Set<string>(["note", "prompt"]);
+export const ITEM_TYPES_WITH_UPLOAD = new Set<string>(["file", "image"]);
+
+export type PricingPeriod = "monthly" | "yearly";
+
+// Pro plan pricing copy. Single source of truth for the marketing pricing
+// section and the upgrade page pricing card.
+export const PRO_PRICE: Record<
+  PricingPeriod,
+  { amount: string; period: string; note: string }
+> = {
+  monthly: { amount: "$8", period: "/ month", note: "Billed monthly" },
+  yearly: {
+    amount: "$6",
+    period: "/ month, billed yearly",
+    note: "$72 billed yearly"
+  }
+};
+
+// Canonical Pro feature list. Single source of truth for the marketing pricing
+// section, the upgrade page pricing card, and the upgrade-prompt dialog.
 export const PRO_FEATURES = [
-  "Unlimited items and collections",
+  "Unlimited items & collections",
   "File & image uploads",
-  "AI auto-tagging, summaries, and code explain",
-  "Export as JSON or ZIP"
+  "AI auto-tagging & summaries",
+  "Explain code & prompt optimizer",
+  "Export as JSON or ZIP",
+  "Priority support"
 ] as const;
 
 export const ONBOARDING_STORAGE_KEY = "devstash:welcome-to-pro:checklist:v1";

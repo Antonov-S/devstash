@@ -20,6 +20,7 @@ import { useEditorPreferences } from "@/components/editor/editor-preferences-con
 import { MONACO_THEMES } from "@/components/editor/monaco-themes";
 import { Button } from "@/components/ui/button";
 import { AI_ACCENT_COLOR, CODE_LANGUAGE_ALIASES } from "@/lib/constants";
+import { toastActionError } from "@/lib/toast-error";
 import { cn } from "@/lib/utils";
 
 const MIN_HEIGHT = 80;
@@ -134,11 +135,9 @@ export function CodeEditor({
         language: resolvedLanguage ?? null
       });
       if (!result.success) {
-        toast.error(result.error, {
-          action: result.error.includes("Pro")
-            ? { label: "Upgrade", onClick: () => window.location.assign("/upgrade") }
-            : undefined
-        });
+        toastActionError(result.error, () =>
+          window.location.assign("/upgrade")
+        );
         return;
       }
       setExplanation(result.explanation);

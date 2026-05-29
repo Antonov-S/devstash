@@ -11,6 +11,7 @@ import {
 } from "@/actions/ai-tags";
 import { useIsPro } from "@/components/billing/is-pro-context";
 import { Button } from "@/components/ui/button";
+import { toastActionError } from "@/lib/toast-error";
 
 type Props = {
   getPayload: () => GenerateAutoTagsPayload;
@@ -41,16 +42,7 @@ export function SuggestTagsButton({
     startTransition(async () => {
       const result = await generateAutoTags(payload);
       if (!result.success) {
-        if (result.error.includes("Pro")) {
-          toast.error(result.error, {
-            action: {
-              label: "Upgrade",
-              onClick: () => router.push("/upgrade")
-            }
-          });
-        } else {
-          toast.error(result.error);
-        }
+        toastActionError(result.error, () => router.push("/upgrade"));
         return;
       }
       const fresh = result.tags.filter((tag) => !existingSet.has(tag));

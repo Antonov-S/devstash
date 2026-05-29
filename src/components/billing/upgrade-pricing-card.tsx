@@ -5,34 +5,10 @@ import { Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 import { createCheckoutSessionAction } from "@/actions/billing";
+import { BillingPeriodToggle } from "@/components/billing/billing-period-toggle";
 import { PendingButton } from "@/components/ui/pending-button";
+import { PRO_FEATURES, PRO_PRICE, type PricingPeriod } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-
-type Billing = "monthly" | "yearly";
-
-const PRO_PRICE: Record<Billing, { amount: string; period: string; note: string }> = {
-  monthly: { amount: "$8", period: "/ month", note: "Billed monthly" },
-  yearly: {
-    amount: "$6",
-    period: "/ month, billed yearly",
-    note: "$72 billed yearly"
-  }
-};
-
-const PRO_FEATURES: { label: React.ReactNode }[] = [
-  {
-    label: (
-      <span>
-        <strong>Unlimited</strong> items &amp; collections
-      </span>
-    )
-  },
-  { label: "File & image uploads" },
-  { label: "AI auto-tagging & summaries" },
-  { label: "Explain code & prompt optimizer" },
-  { label: "Export as JSON or ZIP" },
-  { label: "Priority support" }
-];
 
 function CheckIcon() {
   return (
@@ -80,7 +56,7 @@ const FREE_FEATURES: { label: string; icon: "check" | "x"; muted?: boolean }[] =
 ];
 
 export function UpgradePricingCard() {
-  const [billing, setBilling] = useState<Billing>("monthly");
+  const [billing, setBilling] = useState<PricingPeriod>("monthly");
   const [pending, startTransition] = useTransition();
   const pro = PRO_PRICE[billing];
 
@@ -101,52 +77,7 @@ export function UpgradePricingCard() {
         aria-label="Billing period"
         className="inline-flex items-center gap-1 rounded-full border border-border bg-card p-1"
       >
-        <button
-          type="button"
-          role="tab"
-          aria-selected={billing === "monthly"}
-          onClick={() => setBilling("monthly")}
-          className={cn(
-            "inline-flex items-center gap-2 rounded-full px-4.5 py-2 text-sm font-medium transition-colors",
-            billing === "monthly"
-              ? "bg-primary text-primary-foreground"
-              : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          Monthly
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={billing === "yearly"}
-          onClick={() => setBilling("yearly")}
-          className={cn(
-            "inline-flex items-center gap-2 rounded-full px-4.5 py-2 text-sm font-medium transition-colors",
-            billing === "yearly"
-              ? "bg-primary text-primary-foreground"
-              : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          Yearly
-          <span
-            className="inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold"
-            style={
-              billing === "yearly"
-                ? {
-                    background: "rgba(255, 255, 255, 0.22)",
-                    color: "#fff",
-                    borderColor: "rgba(255, 255, 255, 0.3)"
-                  }
-                : {
-                    background: "rgba(34, 197, 94, 0.2)",
-                    color: "#4ade80",
-                    borderColor: "rgba(34, 197, 94, 0.4)"
-                  }
-            }
-          >
-            Save 25%
-          </span>
-        </button>
+        <BillingPeriodToggle value={billing} onChange={setBilling} />
       </div>
 
       <div className="mx-auto grid w-full max-w-4xl grid-cols-1 gap-6 text-left sm:grid-cols-2">
@@ -220,10 +151,10 @@ export function UpgradePricingCard() {
           <p className="-mt-3 text-[13px] text-muted-foreground">{pro.note}</p>
 
           <ul className="flex flex-col gap-2.5">
-            {PRO_FEATURES.map((feature, idx) => (
-              <li key={idx} className="flex items-center gap-2.5 text-sm">
+            {PRO_FEATURES.map((feature) => (
+              <li key={feature} className="flex items-center gap-2.5 text-sm">
                 <CheckIcon />
-                {feature.label}
+                {feature}
               </li>
             ))}
           </ul>

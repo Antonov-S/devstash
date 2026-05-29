@@ -30,13 +30,14 @@ import {
   SheetHeader,
   SheetTitle
 } from "@/components/ui/sheet";
+import {
+  ITEM_TYPES_WITH_CONTENT,
+  ITEM_TYPES_WITH_LANGUAGE,
+  ITEM_TYPES_WITH_MARKDOWN
+} from "@/lib/constants";
 import type { ItemDetail, ItemWithMeta } from "@/lib/db/items";
 import { iconMap } from "@/lib/icons";
 import { parseTags } from "@/lib/utils";
-
-const TYPES_WITH_CONTENT = new Set(["snippet", "prompt", "command", "note"]);
-const TYPES_WITH_LANGUAGE = new Set(["snippet", "command"]);
-const TYPES_WITH_MARKDOWN = new Set(["note", "prompt"]);
 
 type Props = {
   cardItem: ItemWithMeta;
@@ -104,9 +105,9 @@ export function ItemDrawer({ cardItem, open, onOpenChange }: Props) {
 
   const Icon = iconMap[cardItem.itemType.icon] ?? null;
   const typeName = (detail?.itemType.name ?? cardItem.itemType.name).toLowerCase();
-  const showsContent = TYPES_WITH_CONTENT.has(typeName);
-  const showsLanguage = TYPES_WITH_LANGUAGE.has(typeName);
-  const showsMarkdown = TYPES_WITH_MARKDOWN.has(typeName);
+  const showsContent = ITEM_TYPES_WITH_CONTENT.has(typeName);
+  const showsLanguage = ITEM_TYPES_WITH_LANGUAGE.has(typeName);
+  const showsMarkdown = ITEM_TYPES_WITH_MARKDOWN.has(typeName);
   const showsUrl = typeName === "link";
 
   async function handleCopy() {

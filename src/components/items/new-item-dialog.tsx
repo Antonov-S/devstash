@@ -15,14 +15,12 @@ import {
 import { toast } from "sonner";
 
 import { createItemAction, type CreateItemType } from "@/actions/items";
-import { CodeEditor } from "@/components/items/code-editor";
-import { CollectionsPicker } from "@/components/items/collections-picker";
 import { FileUpload, type UploadedFile } from "@/components/items/file-upload";
-import { Field, Textarea } from "@/components/items/_form-primitives";
-import { GenerateDescriptionButton } from "@/components/items/generate-description-button";
-import { LanguageSelect } from "@/components/items/language-select";
-import { MarkdownEditor } from "@/components/items/markdown-editor";
-import { SuggestTagsButton } from "@/components/items/suggest-tags-button";
+import { Field } from "@/components/items/_form-primitives";
+import {
+  ItemFormFields,
+  type ItemFormValue
+} from "@/components/items/item-form-fields";
 import { Button } from "@/components/ui/button";
 import { PendingButton } from "@/components/ui/pending-button";
 import {
@@ -35,8 +33,14 @@ import {
   DialogTitle,
   DialogTrigger
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  ITEM_TYPES_WITH_CONTENT,
+  ITEM_TYPES_WITH_LANGUAGE,
+  ITEM_TYPES_WITH_MARKDOWN,
+  ITEM_TYPES_WITH_UPLOAD
+} from "@/lib/constants";
+import { toastActionError } from "@/lib/toast-error";
 import { cn, parseTags } from "@/lib/utils";
 
 type TypeOption = {
@@ -56,17 +60,17 @@ const TYPE_OPTIONS: TypeOption[] = [
   { value: "link", label: "Link", Icon: LinkIcon, color: "#10b981" }
 ];
 
-const TYPES_WITH_CONTENT = new Set<CreateItemType>([
-  "snippet",
-  "prompt",
-  "command",
-  "note"
-]);
-const TYPES_WITH_LANGUAGE = new Set<CreateItemType>(["snippet", "command"]);
-const TYPES_WITH_MARKDOWN = new Set<CreateItemType>(["note", "prompt"]);
-const TYPES_WITH_UPLOAD = new Set<CreateItemType>(["file", "image"]);
-
 const DEFAULT_TYPE: CreateItemType = "snippet";
+
+const EMPTY_FORM: ItemFormValue = {
+  title: "",
+  description: "",
+  content: "",
+  url: "",
+  language: "",
+  tags: "",
+  collectionIds: []
+};
 
 type NewItemDialogProps = {
   initialType?: CreateItemType;
@@ -90,41 +94,29 @@ export function NewItemDialog({
     ? (next: boolean) => onOpenChange?.(next)
     : setInternalOpen;
   const [type, setType] = useState<CreateItemType>(baseType);
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [content, setContent] = useState("");
-  const [url, setUrl] = useState("");
-  const [language, setLanguage] = useState("");
-  const [tags, setTags] = useState("");
-  const [collectionIds, setCollectionIds] = useState<string[]>([]);
+  const [form, setForm] = useState<ItemFormValue>(EMPTY_FORM);
   const [uploaded, setUploaded] = useState<UploadedFile | null>(null);
   const [pending, startTransition] = useTransition();
 
-  const showsContent = TYPES_WITH_CONTENT.has(type);
-  const showsLanguage = TYPES_WITH_LANGUAGE.has(type);
+  const showsContent = ITEM_TYPES_WITH_CONTENT.has(type);
+  const showsLanguage = ITEM_TYPES_WITH_LANGUAGE.has(type);
   const showsUrl = type === "link";
-  const showsUpload = TYPES_WITH_UPLOAD.has(type);
+  const showsUpload = ITEM_TYPES_WITH_UPLOAD.has(type);
 
-  const titleEmpty = title.trim() === "";
-  const urlMissing = showsUrl && url.trim() === "";
+  const titleEmpty = form.title.trim() === "";
+  const urlMissing = showsUrl && form.url.trim() === "";
   const uploadMissing = showsUpload && uploaded === null;
   const submitDisabled = pending || titleEmpty || urlMissing || uploadMissing;
 
   function resetForm() {
     setType(baseType);
-    setTitle("");
-    setDescription("");
-    setContent("");
-    setUrl("");
-    setLanguage("");
-    setTags("");
-    setCollectionIds([]);
+    setForm(EMPTY_FORM);
     setUploaded(null);
   }
 
   function handleTypeChange(next: CreateItemType) {
     setType(next);
-    if (!TYPES_WITH_UPLOAD.has(next)) {
+    if (!ITEM_TYPES_WITH_UPLOAD.has(next)) {
       setUploaded(null);
     }
   }
@@ -141,16 +133,16 @@ export function NewItemDialog({
 
     const payload = {
       type,
-      title,
-      description,
-      content: showsContent ? content : null,
-      url: showsUrl ? url : null,
-      language: showsLanguage ? language : null,
+      title: form.title,
+      description: form.description,
+      content: showsContent ? form.content : null,
+      url: showsUrl ? form.url : null,
+      language: showsLanguage ? form.language : null,
       fileUrl: showsUpload ? uploaded?.fileUrl ?? null : null,
       fileName: showsUpload ? uploaded?.fileName ?? null : null,
       fileSize: showsUpload ? uploaded?.fileSize ?? null : null,
-      tags: parseTags(tags),
-      collectionIds
+      tags: parseTags(form.tags),
+      collectionIds: form.collectionIds
     };
 
     startTransition(async () => {
@@ -159,16 +151,7 @@ export function NewItemDialog({
         // Add an Upgrade CTA when the error is a Pro-gated rejection (capacity
         // limit or Pro-only item type). Heuristic matches the action's error
         // strings; see PRO_ONLY_ITEM_TYPES + checkItemCapacity in src/lib/billing.ts.
-        if (result.error.includes("Pro")) {
-          toast.error(result.error, {
-            action: {
-              label: "Upgrade",
-              onClick: () => router.push("/settings#billing")
-            }
-          });
-        } else {
-          toast.error(result.error);
-        }
+        toastActionError(result.error, () => router.push("/settings#billing"));
         return;
       }
       toast.success("Item created");
@@ -238,148 +221,35 @@ export function NewItemDialog({
             </div>
           </div>
 
-          <Field label="Title" htmlFor="new-title" required>
-            <Input
-              id="new-title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              disabled={pending}
-              aria-invalid={titleEmpty ? true : undefined}
-              autoFocus
-              required
-            />
-          </Field>
-
-          <Field
-            label="Description"
-            htmlFor="new-description"
-            action={
-              <GenerateDescriptionButton
-                getPayload={() => ({
-                  typeName: type,
-                  title,
-                  content: showsContent ? content : null,
-                  url: showsUrl ? url : null,
-                  language: showsLanguage ? language : null,
-                  fileName: showsUpload ? uploaded?.fileName ?? null : null,
-                  tags: parseTags(tags)
-                })}
-                onResult={setDescription}
-                disabled={
-                  pending ||
-                  (title.trim() === "" &&
-                    content.trim() === "" &&
-                    url.trim() === "" &&
-                    (uploaded?.fileName ?? "").trim() === "")
-                }
-              />
+          <ItemFormFields
+            value={form}
+            onChange={setForm}
+            disabled={pending}
+            showsContent={showsContent}
+            showsLanguage={showsLanguage}
+            showsMarkdown={ITEM_TYPES_WITH_MARKDOWN.has(type)}
+            showsUrl={showsUrl}
+            typeName={type}
+            fileName={showsUpload ? uploaded?.fileName ?? null : null}
+            idPrefix="new"
+            titleAutoFocus
+            urlRequired
+            descriptionRows={2}
+            contentRows={6}
+            editorAriaLabel="New item content"
+            extraFields={
+              showsUpload ? (
+                <Field label={type === "image" ? "Image" : "File"} required>
+                  <FileUpload
+                    kind={type === "image" ? "image" : "file"}
+                    value={uploaded}
+                    onChange={setUploaded}
+                    disabled={pending}
+                  />
+                </Field>
+              ) : undefined
             }
-          >
-            <Textarea
-              id="new-description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              disabled={pending}
-              rows={2}
-            />
-          </Field>
-
-          {showsLanguage && (
-            <Field label="Language" htmlFor="new-language">
-              <LanguageSelect
-                id="new-language"
-                value={language}
-                onChange={setLanguage}
-                disabled={pending}
-              />
-            </Field>
-          )}
-
-          {showsContent && (
-            <Field label="Content" htmlFor="new-content">
-              {showsLanguage ? (
-                <CodeEditor
-                  value={content}
-                  language={language}
-                  onChange={setContent}
-                  ariaLabel="New item content"
-                />
-              ) : TYPES_WITH_MARKDOWN.has(type) ? (
-                <MarkdownEditor
-                  value={content}
-                  onChange={setContent}
-                  ariaLabel="New item content"
-                />
-              ) : (
-                <Textarea
-                  id="new-content"
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  disabled={pending}
-                  rows={6}
-                  className="font-mono text-sm"
-                />
-              )}
-            </Field>
-          )}
-
-          {showsUrl && (
-            <Field label="URL" htmlFor="new-url" required>
-              <Input
-                id="new-url"
-                type="url"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                disabled={pending}
-                placeholder="https://example.com"
-                aria-invalid={urlMissing ? true : undefined}
-                required
-              />
-            </Field>
-          )}
-
-          {showsUpload && (
-            <Field label={type === "image" ? "Image" : "File"} required>
-              <FileUpload
-                kind={type === "image" ? "image" : "file"}
-                value={uploaded}
-                onChange={setUploaded}
-                disabled={pending}
-              />
-            </Field>
-          )}
-
-          <Field label="Tags" htmlFor="new-tags" hint="Comma-separated">
-            <Input
-              id="new-tags"
-              value={tags}
-              onChange={(e) => setTags(e.target.value)}
-              disabled={pending}
-              placeholder="react, hooks, auth"
-            />
-            <SuggestTagsButton
-              getPayload={() => ({
-                title,
-                content: showsContent ? content : null,
-                description,
-                language: showsLanguage ? language : null,
-                typeName: type
-              })}
-              existingTags={parseTags(tags)}
-              onAccept={(tag) =>
-                setTags((current) => (current.trim() === "" ? tag : `${current}, ${tag}`))
-              }
-              disabled={pending || titleEmpty}
-            />
-          </Field>
-
-          <Field label="Collections">
-            <CollectionsPicker
-              selectedIds={collectionIds}
-              onChange={setCollectionIds}
-              disabled={pending}
-            />
-          </Field>
+          />
 
           <DialogFooter className="pt-2">
             <DialogClose
@@ -402,4 +272,3 @@ export function NewItemDialog({
     </Dialog>
   );
 }
-
