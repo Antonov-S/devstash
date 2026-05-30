@@ -3,6 +3,7 @@
 import { signOut } from "@/auth";
 import { requireUserId } from "@/lib/actions/require-user";
 import { prisma } from "@/lib/prisma";
+import { deleteR2ObjectsByPrefix, isR2Configured } from "@/lib/r2";
 import { getStripe } from "@/lib/stripe";
 
 export type DeleteAccountResult = { error: string };
@@ -33,6 +34,21 @@ export async function deleteAccountAction(): Promise<DeleteAccountResult | void>
         "[deleteAccountAction] failed to cancel Stripe subscription",
         { subscriptionId: user.stripeSubscriptionId, error }
       );
+    }
+  }
+
+  // Best-effort R2 cleanup. The Prisma cascade below removes Item rows at the
+  // Postgres level, which never runs the app-level per-item R2 delete — so we
+  // sweep the user's prefix here. Errors are swallowed (logged only): an R2
+  // outage or missing config must never block the account deletion.
+  if (isR2Configured()) {
+    try {
+      await deleteR2ObjectsByPrefix(`uploads/${userId}/`);
+    } catch (error) {
+      console.error("[deleteAccountAction] failed to delete R2 objects", {
+        userId,
+        error
+      });
     }
   }
 

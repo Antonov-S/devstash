@@ -5,48 +5,15 @@ import { Readable } from "node:stream";
 import {
   DeleteObjectCommand,
   GetObjectCommand,
-  PutObjectCommand,
-  S3Client
+  PutObjectCommand
 } from "@aws-sdk/client-s3";
 
-let cached: { client: S3Client; bucket: string; publicUrl: string } | null = null;
+import { getR2 } from "./r2-core";
 
-function getR2() {
-  if (cached) return cached;
-
-  const accountId = process.env.R2_ACCOUNT_ID;
-  const accessKeyId = process.env.R2_ACCESS_KEY_ID;
-  const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
-  const bucket = process.env.R2_BUCKET_NAME;
-  const publicUrl = process.env.R2_PUBLIC_URL;
-
-  if (!accountId || !accessKeyId || !secretAccessKey || !bucket || !publicUrl) {
-    throw new Error("R2 storage is not configured.");
-  }
-
-  const client = new S3Client({
-    region: "auto",
-    endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
-    credentials: { accessKeyId, secretAccessKey }
-  });
-
-  cached = {
-    client,
-    bucket,
-    publicUrl: publicUrl.replace(/\/$/, "")
-  };
-  return cached;
-}
-
-export function isR2Configured(): boolean {
-  return Boolean(
-    process.env.R2_ACCOUNT_ID &&
-      process.env.R2_ACCESS_KEY_ID &&
-      process.env.R2_SECRET_ACCESS_KEY &&
-      process.env.R2_BUCKET_NAME &&
-      process.env.R2_PUBLIC_URL
-  );
-}
+// The S3 client + prefix-delete sweep live in `r2-core` (no `server-only`) so
+// maintenance scripts can import them under the tsx/Node runner. Re-export the
+// public surface here so app code keeps importing from `@/lib/r2`.
+export { deleteR2ObjectsByPrefix, isR2Configured } from "./r2-core";
 
 export function publicUrlForKey(key: string): string {
   const { publicUrl } = getR2();

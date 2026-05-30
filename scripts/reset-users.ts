@@ -3,6 +3,7 @@ import "dotenv/config";
 import { PrismaNeon } from "@prisma/adapter-neon";
 
 import { PrismaClient } from "../src/generated/prisma/client";
+import { deleteR2ObjectsByPrefix, isR2Configured } from "../src/lib/r2-core";
 
 const DEMO_EMAIL = "demo@devstash.io";
 
@@ -50,6 +51,27 @@ async function main() {
         "\nDry run — re-run with --yes to actually delete these users and all their content."
       );
       return;
+    }
+
+    // Best-effort R2 cleanup for each victim before the cascade delete drops
+    // their Item rows. Failures are logged and skipped — a transient R2 error
+    // must not abort the reset.
+    if (isR2Configured()) {
+      let totalDeleted = 0;
+      for (const u of victims) {
+        try {
+          const { deleted } = await deleteR2ObjectsByPrefix(`uploads/${u.id}/`);
+          totalDeleted += deleted;
+        } catch (err) {
+          console.warn(
+            `⚠ R2 cleanup failed for ${u.email} (proceeding anyway):`,
+            err instanceof Error ? err.message : err
+          );
+        }
+      }
+      console.log(`Deleted ${totalDeleted} R2 object(s) across ${victims.length} user(s).`);
+    } else {
+      console.log("R2 not configured — skipping object cleanup.");
     }
 
     const orphanIdentifiers = await prisma.verificationToken.findMany({
