@@ -1,11 +1,91 @@
 import Link from "next/link";
 
 import { DevStashLogoMark } from "@/components/marketing/logo-mark";
+import { GITHUB_REPO_URL } from "@/lib/constants";
 
-// TODO: real links when these routes exist
-const RESOURCES = ["Docs", "Blog", "Roadmap", "Support"];
-// TODO: real links when these routes exist
-const COMPANY = ["About", "Privacy", "Terms", "Contact"];
+type FooterLink =
+  | { label: string; href: string; kind: "anchor" } // absolute /#hash to a homepage section
+  | { label: string; href: string; kind: "internal" } // next/link to a real route
+  | { label: string; href: string; kind: "external" } // new tab, rel="noopener noreferrer"
+  | { label: string; kind: "placeholder" }; // disabled (no destination yet)
+
+type FooterColumn = {
+  heading: string;
+  links: FooterLink[];
+};
+
+// Anchors use the absolute `/#…` form (not bare `#…`) so they resolve against
+// the homepage from any route the footer renders on (e.g. /privacy, /terms).
+const COLUMNS: FooterColumn[] = [
+  {
+    heading: "Product",
+    links: [
+      { label: "Features", href: "/#features", kind: "anchor" },
+      { label: "Pricing", href: "/#pricing", kind: "anchor" },
+      { label: "AI", href: "/#ai", kind: "anchor" },
+      { label: "Changelog", href: "/changelog", kind: "internal" }
+    ]
+  },
+  {
+    heading: "Resources",
+    links: [
+      { label: "Docs", href: `${GITHUB_REPO_URL}#readme`, kind: "external" },
+      { label: "Support", kind: "placeholder" }
+    ]
+  },
+  {
+    heading: "Company",
+    links: [
+      { label: "Privacy", href: "/privacy", kind: "internal" },
+      { label: "Terms", href: "/terms", kind: "internal" },
+      { label: "Contact", kind: "placeholder" }
+    ]
+  }
+];
+
+const LINK_CLASS =
+  "text-sm text-muted-foreground transition-colors hover:text-foreground";
+const PLACEHOLDER_CLASS =
+  "cursor-not-allowed text-sm text-muted-foreground opacity-50 pointer-events-none";
+
+function FooterLinkItem({ link }: { link: FooterLink }) {
+  switch (link.kind) {
+    case "internal":
+      return (
+        <Link href={link.href} className={LINK_CLASS}>
+          {link.label}
+        </Link>
+      );
+    case "external":
+      return (
+        <a
+          href={link.href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={LINK_CLASS}
+        >
+          {link.label}
+        </a>
+      );
+    case "anchor":
+      return (
+        <a href={link.href} className={LINK_CLASS}>
+          {link.label}
+        </a>
+      );
+    case "placeholder":
+      return (
+        <a
+          href="#"
+          aria-disabled="true"
+          tabIndex={-1}
+          className={PLACEHOLDER_CLASS}
+        >
+          {link.label}
+        </a>
+      );
+  }
+}
 
 export function MarketingFooter() {
   const year = new Date().getFullYear();
@@ -26,87 +106,20 @@ export function MarketingFooter() {
           </p>
         </div>
 
-        <div>
-          <h4 className="m-0 mb-3.5 text-[13px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-            Product
-          </h4>
-          <ul className="m-0 flex list-none flex-col gap-2 p-0">
-            <li>
-              <a
-                href="#features"
-                className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-              >
-                Features
-              </a>
-            </li>
-            <li>
-              <a
-                href="#pricing"
-                className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-              >
-                Pricing
-              </a>
-            </li>
-            <li>
-              <a
-                href="#ai"
-                className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-              >
-                AI
-              </a>
-            </li>
-            <li>
-              <a
-                href="#"
-                aria-disabled="true"
-                tabIndex={-1}
-                className="cursor-not-allowed text-sm text-muted-foreground opacity-50 pointer-events-none"
-              >
-                Changelog
-              </a>
-            </li>
-          </ul>
-        </div>
-
-        <div>
-          <h4 className="m-0 mb-3.5 text-[13px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-            Resources
-          </h4>
-          <ul className="m-0 flex list-none flex-col gap-2 p-0">
-            {RESOURCES.map((label) => (
-              <li key={label}>
-                <a
-                  href="#"
-                  aria-disabled="true"
-                  tabIndex={-1}
-                  className="cursor-not-allowed text-sm text-muted-foreground opacity-50 pointer-events-none"
-                >
-                  {label}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <div>
-          <h4 className="m-0 mb-3.5 text-[13px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-            Company
-          </h4>
-          <ul className="m-0 flex list-none flex-col gap-2 p-0">
-            {COMPANY.map((label) => (
-              <li key={label}>
-                <a
-                  href="#"
-                  aria-disabled="true"
-                  tabIndex={-1}
-                  className="cursor-not-allowed text-sm text-muted-foreground opacity-50 pointer-events-none"
-                >
-                  {label}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
+        {COLUMNS.map((column) => (
+          <div key={column.heading}>
+            <h4 className="m-0 mb-3.5 text-[13px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+              {column.heading}
+            </h4>
+            <ul className="m-0 flex list-none flex-col gap-2 p-0">
+              {column.links.map((link) => (
+                <li key={link.label}>
+                  <FooterLinkItem link={link} />
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
       </div>
 
       <div className="mx-auto mt-12 flex max-w-300 flex-col gap-1.5 border-t border-border px-6 pt-6 text-center text-[13px] text-muted-foreground sm:flex-row sm:justify-between sm:text-left">

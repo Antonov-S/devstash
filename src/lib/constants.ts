@@ -1,5 +1,10 @@
 import type { SystemTypeName } from "@/lib/system-types";
 
+// Public GitHub repository. The marketing footer's "Docs" link points at
+// `${GITHUB_REPO_URL}#readme`. (A SUPPORT_EMAIL constant can join this once the
+// devstash.xyz inbox exists and the Support/Contact placeholders get wired up.)
+export const GITHUB_REPO_URL = "https://github.com/Antonov-S/devstash";
+
 export const ITEMS_PER_PAGE = 21;
 export const COLLECTIONS_PER_PAGE = 21;
 export const DASHBOARD_COLLECTIONS_LIMIT = 6;

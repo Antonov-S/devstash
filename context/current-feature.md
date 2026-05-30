@@ -1,16 +1,32 @@
-# Current Feature
+# Current Feature: Footer Links
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
 
-<!-- Define what success looks like for the next feature. -->
+- Turn the marketing footer's dead placeholder links into real destinations where they exist; remove the ones pointing nowhere (Blog, Roadmap, About).
+- Add a new `(marketing)` route group with a shared layout (`MarketingNav` + readable container + `MarketingFooter`) so the new pages match homepage chrome.
+- Add three new public pages: `/privacy`, `/terms`, `/changelog`.
+- Wire `Docs` to the GitHub README (external, new tab); keep `Support` / `Contact` as disabled placeholders until a `devstash.xyz` inbox exists.
+- Switch footer section anchors from bare `#features` to absolute `/#features` (and `/#pricing`, `/#ai`) so they work from non-homepage routes.
+- Rewrite the footer's link rendering with a typed `FooterLink` descriptor + `FooterLinkItem` renderer (anchor / internal / external / placeholder kinds).
+- Add `GITHUB_REPO_URL` to `src/lib/constants.ts`.
+- Resulting columns — Product: Features · Pricing · AI · Changelog | Resources: Docs · Support* | Company: Privacy · Terms · Contact* (* = disabled placeholder).
 
 ## Notes
 
-<!-- Additional context, constraints, or spec details. -->
+- Spec: `context/features/footer-links-spec.md`.
+- **Legal caveat:** `/privacy` and `/terms` are honest, project-accurate starting templates — **not legal advice**. Describe what DevStash actually does; user must have them professionally reviewed before relying on them in production.
+- Shared `MarketingProse` wrapper (`src/components/marketing/`) styles long-form text via child-element selector classes on a single root — do **not** add `@tailwindcss/typography` or reuse `.markdown-preview`. Use `foreground`/`muted-foreground` tokens so it reads on dark + light.
+- `(marketing)/layout.tsx` mirrors `(auth)/layout.tsx`: `async`, `auth()` → `isAuthenticated`, `pt-24 pb-10 sm:pt-28` to clear fixed nav, `mx-auto w-full max-w-3xl px-6` container. Homepage stays at `src/app/page.tsx` (root, not moved).
+- Privacy/Terms use a **hardcoded** "Last updated: May 31, 2026" string (not `new Date()` — legal effective date must not silently change on deploy).
+- Privacy disclosures must reflect the real stack: Neon, Cloudflare R2, Stripe, Resend, Upstash, OpenAI (Pro), hosting; NextAuth JWT session cookie; R2 cleanup on account deletion. No personal email — placeholder `support@devstash.xyz` note only.
+- Changelog: rewrite README "Development Journey" (13 phases) into user-facing release-note buckets (newest first); **never** dump the raw History log (file paths, fn names, test counts, infra IDs, emails). Static, hand-maintained, no DB/generation.
+- Docs external link uses `${GITHUB_REPO_URL}#readme`.
+- **Out of scope:** real `mailto:` for Support/Contact (deferred to `devstash.xyz` inbox); rebuilding Blog/Roadmap/About; auto-generated changelog; a `/docs` site.
+- **Testing:** no new Vitest tests (pages/components out of scope, only new util is `GITHUB_REPO_URL`); `npm run test:run` + `npm run build` must pass; manual/Playwright verification of footer columns, Docs new-tab, new pages render with nav+footer+prose, placeholders disabled, mobile + desktop.
 
 ## History
 
