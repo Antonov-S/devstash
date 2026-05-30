@@ -42,12 +42,80 @@ function getFromAddress(): string {
   });
 }
 
+/**
+ * Strip whitespace and a single pair of surrounding quotes from an API key.
+ * Host env-var UIs (Vercel, etc.) often let a `"re_..."` or a trailing newline
+ * sneak in, which Resend then rejects as invalid. Returns `undefined` for an
+ * empty / whitespace-only value so the caller can treat it as unset.
+ *
+ * Pure so it can be unit-tested without mutating `process.env`.
+ */
+export function normalizeApiKey(raw: string | undefined): string | undefined {
+  if (!raw) return undefined;
+  const unquoted = raw.trim().replace(/^["']|["']$/g, "").trim();
+  return unquoted || undefined;
+}
+
+// Show enough of the key to identify it in logs without leaking it.
+function maskKey(key: string): string {
+  if (key.length <= 8) return `*** (length ${key.length})`;
+  return `${key.slice(0, 5)}…${key.slice(-2)} (length ${key.length})`;
+}
+
+/**
+ * Turn a Resend send error into an actionable log message. Includes the sender
+ * we tried (so an account/domain mismatch is obvious) and a targeted hint for
+ * the two failures we actually hit in production: a rejected API key and an
+ * unverified sender domain.
+ *
+ * Pure so it can be unit-tested.
+ */
+export function formatSendError(
+  error: { name?: string; message?: string },
+  from: string
+): string {
+  const base = error.message ?? "unknown error";
+  const haystack = `${error.name ?? ""} ${base}`.toLowerCase();
+
+  let hint = "";
+  if (
+    haystack.includes("api key") ||
+    haystack.includes("unauthorized") ||
+    haystack.includes("invalid")
+  ) {
+    hint =
+      " — Resend rejected the API key. Confirm RESEND_API_KEY belongs to the SAME Resend" +
+      " account where the sender domain is verified, has no surrounding quotes/whitespace," +
+      " and that the deployment was rebuilt (not cache-reused) after the value changed.";
+  } else if (
+    haystack.includes("not verified") ||
+    haystack.includes("domain") ||
+    haystack.includes("verify")
+  ) {
+    hint =
+      ` — the sender "${from}" is not on a verified domain in this Resend account.` +
+      " Verify the domain in Resend (SPF/DKIM) or change EMAIL_FROM to a verified sender.";
+  }
+
+  return `Resend send failed (from "${from}"): ${base}${hint}`;
+}
+
 let cached: Resend | null = null;
 
 function getResend(): Resend {
   if (cached) return cached;
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) throw new Error("RESEND_API_KEY is not set");
+  const apiKey = normalizeApiKey(process.env.RESEND_API_KEY);
+  if (!apiKey) {
+    throw new Error(
+      "RESEND_API_KEY is not set (or is empty after trimming quotes/whitespace)."
+    );
+  }
+  if (!apiKey.startsWith("re_")) {
+    console.warn(
+      `[email] RESEND_API_KEY does not look like a Resend key — expected a "re_" prefix, ` +
+        `got ${maskKey(apiKey)}. Check the value in your host's environment variables.`
+    );
+  }
   cached = new Resend(apiKey);
   return cached;
 }
@@ -97,8 +165,9 @@ ${verifyUrl}
 
 If you didn't create a DevStash account, you can ignore this email.`;
 
+  const from = getFromAddress();
   const { error } = await getResend().emails.send({
-    from: getFromAddress(),
+    from,
     to,
     subject: "Verify your DevStash email",
     html,
@@ -106,7 +175,7 @@ If you didn't create a DevStash account, you can ignore this email.`;
   });
 
   if (error) {
-    throw new Error(`Resend send failed: ${error.message ?? "unknown error"}`);
+    throw new Error(formatSendError(error, from));
   }
 }
 
@@ -155,8 +224,9 @@ ${resetUrl}
 
 If you didn't ask to reset your password, you can safely ignore this email — your account is unchanged.`;
 
+  const from = getFromAddress();
   const { error } = await getResend().emails.send({
-    from: getFromAddress(),
+    from,
     to,
     subject: "Reset your DevStash password",
     html,
@@ -164,6 +234,6 @@ If you didn't ask to reset your password, you can safely ignore this email — y
   });
 
   if (error) {
-    throw new Error(`Resend send failed: ${error.message ?? "unknown error"}`);
+    throw new Error(formatSendError(error, from));
   }
 }
