@@ -2,6 +2,7 @@ import "dotenv/config";
 import Stripe from "stripe";
 import { PrismaNeon } from "@prisma/adapter-neon";
 import { PrismaClient } from "../src/generated/prisma/client";
+import { deleteR2ObjectsByPrefix, isR2Configured } from "../src/lib/r2-core";
 
 const DEMO_EMAIL = "demo@devstash.io";
 
@@ -36,6 +37,18 @@ async function main() {
           console.warn(`⚠ Stripe cancel failed (proceeding anyway):`, err instanceof Error ? err.message : err);
         }
       }
+    }
+
+    // Best-effort R2 cleanup before the cascade delete drops the Item rows.
+    if (isR2Configured()) {
+      try {
+        const { deleted } = await deleteR2ObjectsByPrefix(`uploads/${user.id}/`);
+        console.log(`✓ Deleted ${deleted} R2 object(s) under uploads/${user.id}/`);
+      } catch (err) {
+        console.warn(`⚠ R2 cleanup failed (proceeding anyway):`, err instanceof Error ? err.message : err);
+      }
+    } else {
+      console.log("R2 not configured — skipping object cleanup.");
     }
 
     const del = await prisma.user.delete({ where: { id: user.id } });

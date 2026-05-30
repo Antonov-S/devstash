@@ -26,6 +26,18 @@ vi.mock("@/lib/stripe", () => ({
   })
 }));
 
+const { mockedIsR2Configured, mockedDeleteR2ObjectsByPrefix } = vi.hoisted(
+  () => ({
+    mockedIsR2Configured: vi.fn(),
+    mockedDeleteR2ObjectsByPrefix: vi.fn()
+  })
+);
+
+vi.mock("@/lib/r2", () => ({
+  isR2Configured: mockedIsR2Configured,
+  deleteR2ObjectsByPrefix: mockedDeleteR2ObjectsByPrefix
+}));
+
 import { auth, signOut } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { deleteAccountAction } from "@/actions/account";
@@ -47,9 +59,15 @@ describe("deleteAccountAction", () => {
     mockedUserDelete.mockReset();
     mockedUserFindUnique.mockReset();
     mockedSubscriptionsCancel.mockReset();
+    mockedIsR2Configured.mockReset();
+    mockedDeleteR2ObjectsByPrefix.mockReset();
     // Default to no subscription so cases that don't care about billing
     // can skip the setup — subscription cases override below.
     mockedUserFindUnique.mockResolvedValue({ stripeSubscriptionId: null });
+    // Default R2 to configured + a successful sweep so cases that don't care
+    // about R2 don't have to set it up — R2 cases override below.
+    mockedIsR2Configured.mockReturnValue(true);
+    mockedDeleteR2ObjectsByPrefix.mockResolvedValue({ deleted: 0 });
   });
 
   it("returns an error when there is no session", async () => {
@@ -139,5 +157,71 @@ describe("deleteAccountAction", () => {
     expect(result).toBeUndefined();
 
     errSpy.mockRestore();
+  });
+
+  it("sweeps the user's R2 prefix before deleting the user", async () => {
+    mockedAuth.mockResolvedValue({
+      user: { id: "user_123", email: "x@example.com" }
+    });
+    mockedDeleteR2ObjectsByPrefix.mockResolvedValue({ deleted: 3 });
+    mockedUserDelete.mockResolvedValue({ id: "user_123" });
+    mockedSignOut.mockResolvedValue(undefined);
+
+    const result = await deleteAccountAction();
+
+    expect(mockedDeleteR2ObjectsByPrefix).toHaveBeenCalledWith(
+      "uploads/user_123/"
+    );
+    // Verify ordering: R2 sweep happens before the cascade delete drops the
+    // Item rows it derives the prefix from.
+    expect(
+      mockedDeleteR2ObjectsByPrefix.mock.invocationCallOrder[0]
+    ).toBeLessThan(mockedUserDelete.mock.invocationCallOrder[0]);
+    expect(mockedUserDelete).toHaveBeenCalledWith({
+      where: { id: "user_123" }
+    });
+    expect(mockedSignOut).toHaveBeenCalledOnce();
+    expect(result).toBeUndefined();
+  });
+
+  it("still deletes the user when the R2 sweep throws (errors are swallowed)", async () => {
+    mockedAuth.mockResolvedValue({
+      user: { id: "user_123", email: "x@example.com" }
+    });
+    mockedDeleteR2ObjectsByPrefix.mockRejectedValue(new Error("r2 down"));
+    mockedUserDelete.mockResolvedValue({ id: "user_123" });
+    mockedSignOut.mockResolvedValue(undefined);
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const result = await deleteAccountAction();
+
+    expect(mockedDeleteR2ObjectsByPrefix).toHaveBeenCalledWith(
+      "uploads/user_123/"
+    );
+    expect(mockedUserDelete).toHaveBeenCalledWith({
+      where: { id: "user_123" }
+    });
+    expect(mockedSignOut).toHaveBeenCalledOnce();
+    expect(result).toBeUndefined();
+
+    errSpy.mockRestore();
+  });
+
+  it("skips the R2 sweep when R2 is not configured", async () => {
+    mockedAuth.mockResolvedValue({
+      user: { id: "user_123", email: "x@example.com" }
+    });
+    mockedIsR2Configured.mockReturnValue(false);
+    mockedUserDelete.mockResolvedValue({ id: "user_123" });
+    mockedSignOut.mockResolvedValue(undefined);
+
+    const result = await deleteAccountAction();
+
+    expect(mockedDeleteR2ObjectsByPrefix).not.toHaveBeenCalled();
+    expect(mockedUserDelete).toHaveBeenCalledWith({
+      where: { id: "user_123" }
+    });
+    expect(mockedSignOut).toHaveBeenCalledOnce();
+    expect(result).toBeUndefined();
   });
 });
