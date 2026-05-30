@@ -1,4 +1,4 @@
-# Current Feature: Production email + custom domain (devstash.xyz)
+# Current Feature
 
 ## Status
 
@@ -6,48 +6,12 @@ Not Started
 
 ## Goals
 
-- Make the email sender (`FROM`) environment-aware so production sends from a verified `devstash.xyz` address while local/dev keeps Resend's `onboarding@resend.dev` sandbox.
-- Drive the sender from an `EMAIL_FROM` env var instead of the hardcoded constant in `src/lib/email.ts`, with a **production guard** that fails fast if `EMAIL_FROM` is missing in prod (never silently send from the unusable sandbox in production).
-- Ensure verify / reset email links point at `https://devstash.xyz` in production via env config (see base-url note below).
-- Update `.env.example` with the new `EMAIL_FROM` entry and confirm the base-URL env var.
-- Document the external setup: verify `devstash.xyz` in Resend (SPF/DKIM/DMARC DNS records) + set production env vars on the host.
+<!-- Define what success looks like for the next feature. -->
 
 ## Notes
 
-### Current state (audited)
+<!-- Additional context, constraints, or spec details. -->
 
-- `src/lib/email.ts` hardcodes `const FROM = "DevStash <onboarding@resend.dev>"` — Resend's shared sandbox, which only delivers to the account owner's own verified address. Real users never receive mail. This is the core go-live blocker. Both `sendVerificationEmail` and `sendPasswordResetEmail` read this single module-level `FROM`.
-- **Base URL is driven by `AUTH_URL` (or `NEXTAUTH_URL`), NOT `NEXT_PUBLIC_APP_URL`.** `src/lib/base-url.ts` `getBaseUrl()` returns `process.env.AUTH_URL ?? process.env.NEXTAUTH_URL` (trailing slash stripped). Verify/reset links are built from it in `register`, `forgot-password`, and `resend-verification` routes. So the email-link domain is already solved by env config — production just needs `AUTH_URL=https://devstash.xyz`. (Note: `AUTH_SECURITY_REVIEW.md` flags that a missing `AUTH_URL` falls back to request headers = poisoning risk, so setting it in prod also closes that hole.)
-
-### Design decision (confirmed: EMAIL_FROM + prod guard)
-
-- In `src/lib/email.ts`, resolve the sender from `process.env.EMAIL_FROM`.
-- If `EMAIL_FROM` is set → use it (works for prod `DevStash <noreply@devstash.xyz>` and for staging).
-- If unset and **not** production → fall back to `onboarding@resend.dev` (dev sandbox).
-- If unset and `NODE_ENV === "production"` → **throw** (fail fast; don't send from the dead sandbox).
-- Extract the choice into a pure helper (e.g. `resolveFromAddress({ nodeEnv, emailFrom })`) so it's unit-testable without env mutation. Keep it centralized per the constants-centralization rule.
-
-### What's necessary (the actual work)
-
-1. **Code — `src/lib/email.ts`**: replace the hardcoded `FROM` with the `resolveFromAddress` helper described above; both send functions use it.
-2. **`.env.example`**: add `EMAIL_FROM=` (e.g. `DevStash <noreply@devstash.xyz>`) under the Resend section; confirm/note `AUTH_URL=` for the canonical origin.
-3. **External — Resend dashboard (manual, document only)**: add + verify the `devstash.xyz` domain (publish SPF `TXT`, DKIM records, optional DMARC at the DNS host). Until verified, sends from `@devstash.xyz` are rejected.
-4. **External — production env vars (host, document only)**: set `EMAIL_FROM`, `AUTH_URL=https://devstash.xyz`, and `RESEND_API_KEY`.
-
-### Testing
-
-- Add Vitest cases for the extracted `resolveFromAddress` helper: explicit `EMAIL_FROM` override, dev sandbox fallback, and prod-missing throws. (Per `coding-standards.md` Testing section — `src/lib/**` is in scope; the thin Resend send wrapper itself stays untested.)
-
-### Out of scope
-
-- Switching email provider, redesigning templates / React Email, DNS registration of the domain itself.
-
-## History
-
-- Initial Next.js and Tailwind setup
-- Mock data added for dashboard UI (`src/lib/mock-data.ts`)
-- Dashboard UI Phase 1 — Completed
-- Dashboard UI Phase 2 — Completed
 - Dashboard UI Phase 3 — Completed
 - Prisma + Neon PostgreSQL setup — Completed
 - Database seed (demo user + system types + 5 collections / 18 items) — Completed
@@ -126,3 +90,4 @@ Not Started
 - Image gallery quick-download + dialog overflow fix — bundled two related items from the same session on `feature/image-gallery-quick-download`; **(1) Image gallery quick-download** — `/items/images` cards (`ClickableImageCard`) gained a small hover-only Download icon button reusing `quickActionButtonClass` (matches `QuickCopyButton`/`QuickFavoriteButton`), rendered as a sibling `<a href="/api/files/{id}" download={fileName}>` of the open-drawer `<button>` (NOT nested — nesting interactive elements is invalid HTML, mirrors `ClickableFileRow`) with `event.stopPropagation()` so the download click can't open the drawer; favorite owns the top-right corner, so the download anchors to the **thumbnail's** bottom-right via a `pointer-events-none absolute inset-x-0 top-0 aspect-video` box (with `pointer-events-auto` on the anchor) — this avoids overlapping the title strip that a card-relative `bottom-2` would hit, and lets thumbnail clicks fall through to the open-drawer button beneath; revealed on `group-hover`/`group-focus-within`/`[@media(hover:none)]` (always visible on touch), guarded on `item.fileUrl` so a null-fileUrl card renders no dead link; a shared `REVEAL` class constant dedupes the favorite + download visibility strings; **(2) Image preview cropping + sizing** — the thumbnail `<img>` switched `object-cover` → `object-contain` so the full image shows uncropped (letterboxed against the frame's `bg-muted/40` instead of center-cropped to fill the 16:9 frame), and the image grid densified from `sm:grid-cols-2 lg:grid-cols-3` → `sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5` (base `grid-cols-1` unchanged on phones) so each preview is smaller — net "smaller but full" per user request; **(3) Dialog confirmation button off-screen fix** — root cause was the shared `DialogContent` primitive (NOT image size — the `FileUpload` preview was already capped at `max-h-64`): it's vertically centered (`top-1/2 -translate-y-1/2`) but had no max-height/scroll, so a form taller than the viewport overflowed equally off the top + bottom and dropped the footer's confirm button below the fold (only reachable by zooming the browser out; failed entirely on phones where the dynamic browser chrome made it worse); two additive layout-only changes (no state/props/validation/submit/upload logic touched) — added `max-h-[calc(100dvh-2rem)] overflow-y-auto` to `DialogContent` globally (`dvh` not `vh` to track mobile chrome; also protects the collection + delete-confirm dialogs) and pinned the New Item dialog's header + footer by switching its `DialogContent` to `flex flex-col overflow-y-hidden` (cleanly overrides the global `grid`/`overflow-y-auto` via tailwind-merge while inheriting `gap-4` + `max-h`) with the type selector + fields wrapped in a `flex-1 min-h-0 overflow-y-auto` region and the footer outside it — mirrors the existing item-drawer `SheetHeader` + `flex-1 overflow-y-auto` body pattern; per `coding-standards.md` Testing section all changes are components (out of Vitest scope) so no test additions — all 367 existing tests + `next build` pass; live-verified by the user (download click does not open the drawer; full image shows uncropped; dialog footer reachable); the related `context/features/r2-cleanup-spec.md` spec (account-deletion + script R2-orphan cleanup with a new prefix-delete helper) was authored this session but left untracked/uncommitted per user request, deferred to its own future feature — Completed
 - Professional README — replaced the default `create-next-app` boilerplate `README.md` with a polished, GitHub-ready document grounded in the actual codebase; centered header (title + value proposition + description + 8 shields.io tech badges), a Table of Contents, Overview (the scattered-knowledge problem + DevStash's solution), a Features section grouped into Items & Content / Organization / Authentication / AI (Pro) / Billing / Polish, a Tech Stack table (Next.js 16 / React 19, TS, Neon + Prisma 7, NextAuth v5, Cloudflare R2, Upstash Redis, Resend, OpenAI Responses API, Stripe, Tailwind v4 + shadcn/ui, Monaco + react-markdown, Vitest), an ASCII Architecture diagram + server-component/server-action/API-route conventions, Getting Started (prereqs, 5-step setup with the real clone URL `https://github.com/Antonov-S/devstash.git`, the no-`db push` rule), an Environment Variables reference table derived from `.env.example` (no secrets/branch IDs exposed), an Available Scripts table from `package.json`, a Project Structure tree + conventions (strict TS, server-first, Tailwind v4 `@theme`, centralized constants), a Testing section (Vitest scope = actions + lib only, components excluded), and a **Development Journey** section per user request distilling the granular `## History` log into 13 readable phases (Foundation → Database → Data wiring → Auth → Account/profile → Items CRUD → Editors & uploads → Organization → Settings → Marketing → Billing → AI → Refactors/polish) with a pointer to the full changelog; pure documentation — no app code, schema, or tests touched (README is out of Vitest scope per `coding-standards.md`), so no test/build run was meaningful; the untracked `context/features/r2-cleanup-spec.md` was deliberately left out of the commit (still deferred); suggested-improvements offered afterward (screenshots/demo GIF, live-demo link, Stripe-CLI webhook note) — none applied, left for a future pass — Completed
 - Bumped AI rate-limit constants from 20 → 40 per-user/hour for all four AI features (`AI_SUGGEST_TAGS_PER_HOUR`, `AI_GENERATE_DESCRIPTION_PER_HOUR`, `AI_EXPLAIN_CODE_PER_HOUR`, `AI_OPTIMIZE_PROMPT_PER_HOUR` in `src/lib/constants.ts`) — the `gpt-5-nano` model is cheap so a higher cap is affordable and gives Pro users more headroom before hitting the sliding-window limit; pure config change, no test/behavior changes — Completed
+- Production email + custom domain (devstash.xyz) — made the Resend sender environment-aware so production stops sending from the dead `onboarding@resend.dev` sandbox (which only delivers to the Resend account owner's own verified address); new pure `resolveFromAddress({ nodeEnv, emailFrom })` helper in `src/lib/email.ts` — `EMAIL_FROM` set → use it (prod `DevStash <noreply@devstash.xyz>` / staging), unset + non-production → sandbox fallback, unset + `NODE_ENV === "production"` → **throws** so it never silently sends from the unusable sandbox; wrapped in a lazy `getFromAddress()` called at send time (NOT module top-level) so a production `next build` with `EMAIL_FROM` still unset doesn't crash on import; both `sendVerificationEmail` + `sendPasswordResetEmail` now resolve `from:` through it (was a single hardcoded `const FROM`); confirmed the verify/reset email links are already env-driven — `getBaseUrl()` in `src/lib/base-url.ts` returns `AUTH_URL ?? NEXTAUTH_URL` (request-header fallback only when unset), so production just needs `AUTH_URL=https://devstash.xyz` with no code change, which also closes the host-header poisoning finding from `AUTH_SECURITY_REVIEW.md`; `.env.example` gained `EMAIL_FROM=` (Resend section) + `AUTH_URL=` (NextAuth section) with prod guidance, plus a note that `EMAIL_VERIFICATION_ENABLED` should be empty/`"true"` (never `"false"`) in production since disabling it skips the verification send and lets unverified credentials sign in; new Vitest `src/lib/__tests__/email.test.ts` (6 cases: explicit override, whitespace trim, dev sandbox fallback, whitespace-only-as-unset, prod-throws on unset + on whitespace-only) with `vi.mock("resend")` so the pure helper imports without resolving the SDK (Vitest can't load the real `resend` package); external steps documented but not code (verify `devstash.xyz` in Resend → publish SPF/DKIM/optional DMARC DNS; set prod env vars on the host); bundled `chore:` commit bumping all four AI rate-limit caps 20 → 40 per-user/hour (`AI_SUGGEST_TAGS`/`AI_GENERATE_DESCRIPTION`/`AI_EXPLAIN_CODE`/`AI_OPTIMIZE_PROMPT`_PER_HOUR in `src/lib/constants.ts`) since the `gpt-5-nano` model is cheap and flows straight into the `rate-limit.ts` LIMITS table; 367 → 373 tests + `next build` pass — Completed
