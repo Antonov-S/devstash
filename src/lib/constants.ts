@@ -134,16 +134,16 @@ export const AI_MODEL = "gpt-5-nano" as const;
 export const AI_MAX_INPUT_CHARS = 2000;
 
 // Per-user, per-hour cap on the Suggest Tags action.
-export const AI_SUGGEST_TAGS_PER_HOUR = 20;
+export const AI_SUGGEST_TAGS_PER_HOUR = 40;
 
 // Per-user, per-hour cap on the Generate Description action.
-export const AI_GENERATE_DESCRIPTION_PER_HOUR = 20;
+export const AI_GENERATE_DESCRIPTION_PER_HOUR = 40;
 
 // Per-user, per-hour cap on the Explain Code action.
-export const AI_EXPLAIN_CODE_PER_HOUR = 20;
+export const AI_EXPLAIN_CODE_PER_HOUR = 40;
 
 // Per-user, per-hour cap on the Optimize Prompt action.
-export const AI_OPTIMIZE_PROMPT_PER_HOUR = 20;
+export const AI_OPTIMIZE_PROMPT_PER_HOUR = 40;
 
 // Shared blue accent for AI affordances (matches SYSTEM_TYPE_COLORS.snippet
 // and the homepage hero gradient). Keep the two AI buttons (Suggest tags,

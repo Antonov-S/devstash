@@ -2,10 +2,45 @@ import "server-only";
 
 import { Resend } from "resend";
 
-const FROM = "DevStash <onboarding@resend.dev>";
+// Resend's shared sandbox sender. It only delivers to the Resend account
+// owner's own verified address, so it's fine for local/dev but never works
+// for real users in production.
+const SANDBOX_FROM = "DevStash <onboarding@resend.dev>";
 
 export const EMAIL_VERIFICATION_ENABLED =
   process.env.EMAIL_VERIFICATION_ENABLED !== "false";
+
+/**
+ * Pick the email sender for the current environment.
+ *
+ * - `EMAIL_FROM` set      → use it (production `devstash.xyz` sender, staging, etc.)
+ * - unset + non-production → fall back to the Resend sandbox address
+ * - unset + production     → throw, so we never silently send from the dead sandbox
+ *
+ * Pure so it can be unit-tested without mutating `process.env`.
+ */
+export function resolveFromAddress(env: {
+  nodeEnv: string | undefined;
+  emailFrom: string | undefined;
+}): string {
+  const emailFrom = env.emailFrom?.trim();
+  if (emailFrom) return emailFrom;
+  if (env.nodeEnv === "production") {
+    throw new Error(
+      "EMAIL_FROM must be set in production — refusing to send from the Resend sandbox address."
+    );
+  }
+  return SANDBOX_FROM;
+}
+
+// Resolved lazily (at send time, not import time) so a production `next build`
+// with no EMAIL_FROM yet doesn't crash when the module is loaded.
+function getFromAddress(): string {
+  return resolveFromAddress({
+    nodeEnv: process.env.NODE_ENV,
+    emailFrom: process.env.EMAIL_FROM
+  });
+}
 
 let cached: Resend | null = null;
 
@@ -63,7 +98,7 @@ ${verifyUrl}
 If you didn't create a DevStash account, you can ignore this email.`;
 
   const { error } = await getResend().emails.send({
-    from: FROM,
+    from: getFromAddress(),
     to,
     subject: "Verify your DevStash email",
     html,
@@ -121,7 +156,7 @@ ${resetUrl}
 If you didn't ask to reset your password, you can safely ignore this email — your account is unchanged.`;
 
   const { error } = await getResend().emails.send({
-    from: FROM,
+    from: getFromAddress(),
     to,
     subject: "Reset your DevStash password",
     html,
