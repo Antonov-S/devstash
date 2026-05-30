@@ -12,6 +12,12 @@ Not Started
 
 <!-- Additional context, constraints, or spec details. -->
 
+## History
+
+- Initial Next.js and Tailwind setup
+- Mock data added for dashboard UI (`src/lib/mock-data.ts`)
+- Dashboard UI Phase 1 — Completed
+- Dashboard UI Phase 2 — Completed
 - Dashboard UI Phase 3 — Completed
 - Prisma + Neon PostgreSQL setup — Completed
 - Database seed (demo user + system types + 5 collections / 18 items) — Completed
