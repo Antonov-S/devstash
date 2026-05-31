@@ -3,7 +3,13 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { ArrowRight, Folder as FolderIcon, Pencil, Trash2 } from "lucide-react";
+import {
+  ArrowRight,
+  Download,
+  Folder as FolderIcon,
+  Pencil,
+  Trash2
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { deleteFolderAction } from "@/actions/folders";
@@ -17,7 +23,7 @@ import {
   SheetHeader,
   SheetTitle
 } from "@/components/ui/sheet";
-import { SYSTEM_TYPE_COLORS } from "@/lib/constants";
+import { MAX_ZIP_BYTES, SYSTEM_TYPE_COLORS } from "@/lib/constants";
 import type { FolderWithMeta } from "@/lib/db/folders";
 import { formatDateLong } from "@/lib/format-date";
 import { formatBytes } from "@/lib/upload-constraints";
@@ -39,6 +45,10 @@ export function FolderHubDrawer({ folder, open, onOpenChange }: Props) {
 
   const folderHref = `/folders/${folder.id}`;
   const previews = folder.previewImageUrls.slice(0, 4);
+  // A plain <a download> can't toast the route's 409, so when the folder
+  // exceeds the ZIP cap we render a disabled button + helper text instead.
+  const tooLarge = folder.totalSize > MAX_ZIP_BYTES;
+  const maxZipMb = Math.floor(MAX_ZIP_BYTES / (1024 * 1024));
 
   function handleDeleteConfirm() {
     startDeleting(async () => {
@@ -82,6 +92,33 @@ export function FolderHubDrawer({ folder, open, onOpenChange }: Props) {
           </div>
 
           <div className="flex items-center gap-0.5">
+            {/* Primary action: a plain browser download — no client zipping,
+                no pending affordance. Hidden when the folder is empty (the
+                route 404s with no files); disabled when it exceeds the cap. */}
+            {folder.itemCount > 0 &&
+              (tooLarge ? (
+                <Button
+                  size="sm"
+                  disabled
+                  className="gap-1.5"
+                  title={`Folder too large to download as a ZIP (max ${maxZipMb} MB).`}
+                >
+                  <Download aria-hidden />
+                  Download all (.zip)
+                </Button>
+              ) : (
+                <a
+                  href={`/api/folders/${folder.id}/download`}
+                  download
+                  className={buttonVariants({
+                    size: "sm",
+                    className: "gap-1.5"
+                  })}
+                >
+                  <Download aria-hidden />
+                  Download all (.zip)
+                </a>
+              ))}
             <Button
               variant="ghost"
               size="sm"
@@ -103,6 +140,12 @@ export function FolderHubDrawer({ folder, open, onOpenChange }: Props) {
               <Trash2 aria-hidden />
             </Button>
           </div>
+          {folder.itemCount > 0 && tooLarge && (
+            <p className="text-xs text-muted-foreground">
+              This folder is over {maxZipMb} MB — too large to download as a
+              single ZIP.
+            </p>
+          )}
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto px-6 py-6">

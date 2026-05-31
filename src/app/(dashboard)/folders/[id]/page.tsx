@@ -121,7 +121,11 @@ export default async function FolderDetailPage({
             </p>
           </div>
         </div>
-        <FolderActions folder={{ id: folder.id, name: folder.name }} />
+        <FolderActions
+          folder={{ id: folder.id, name: folder.name }}
+          showDownload={folder.totalItemCount > 0}
+          totalSize={folder.totalSize}
+        />
       </div>
 
       {folder.items.length > 0 ? (

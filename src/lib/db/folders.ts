@@ -23,6 +23,9 @@ export type FolderWithItems = {
   id: string;
   name: string;
   updatedAt: Date;
+  // Sum of fileSize across all items in the folder (bytes). Used to gate the
+  // Download-all button client-side against MAX_ZIP_BYTES.
+  totalSize: number;
   items: ItemWithMeta[];
   totalItemCount: number;
 };
@@ -121,12 +124,68 @@ export async function getFolderWithItemsForUser(
   });
   if (!folder) return null;
 
-  const { items, totalCount } = await getItemsForUserByFolderId(
-    userId,
-    folderId,
-    options
-  );
-  return { ...folder, items, totalItemCount: totalCount };
+  const [{ items, totalCount }, sizeAgg] = await Promise.all([
+    getItemsForUserByFolderId(userId, folderId, options),
+    // Total size across ALL items in the folder (not just the current page) —
+    // one indexed aggregate, run in parallel with the item fetch.
+    prisma.item.aggregate({
+      where: { userId, folderId },
+      _sum: { fileSize: true }
+    })
+  ]);
+  return {
+    ...folder,
+    totalSize: sizeAgg._sum.fileSize ?? 0,
+    items,
+    totalItemCount: totalCount
+  };
+}
+
+export type FolderDownloadFile = {
+  id: string;
+  fileUrl: string;
+  fileName: string | null;
+};
+
+export type FolderDownload = {
+  name: string;
+  totalSize: number;
+  files: FolderDownloadFile[];
+};
+
+// Ownership-scoped payload for the Download-all ZIP route. Returns the folder
+// name + every file/image item that has an fileUrl, plus the summed fileSize.
+// Returns null when the folder doesn't exist or isn't owned by the user.
+export async function getFolderFilesForDownload(
+  userId: string,
+  folderId: string
+): Promise<FolderDownload | null> {
+  const folder = await prisma.folder.findFirst({
+    where: { id: folderId, userId },
+    select: { name: true }
+  });
+  if (!folder) return null;
+
+  const items = await prisma.item.findMany({
+    where: {
+      userId,
+      folderId,
+      itemType: { name: { in: ["file", "image"] } },
+      fileUrl: { not: null }
+    },
+    orderBy: { createdAt: "asc" },
+    select: { id: true, fileUrl: true, fileName: true, fileSize: true }
+  });
+
+  let totalSize = 0;
+  const files: FolderDownloadFile[] = [];
+  for (const item of items) {
+    if (!item.fileUrl) continue;
+    totalSize += item.fileSize ?? 0;
+    files.push({ id: item.id, fileUrl: item.fileUrl, fileName: item.fileName });
+  }
+
+  return { name: folder.name, totalSize, files };
 }
 
 export type FolderListEntry = {

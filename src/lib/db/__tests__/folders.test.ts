@@ -13,6 +13,7 @@ vi.mock("@/lib/prisma", () => ({
       findFirst: vi.fn(),
       findMany: vi.fn(),
       groupBy: vi.fn(),
+      aggregate: vi.fn(),
       updateMany: vi.fn()
     }
   }
@@ -27,6 +28,7 @@ import { getItemsForUserByFolderId } from "@/lib/db/items";
 import {
   createFolderForUser,
   deleteFolderForUser,
+  getFolderFilesForDownload,
   getFolderWithItemsForUser,
   getFoldersForUser,
   getUserFoldersList,
@@ -54,6 +56,9 @@ const mockedItemFindMany = prisma.item.findMany as unknown as ReturnType<
   typeof vi.fn
 >;
 const mockedItemGroupBy = prisma.item.groupBy as unknown as ReturnType<
+  typeof vi.fn
+>;
+const mockedItemAggregate = prisma.item.aggregate as unknown as ReturnType<
   typeof vi.fn
 >;
 const mockedItemUpdateMany = prisma.item.updateMany as unknown as ReturnType<
@@ -241,9 +246,10 @@ describe("getFolderWithItemsForUser", () => {
   beforeEach(() => {
     mockedFolderFindFirst.mockReset();
     mockedGetItems.mockReset();
+    mockedItemAggregate.mockReset();
   });
 
-  it("returns null and skips the items fetch when the folder is not owned", async () => {
+  it("returns null and skips the items + size fetch when the folder is not owned", async () => {
     mockedFolderFindFirst.mockResolvedValue(null);
 
     const result = await getFolderWithItemsForUser("user_1", "folder_missing");
@@ -254,9 +260,10 @@ describe("getFolderWithItemsForUser", () => {
       select: { id: true, name: true, updatedAt: true }
     });
     expect(mockedGetItems).not.toHaveBeenCalled();
+    expect(mockedItemAggregate).not.toHaveBeenCalled();
   });
 
-  it("returns folder metadata + items + totalItemCount when owned", async () => {
+  it("returns folder metadata + items + totalItemCount + totalSize when owned", async () => {
     const now = new Date("2026-05-31T00:00:00Z");
     mockedFolderFindFirst.mockResolvedValue({
       id: "folder_1",
@@ -264,6 +271,7 @@ describe("getFolderWithItemsForUser", () => {
       updatedAt: now
     });
     mockedGetItems.mockResolvedValue({ items: [{ id: "item_1" }], totalCount: 12 });
+    mockedItemAggregate.mockResolvedValue({ _sum: { fileSize: 8192 } });
 
     const result = await getFolderWithItemsForUser("user_1", "folder_1", {
       skip: 0,
@@ -274,13 +282,33 @@ describe("getFolderWithItemsForUser", () => {
       skip: 0,
       take: 21
     });
+    expect(mockedItemAggregate).toHaveBeenCalledWith({
+      where: { userId: "user_1", folderId: "folder_1" },
+      _sum: { fileSize: true }
+    });
     expect(result).toEqual({
       id: "folder_1",
       name: "Invoices",
       updatedAt: now,
+      totalSize: 8192,
       items: [{ id: "item_1" }],
       totalItemCount: 12
     });
+  });
+
+  it("treats a null _sum.fileSize as totalSize 0", async () => {
+    const now = new Date("2026-05-31T00:00:00Z");
+    mockedFolderFindFirst.mockResolvedValue({
+      id: "folder_1",
+      name: "Empty",
+      updatedAt: now
+    });
+    mockedGetItems.mockResolvedValue({ items: [], totalCount: 0 });
+    mockedItemAggregate.mockResolvedValue({ _sum: { fileSize: null } });
+
+    const result = await getFolderWithItemsForUser("user_1", "folder_1");
+
+    expect(result?.totalSize).toBe(0);
   });
 });
 
@@ -413,5 +441,73 @@ describe("moveItemToFolder", () => {
       data: { folderId: null }
     });
     expect(result).toEqual({ ok: true });
+  });
+});
+
+describe("getFolderFilesForDownload", () => {
+  beforeEach(() => {
+    mockedFolderFindFirst.mockReset();
+    mockedItemFindMany.mockReset();
+  });
+
+  it("returns null and skips the items fetch when the folder is not owned", async () => {
+    mockedFolderFindFirst.mockResolvedValue(null);
+
+    const result = await getFolderFilesForDownload("user_1", "folder_missing");
+
+    expect(result).toBeNull();
+    expect(mockedFolderFindFirst).toHaveBeenCalledWith({
+      where: { id: "folder_missing", userId: "user_1" },
+      select: { name: true }
+    });
+    expect(mockedItemFindMany).not.toHaveBeenCalled();
+  });
+
+  it("scopes the item query by userId + folder + file/image type and maps fileUrl/fileName + name + totalSize", async () => {
+    mockedFolderFindFirst.mockResolvedValue({ name: "Invoices" });
+    mockedItemFindMany.mockResolvedValue([
+      {
+        id: "item_1",
+        fileUrl: "https://r2/a.pdf",
+        fileName: "a.pdf",
+        fileSize: 1000
+      },
+      {
+        id: "item_2",
+        fileUrl: "https://r2/b.png",
+        fileName: null,
+        fileSize: 2000
+      }
+    ]);
+
+    const result = await getFolderFilesForDownload("user_1", "folder_1");
+
+    expect(mockedItemFindMany).toHaveBeenCalledWith({
+      where: {
+        userId: "user_1",
+        folderId: "folder_1",
+        itemType: { name: { in: ["file", "image"] } },
+        fileUrl: { not: null }
+      },
+      orderBy: { createdAt: "asc" },
+      select: { id: true, fileUrl: true, fileName: true, fileSize: true }
+    });
+    expect(result).toEqual({
+      name: "Invoices",
+      totalSize: 3000,
+      files: [
+        { id: "item_1", fileUrl: "https://r2/a.pdf", fileName: "a.pdf" },
+        { id: "item_2", fileUrl: "https://r2/b.png", fileName: null }
+      ]
+    });
+  });
+
+  it("treats a missing fileSize as 0 and returns an empty file list for an empty folder", async () => {
+    mockedFolderFindFirst.mockResolvedValue({ name: "Empty" });
+    mockedItemFindMany.mockResolvedValue([]);
+
+    const result = await getFolderFilesForDownload("user_1", "folder_1");
+
+    expect(result).toEqual({ name: "Empty", totalSize: 0, files: [] });
   });
 });
