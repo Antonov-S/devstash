@@ -71,7 +71,7 @@ Developers keep their essentials scattered everywhere — snippets in VS Code, p
 ### Organization
 
 - **Collections** — group items freely; an item can live in multiple collections
-- **Folders** — file uploads into a single home folder; a folder card opens a quick-peek drawer (preview, rename, delete) with one click through to the full folder page
+- **Folders** — file uploads into a single home folder; a folder card opens a quick-peek drawer (preview, rename, delete, **download the whole folder as a ZIP**) with one click through to the full folder page
 - **Favorites** page with independent client-side sorting per section
 - **Global command palette** (`Cmd/Ctrl + K`) with fuzzy, acronym-style search across items and collections
 - URL-based **pagination** on item, collection, and listing pages
@@ -288,7 +288,7 @@ DevStash was built feature-by-feature on a documented branch-per-feature workflo
 5. **Account & profile** — profile/settings pages, change password, delete account.
 6. **Items CRUD** — type-filtered list pages, an item detail drawer, and create / edit / delete flows backed by validated server actions.
 7. **Editors & uploads** — Monaco code editor with a language picker, a Markdown editor with live preview, and Cloudflare R2 file/image uploads with a secure download proxy, image gallery, and file-list views.
-8. **Organization** — collections (create/edit/delete, add items), folders for filing files and images, favorites, pinning, quick-copy/quick-favorite card actions, a `Cmd/Ctrl + K` fuzzy command palette, and URL-based pagination.
+8. **Organization** — collections (create/edit/delete, add items), folders for filing files and images (with one-click download of a whole folder as a ZIP), favorites, pinning, quick-copy/quick-favorite card actions, a `Cmd/Ctrl + K` fuzzy command palette, and URL-based pagination.
 9. **Settings** — a dedicated settings area plus per-user editor preferences (theme, font size, tab size, word wrap, minimap).
 10. **Marketing site** — an animated homepage prototype ported to the real app (hero, features, pricing toggle, CTA), with shared branding.
 11. **Billing** — Stripe integration in phases: SDK foundation, webhooks + checkout/portal actions, free-tier enforcement, upgrade prompts, and a celebratory post-checkout page.
