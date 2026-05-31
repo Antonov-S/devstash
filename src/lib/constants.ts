@@ -21,6 +21,15 @@ export const FREE_TIER_LIMITS = {
 // validation can't drift between the two paths.
 export const FOLDER_NAME_MAX_LENGTH = 100;
 
+// Guard rail on the folder Download-all ZIP route. NOT sized to disk — a
+// streamed ZIP is gated by the CLIENT's download speed (backpressure holds the
+// serverless function open for the user's entire download), so this is "the
+// largest archive a plausibly-slow client finishes within maxDuration". On the
+// Vercel Hobby 60s ceiling a ~1.7 MB/s client finishes ~100 MB before the
+// function is killed mid-stream. Lower this (e.g. ~60 MB) to also cover
+// ~1 MB/s clients, or raise maxDuration via Vercel Pro / Fluid compute.
+export const MAX_ZIP_BYTES = 100 * 1024 * 1024;
+
 export const PRO_ONLY_ITEM_TYPES = new Set<string>(["file", "image"]);
 
 // Item-type membership sets that decide which fields / editors an item type

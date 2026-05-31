@@ -62,6 +62,29 @@ export type R2ObjectStream = {
   contentLength: number | null;
 };
 
+// Returns the SDK's Node `Readable` body directly, BEFORE the toWeb conversion
+// getObjectFromR2 does — `archiver` appends Node streams, not Web streams.
+// Returns null on a missing object so the ZIP route can skip + continue.
+export async function getObjectNodeStreamFromR2(
+  key: string
+): Promise<Readable | null> {
+  const { client, bucket } = getR2();
+  try {
+    const response = await client.send(
+      new GetObjectCommand({ Bucket: bucket, Key: key })
+    );
+    const body = response.Body;
+    if (body instanceof Readable) return body;
+    return null;
+  } catch (error) {
+    const name = (error as { name?: string })?.name;
+    if (name === "NoSuchKey" || name === "NotFound") {
+      return null;
+    }
+    throw error;
+  }
+}
+
 export async function getObjectFromR2(key: string): Promise<R2ObjectStream | null> {
   const { client, bucket } = getR2();
   try {
