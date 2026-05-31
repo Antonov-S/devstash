@@ -2,6 +2,7 @@
 
 import { Download, ExternalLink, FileIcon } from "lucide-react";
 
+import { MoveToFolderSelect } from "@/components/folders/move-to-folder-select";
 import { CodeEditor, type ExplainContext } from "@/components/items/code-editor";
 import {
   MarkdownEditor,
@@ -31,6 +32,10 @@ export function ItemDrawerBody({
       : detail.contentType === "URL"
         ? "Link"
         : "Content";
+
+  // Folders are a file/image-only organization layer.
+  const typeName = detail.itemType.name.toLowerCase();
+  const isFoldered = typeName === "file" || typeName === "image";
 
   return (
     <div className="flex flex-col gap-6">
@@ -77,6 +82,15 @@ export function ItemDrawerBody({
               </Badge>
             ))}
           </div>
+        </Section>
+      )}
+
+      {isFoldered && (
+        <Section title="Folder">
+          <MoveToFolderSelect
+            itemId={detail.id}
+            currentFolderId={detail.folderId}
+          />
         </Section>
       )}
 

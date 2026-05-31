@@ -1,8 +1,11 @@
-import { Plus } from "lucide-react";
+import { FolderPlus, Plus } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
 
 import { auth } from "@/auth";
 import type { CreateItemType } from "@/actions/items";
+import { FolderCard } from "@/components/folders/folder-card";
+import { FolderRow } from "@/components/folders/folder-row";
+import { NewFolderDialog } from "@/components/folders/new-folder-dialog";
 import { ClickableFileRow } from "@/components/items/clickable-file-row";
 import { ClickableImageCard } from "@/components/items/clickable-image-card";
 import { ClickableItemCard } from "@/components/items/clickable-item-card";
@@ -10,6 +13,7 @@ import { NewItemDialog } from "@/components/items/new-item-dialog";
 import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/ui/pagination";
 import { PRO_ONLY_ITEM_TYPES } from "@/lib/constants";
+import { getFoldersForUser, type FolderWithMeta } from "@/lib/db/folders";
 import {
   getItemsForUserByTypeId,
   getSystemItemTypeByName
@@ -53,6 +57,37 @@ export async function generateMetadata({
   return { title: `${capitalize(type)} · DevStash` };
 }
 
+function FoldersSection({
+  folders,
+  typeName
+}: {
+  folders: FolderWithMeta[];
+  typeName: SystemTypeName;
+}) {
+  if (folders.length === 0) return null;
+
+  return (
+    <section className="flex flex-col gap-3">
+      <h2 className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
+        Folders ({folders.length})
+      </h2>
+      {typeName === "image" ? (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+          {folders.map((folder) => (
+            <FolderCard key={folder.id} folder={folder} />
+          ))}
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {folders.map((folder) => (
+            <FolderRow key={folder.id} folder={folder} />
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
 export default async function ItemsByTypePage({
   params,
   searchParams
@@ -78,14 +113,21 @@ export default async function ItemsByTypePage({
   const { page: rawPage } = await searchParams;
   const requestedPage = parsePageParam(rawPage);
 
-  const { items, totalCount } = await getItemsForUserByTypeId(
-    userId,
-    itemType.id,
-    {
+  // Folders are a file/image-only organization layer. On those pages the item
+  // grid shows only ungrouped items (filed items live inside their folder).
+  const isFolderType = typeName === "file" || typeName === "image";
+
+  const [{ items, totalCount }, folders] = await Promise.all([
+    getItemsForUserByTypeId(userId, itemType.id, {
       skip: (requestedPage - 1) * ITEMS_PER_PAGE,
-      take: ITEMS_PER_PAGE
-    }
-  );
+      take: ITEMS_PER_PAGE,
+      ...(isFolderType ? { folderId: null } : {})
+    }),
+    isFolderType
+      ? getFoldersForUser(userId)
+      : Promise.resolve<FolderWithMeta[]>([])
+  ]);
+
   const { currentPage, totalPages } = paginate({
     page: requestedPage,
     perPage: ITEMS_PER_PAGE,
@@ -97,6 +139,8 @@ export default async function ItemsByTypePage({
 
   const singularLabel = capitalize(typeName);
   const creatable = isCreatable(typeName);
+
+  const hasContent = items.length > 0 || folders.length > 0;
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6">
@@ -117,44 +161,65 @@ export default async function ItemsByTypePage({
             </p>
           </div>
         </div>
-        {creatable && (
-          <NewItemDialog
-            initialType={typeName}
-            trigger={
-              <Button
-                size="sm"
-                aria-label={`New ${singularLabel}`}
-                title={`New ${singularLabel}`}
-              >
-                <Plus className="size-4" />
-                <span className="hidden md:inline">New {singularLabel}</span>
-              </Button>
-            }
-          />
-        )}
+        <div className="flex items-center gap-2">
+          {isFolderType && (
+            <NewFolderDialog
+              trigger={
+                <Button
+                  variant="outline"
+                  size="sm"
+                  aria-label="New Folder"
+                  title="New Folder"
+                >
+                  <FolderPlus className="size-4" />
+                  <span className="hidden md:inline">New Folder</span>
+                </Button>
+              }
+            />
+          )}
+          {creatable && (
+            <NewItemDialog
+              initialType={typeName}
+              trigger={
+                <Button
+                  size="sm"
+                  aria-label={`New ${singularLabel}`}
+                  title={`New ${singularLabel}`}
+                >
+                  <Plus className="size-4" />
+                  <span className="hidden md:inline">New {singularLabel}</span>
+                </Button>
+              }
+            />
+          )}
+        </div>
       </div>
 
-      {items.length > 0 ? (
+      {hasContent ? (
         <>
-          {typeName === "image" ? (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-              {items.map((item) => (
-                <ClickableImageCard key={item.id} item={item} />
-              ))}
-            </div>
-          ) : typeName === "file" ? (
-            <div className="flex flex-col gap-2">
-              {items.map((item) => (
-                <ClickableFileRow key={item.id} item={item} />
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
-              {items.map((item) => (
-                <ClickableItemCard key={item.id} item={item} />
-              ))}
-            </div>
-          )}
+          <FoldersSection folders={folders} typeName={typeName} />
+
+          {items.length > 0 &&
+            (typeName === "image" ? (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                {items.map((item) => (
+                  <ClickableImageCard key={item.id} item={item} />
+                ))}
+              </div>
+            ) : typeName === "file" ? (
+              <div className="flex flex-col gap-2">
+                {items.map((item) => (
+                  <ClickableFileRow key={item.id} item={item} />
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+                {items.map((item) => (
+                  <ClickableItemCard key={item.id} item={item} />
+                ))}
+              </div>
+            ))}
+
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}

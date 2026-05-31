@@ -17,6 +17,10 @@ export const FREE_TIER_LIMITS = {
   collections: 3
 } as const;
 
+// Max length for a folder name. Shared by the create + rename Zod schema so
+// validation can't drift between the two paths.
+export const FOLDER_NAME_MAX_LENGTH = 100;
+
 export const PRO_ONLY_ITEM_TYPES = new Set<string>(["file", "image"]);
 
 // Item-type membership sets that decide which fields / editors an item type

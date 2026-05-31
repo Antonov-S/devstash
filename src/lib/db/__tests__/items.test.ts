@@ -37,6 +37,7 @@ import {
   getFavoriteItemsForUser,
   getItemDetailForUser,
   getItemsForUserByCollectionId,
+  getItemsForUserByFolderId,
   getItemsForUserByTypeId,
   getPinnedItemsForUser,
   getRecentItemsForUser,
@@ -675,6 +676,80 @@ describe("getItemsForUserByTypeId", () => {
     const { items, totalCount } = await getItemsForUserByTypeId(
       "user_1",
       "type_1"
+    );
+
+    expect(totalCount).toBe(1);
+    expect(items).toHaveLength(1);
+    expect(items[0].id).toBe("item_1");
+    expect(items[0].tags).toEqual(["react", "auth"]);
+  });
+
+  it("restricts to ungrouped items when folderId: null is passed", async () => {
+    await getItemsForUserByTypeId("user_1", "type_1", { folderId: null });
+
+    expect(mockedFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userId: "user_1", itemTypeId: "type_1", folderId: null }
+      })
+    );
+    expect(mockedItemCount).toHaveBeenCalledWith({
+      where: { userId: "user_1", itemTypeId: "type_1", folderId: null }
+    });
+  });
+
+  it("leaves the where clause unfiltered when the folderId option is omitted", async () => {
+    await getItemsForUserByTypeId("user_1", "type_1");
+
+    const arg = mockedFindMany.mock.calls[0][0];
+    expect(arg.where).toEqual({ userId: "user_1", itemTypeId: "type_1" });
+    expect(arg.where).not.toHaveProperty("folderId");
+  });
+});
+
+describe("getItemsForUserByFolderId", () => {
+  beforeEach(() => {
+    mockedFindMany.mockReset();
+    mockedFindMany.mockResolvedValue([]);
+    mockedItemCount.mockReset();
+    mockedItemCount.mockResolvedValue(0);
+  });
+
+  it("filters by userId + folderId with default skip:0/take:200 and counts in parallel", async () => {
+    mockedItemCount.mockResolvedValue(7);
+
+    const { totalCount } = await getItemsForUserByFolderId("user_1", "folder_1");
+
+    expect(mockedFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userId: "user_1", folderId: "folder_1" },
+        skip: 0,
+        take: 200
+      })
+    );
+    expect(mockedItemCount).toHaveBeenCalledWith({
+      where: { userId: "user_1", folderId: "folder_1" }
+    });
+    expect(totalCount).toBe(7);
+  });
+
+  it("sorts pinned items first, then by lastUsedAt and updatedAt", async () => {
+    await getItemsForUserByFolderId("user_1", "folder_1");
+
+    const arg = mockedFindMany.mock.calls[0][0];
+    expect(arg.orderBy).toEqual([
+      { isPinned: "desc" },
+      { lastUsedAt: { sort: "desc", nulls: "last" } },
+      { updatedAt: "desc" }
+    ]);
+  });
+
+  it("maps rows into ItemWithMeta and returns { items, totalCount }", async () => {
+    mockedFindMany.mockResolvedValue([baseRow]);
+    mockedItemCount.mockResolvedValue(1);
+
+    const { items, totalCount } = await getItemsForUserByFolderId(
+      "user_1",
+      "folder_1"
     );
 
     expect(totalCount).toBe(1);
