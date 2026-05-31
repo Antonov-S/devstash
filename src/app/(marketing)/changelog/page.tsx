@@ -50,6 +50,7 @@ const GROUPS: ChangelogGroup[] = [
     items: [
       "Global command palette (⌘K / Ctrl+K) with fast fuzzy search across items and collections.",
       "Collections — group items freely; an item can live in several collections.",
+      "Assign collections inline from an item's drawer — no need to open edit mode.",
       "Favorites and pinned items for the things you reach for most.",
       "Pagination across item and collection listings."
     ]
