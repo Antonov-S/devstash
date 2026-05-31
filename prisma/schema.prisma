@@ -32,6 +32,7 @@ model User {
   items       Item[]
   collections Collection[]
   itemTypes   ItemType[]
+  folders     Folder[]
 }
 
 // ─── NextAuth ────────────────────────────────────────
@@ -119,17 +120,39 @@ model Item {
 
   userId     String
   itemTypeId String
+  folderId   String?
 
   user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   itemType    ItemType         @relation(fields: [itemTypeId], references: [id])
+  folder      Folder?          @relation(fields: [folderId], references: [id], onDelete: SetNull)
   tags        TagsOnItems[]
   collections ItemCollection[]
 
   @@index([userId])
   @@index([itemTypeId])
+  @@index([folderId])
   @@index([userId, isPinned])
   @@index([userId, isFavorite])
   @@index([userId, lastUsedAt])
+}
+
+// ─── Folder ──────────────────────────────────────────
+// File/image organization. An item has at most one folder (true folder
+// semantics). Deleting a folder loosens its items back to top level via
+// onDelete: SetNull — items are never deleted with the folder. Flat only —
+// no nesting / parentId.
+
+model Folder {
+  id        String   @id @default(cuid())
+  name      String
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items Item[]
+
+  @@index([userId])
 }
 
 // ─── Collection ──────────────────────────────────────

@@ -172,10 +172,16 @@ export type ItemPageOptions = {
 export async function getItemsForUserByTypeId(
   userId: string,
   itemTypeId: string,
-  options: ItemPageOptions = {}
+  options: ItemPageOptions & { folderId?: null } = {}
 ): Promise<PagedItems> {
   const { skip = 0, take = 200 } = options;
-  const where = { userId, itemTypeId };
+  const where = {
+    userId,
+    itemTypeId,
+    // When `folderId: null` is passed, restrict to ungrouped items (those not
+    // filed into a folder). Omitting the option returns ALL items of the type.
+    ...("folderId" in options ? { folderId: options.folderId } : {})
+  };
   const [rows, totalCount] = await Promise.all([
     prisma.item.findMany({
       where,
@@ -217,6 +223,30 @@ export async function getItemsForUserByCollectionId(
   return { items: rows.map(toItemWithMeta), totalCount };
 }
 
+export async function getItemsForUserByFolderId(
+  userId: string,
+  folderId: string,
+  options: ItemPageOptions = {}
+): Promise<PagedItems> {
+  const { skip = 0, take = 200 } = options;
+  const where = { userId, folderId };
+  const [rows, totalCount] = await Promise.all([
+    prisma.item.findMany({
+      where,
+      orderBy: [
+        { isPinned: "desc" },
+        { lastUsedAt: { sort: "desc", nulls: "last" } },
+        { updatedAt: "desc" }
+      ],
+      skip,
+      take,
+      select: itemSelect
+    }),
+    prisma.item.count({ where })
+  ]);
+  return { items: rows.map(toItemWithMeta), totalCount };
+}
+
 export type ItemCollectionSummary = {
   id: string;
   name: string;
@@ -224,6 +254,7 @@ export type ItemCollectionSummary = {
 
 export type ItemDetail = ItemWithMeta & {
   contentType: ContentType;
+  folderId: string | null;
   collections: ItemCollectionSummary[];
 };
 
@@ -236,6 +267,7 @@ export async function getItemDetailForUser(
     select: {
       ...itemSelect,
       contentType: true,
+      folderId: true,
       collections: {
         select: { collection: { select: { id: true, name: true } } },
         orderBy: { addedAt: "desc" }
@@ -246,6 +278,7 @@ export async function getItemDetailForUser(
   return {
     ...toItemWithMeta(row),
     contentType: row.contentType,
+    folderId: row.folderId,
     collections: row.collections.map(({ collection }) => collection)
   };
 }
