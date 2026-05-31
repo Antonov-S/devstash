@@ -9,8 +9,12 @@ import {
 export type FolderWithMeta = {
   id: string;
   name: string;
+  createdAt: Date;
   updatedAt: Date;
   itemCount: number;
+  // Sum of fileSize across all items in the folder (bytes). Shown as the
+  // "X.X MB" half of the hub header's "N items · X.X MB" line.
+  totalSize: number;
   // First few image fileUrls (≤4) for a mosaic thumbnail on the folder card.
   previewImageUrls: string[];
 };
@@ -38,6 +42,7 @@ export async function getFoldersForUser(
     select: {
       id: true,
       name: true,
+      createdAt: true,
       updatedAt: true,
       _count: { select: { items: true } }
     }
@@ -46,18 +51,28 @@ export async function getFoldersForUser(
   if (rows.length === 0) return [];
 
   const folderIds = rows.map((row) => row.id);
-  // Batched follow-up for the mosaic — image-type items only, newest first.
-  // N+1-safe: one query over all folders, grouped client-side.
-  const images = await prisma.item.findMany({
-    where: {
-      userId,
-      folderId: { in: folderIds },
-      itemType: { name: "image" },
-      fileUrl: { not: null }
-    },
-    orderBy: { createdAt: "desc" },
-    select: { folderId: true, fileUrl: true }
-  });
+  // Two batched follow-ups, both N+1-safe (one query each over all folders,
+  // grouped client-side, bounded by @@index([folderId])).
+  const [images, sizes] = await Promise.all([
+    // Mosaic preview — image-type items only, newest first.
+    prisma.item.findMany({
+      where: {
+        userId,
+        folderId: { in: folderIds },
+        itemType: { name: "image" },
+        fileUrl: { not: null }
+      },
+      orderBy: { createdAt: "desc" },
+      select: { folderId: true, fileUrl: true }
+    }),
+    // Total size — sums fileSize across ALL items in each folder (file +
+    // image), a different query than the image-only preview above.
+    prisma.item.groupBy({
+      by: ["folderId"],
+      where: { userId, folderId: { in: folderIds } },
+      _sum: { fileSize: true }
+    })
+  ]);
 
   const previewsByFolder = new Map<string, string[]>();
   for (const image of images) {
@@ -68,11 +83,19 @@ export async function getFoldersForUser(
     previewsByFolder.set(image.folderId, list);
   }
 
+  const sizeByFolder = new Map<string, number>();
+  for (const row of sizes) {
+    if (!row.folderId) continue;
+    sizeByFolder.set(row.folderId, row._sum.fileSize ?? 0);
+  }
+
   return rows.map((row) => ({
     id: row.id,
     name: row.name,
+    createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     itemCount: row._count.items,
+    totalSize: sizeByFolder.get(row.id) ?? 0,
     previewImageUrls: previewsByFolder.get(row.id) ?? []
   }));
 }
@@ -131,14 +154,16 @@ export async function createFolderForUser(
 ): Promise<FolderWithMeta> {
   const created = await prisma.folder.create({
     data: { name: data.name, userId },
-    select: { id: true, name: true, updatedAt: true }
+    select: { id: true, name: true, createdAt: true, updatedAt: true }
   });
 
   return {
     id: created.id,
     name: created.name,
+    createdAt: created.createdAt,
     updatedAt: created.updatedAt,
     itemCount: 0,
+    totalSize: 0,
     previewImageUrls: []
   };
 }

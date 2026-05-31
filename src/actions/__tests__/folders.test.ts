@@ -42,8 +42,10 @@ const signedIn = { user: { id: "user_1", email: "u@example.com" } };
 const sampleFolder = {
   id: "folder_1",
   name: "Design Assets",
+  createdAt: new Date("2026-05-31T00:00:00Z"),
   updatedAt: new Date("2026-05-31T00:00:00Z"),
   itemCount: 0,
+  totalSize: 0,
   previewImageUrls: []
 };
 
