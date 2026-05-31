@@ -38,6 +38,7 @@ const GROUPS: ChangelogGroup[] = [
   {
     title: "Files & images",
     items: [
+      "Folders — organize files and images into folders, each opening as its own page.",
       "File and image uploads with drag-and-drop and upload progress.",
       "Image gallery view with thumbnails and quick download.",
       "Drive-style file list view with type-aware icons."
