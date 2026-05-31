@@ -71,7 +71,7 @@ Developers keep their essentials scattered everywhere — snippets in VS Code, p
 ### Organization
 
 - **Collections** — group items freely; an item can live in multiple collections
-- **Folders** — file uploads into a single home folder; each folder opens as its own page
+- **Folders** — file uploads into a single home folder; a folder card opens a quick-peek drawer (preview, rename, delete) with one click through to the full folder page
 - **Favorites** page with independent client-side sorting per section
 - **Global command palette** (`Cmd/Ctrl + K`) with fuzzy, acronym-style search across items and collections
 - URL-based **pagination** on item, collection, and listing pages
