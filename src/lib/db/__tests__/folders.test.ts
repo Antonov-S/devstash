@@ -12,6 +12,7 @@ vi.mock("@/lib/prisma", () => ({
     item: {
       findFirst: vi.fn(),
       findMany: vi.fn(),
+      groupBy: vi.fn(),
       updateMany: vi.fn()
     }
   }
@@ -52,6 +53,9 @@ const mockedItemFindFirst = prisma.item.findFirst as unknown as ReturnType<
 const mockedItemFindMany = prisma.item.findMany as unknown as ReturnType<
   typeof vi.fn
 >;
+const mockedItemGroupBy = prisma.item.groupBy as unknown as ReturnType<
+  typeof vi.fn
+>;
 const mockedItemUpdateMany = prisma.item.updateMany as unknown as ReturnType<
   typeof vi.fn
 >;
@@ -69,6 +73,7 @@ describe("createFolderForUser", () => {
     mockedFolderCreate.mockResolvedValue({
       id: "folder_1",
       name: "Design Assets",
+      createdAt: now,
       updatedAt: now
     });
 
@@ -78,13 +83,15 @@ describe("createFolderForUser", () => {
 
     expect(mockedFolderCreate).toHaveBeenCalledWith({
       data: { name: "Design Assets", userId: "user_1" },
-      select: { id: true, name: true, updatedAt: true }
+      select: { id: true, name: true, createdAt: true, updatedAt: true }
     });
     expect(result).toEqual({
       id: "folder_1",
       name: "Design Assets",
+      createdAt: now,
       updatedAt: now,
       itemCount: 0,
+      totalSize: 0,
       previewImageUrls: []
     });
   });
@@ -120,26 +127,44 @@ describe("getFoldersForUser", () => {
     mockedFolderFindMany.mockReset();
     mockedItemFindMany.mockReset();
     mockedItemFindMany.mockResolvedValue([]);
+    mockedItemGroupBy.mockReset();
+    mockedItemGroupBy.mockResolvedValue([]);
   });
 
-  it("returns [] without the preview query when the user has no folders", async () => {
+  it("returns [] without the batched queries when the user has no folders", async () => {
     mockedFolderFindMany.mockResolvedValue([]);
 
     const result = await getFoldersForUser("user_1");
 
     expect(result).toEqual([]);
     expect(mockedItemFindMany).not.toHaveBeenCalled();
+    expect(mockedItemGroupBy).not.toHaveBeenCalled();
   });
 
-  it("orders by name asc, selects _count, and batches the image preview query", async () => {
+  it("orders by name asc, selects _count, and batches the preview + size queries", async () => {
     const now = new Date("2026-05-31T00:00:00Z");
     mockedFolderFindMany.mockResolvedValue([
-      { id: "folder_1", name: "Invoices", updatedAt: now, _count: { items: 3 } },
-      { id: "folder_2", name: "Shots", updatedAt: now, _count: { items: 0 } }
+      {
+        id: "folder_1",
+        name: "Invoices",
+        createdAt: now,
+        updatedAt: now,
+        _count: { items: 3 }
+      },
+      {
+        id: "folder_2",
+        name: "Shots",
+        createdAt: now,
+        updatedAt: now,
+        _count: { items: 0 }
+      }
     ]);
     mockedItemFindMany.mockResolvedValue([
       { folderId: "folder_1", fileUrl: "https://r2/a.png" },
       { folderId: "folder_1", fileUrl: "https://r2/b.png" }
+    ]);
+    mockedItemGroupBy.mockResolvedValue([
+      { folderId: "folder_1", _sum: { fileSize: 4096 } }
     ]);
 
     const result = await getFoldersForUser("user_1");
@@ -161,19 +186,28 @@ describe("getFoldersForUser", () => {
         orderBy: { createdAt: "desc" }
       })
     );
+    expect(mockedItemGroupBy).toHaveBeenCalledWith({
+      by: ["folderId"],
+      where: { userId: "user_1", folderId: { in: ["folder_1", "folder_2"] } },
+      _sum: { fileSize: true }
+    });
     expect(result).toEqual([
       {
         id: "folder_1",
         name: "Invoices",
+        createdAt: now,
         updatedAt: now,
         itemCount: 3,
+        totalSize: 4096,
         previewImageUrls: ["https://r2/a.png", "https://r2/b.png"]
       },
       {
         id: "folder_2",
         name: "Shots",
+        createdAt: now,
         updatedAt: now,
         itemCount: 0,
+        totalSize: 0,
         previewImageUrls: []
       }
     ]);
@@ -182,7 +216,13 @@ describe("getFoldersForUser", () => {
   it("caps the preview mosaic at 4 images per folder", async () => {
     const now = new Date("2026-05-31T00:00:00Z");
     mockedFolderFindMany.mockResolvedValue([
-      { id: "folder_1", name: "Shots", updatedAt: now, _count: { items: 9 } }
+      {
+        id: "folder_1",
+        name: "Shots",
+        createdAt: now,
+        updatedAt: now,
+        _count: { items: 9 }
+      }
     ]);
     mockedItemFindMany.mockResolvedValue(
       Array.from({ length: 9 }, (_, i) => ({
