@@ -10,6 +10,7 @@ import { verifyCollectionsOwnedByUser } from "@/lib/db/collections";
 import {
   createItemForUser,
   deleteItemForUser,
+  setItemCollectionsForUser,
   setItemFavoriteForUser,
   setItemPinnedForUser,
   updateItemForUser,
@@ -286,6 +287,60 @@ export async function setItemPinnedAction(
   } catch (error) {
     console.error("setItemPinnedAction failed", error);
     return { success: false, error: "Could not update pin. Please try again." };
+  }
+}
+
+export type SetItemCollectionsResult =
+  | { success: true }
+  | { success: false; error: string };
+
+export async function setItemCollectionsAction(
+  itemId: string,
+  collectionIds: string[]
+): Promise<SetItemCollectionsResult> {
+  const authed = await requireUserId();
+  if (!authed.ok) {
+    return { success: false, error: authed.error };
+  }
+  const { userId } = authed;
+
+  if (typeof itemId !== "string" || !itemId) {
+    return { success: false, error: "Invalid item id" };
+  }
+
+  const parsed = collectionIdsField.safeParse(collectionIds);
+  if (!parsed.success) {
+    return { success: false, error: firstIssue(parsed.error) };
+  }
+
+  const uniqueCollectionIds = Array.from(new Set(parsed.data));
+  // Collections are a free-tier feature — no Pro gate here (unlike folders).
+  if (uniqueCollectionIds.length > 0) {
+    const ownsAll = await verifyCollectionsOwnedByUser(
+      userId,
+      uniqueCollectionIds
+    );
+    if (!ownsAll) {
+      return { success: false, error: "Invalid collection" };
+    }
+  }
+
+  try {
+    const updated = await setItemCollectionsForUser(
+      userId,
+      itemId,
+      uniqueCollectionIds
+    );
+    if (!updated) {
+      return { success: false, error: "Item not found" };
+    }
+    return { success: true };
+  } catch (error) {
+    console.error("setItemCollectionsAction failed", error);
+    return {
+      success: false,
+      error: "Could not update collections. Please try again."
+    };
   }
 }
 

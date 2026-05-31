@@ -18,7 +18,8 @@ vi.mock("@/lib/prisma", () => ({
       deleteMany: vi.fn()
     },
     itemCollection: {
-      deleteMany: vi.fn()
+      deleteMany: vi.fn(),
+      createMany: vi.fn()
     },
     $transaction: vi.fn()
   }
@@ -41,6 +42,7 @@ import {
   getItemsForUserByTypeId,
   getPinnedItemsForUser,
   getRecentItemsForUser,
+  setItemCollectionsForUser,
   setItemFavoriteForUser,
   setItemPinnedForUser,
   updateItemForUser
@@ -60,6 +62,8 @@ const mockedTagsDeleteMany = prisma.tagsOnItems.deleteMany as unknown as ReturnT
 >;
 const mockedItemCollectionDeleteMany =
   prisma.itemCollection.deleteMany as unknown as ReturnType<typeof vi.fn>;
+const mockedItemCollectionCreateMany =
+  prisma.itemCollection.createMany as unknown as ReturnType<typeof vi.fn>;
 const mockedTransaction = prisma.$transaction as unknown as ReturnType<
   typeof vi.fn
 >;
@@ -899,5 +903,66 @@ describe("setItemPinnedForUser", () => {
       where: { id: "item_1", userId: "user_1" },
       data: { isPinned: false }
     });
+  });
+});
+
+describe("setItemCollectionsForUser", () => {
+  beforeEach(() => {
+    mockedFindFirst.mockReset();
+    mockedItemCollectionDeleteMany.mockReset();
+    mockedItemCollectionCreateMany.mockReset();
+    mockedTransaction.mockReset();
+    mockedTransaction.mockResolvedValue([]);
+  });
+
+  it("returns false when the item is not owned by the user and skips the transaction", async () => {
+    mockedFindFirst.mockResolvedValue(null);
+
+    const result = await setItemCollectionsForUser("user_1", "item_missing", [
+      "coll_1"
+    ]);
+
+    expect(result).toBe(false);
+    expect(mockedFindFirst).toHaveBeenCalledWith({
+      where: { id: "item_missing", userId: "user_1" },
+      select: { id: true }
+    });
+    expect(mockedTransaction).not.toHaveBeenCalled();
+    expect(mockedItemCollectionDeleteMany).not.toHaveBeenCalled();
+    expect(mockedItemCollectionCreateMany).not.toHaveBeenCalled();
+  });
+
+  it("clears existing links and recreates deduped rows inside the transaction", async () => {
+    mockedFindFirst.mockResolvedValue({ id: "item_1" });
+
+    const result = await setItemCollectionsForUser("user_1", "item_1", [
+      "coll_1",
+      "coll_2",
+      "coll_1"
+    ]);
+
+    expect(result).toBe(true);
+    expect(mockedItemCollectionDeleteMany).toHaveBeenCalledWith({
+      where: { itemId: "item_1" }
+    });
+    expect(mockedItemCollectionCreateMany).toHaveBeenCalledWith({
+      data: [
+        { itemId: "item_1", collectionId: "coll_1" },
+        { itemId: "item_1", collectionId: "coll_2" }
+      ]
+    });
+    expect(mockedTransaction).toHaveBeenCalledTimes(1);
+  });
+
+  it("clears all links with an empty createMany when no ids are supplied", async () => {
+    mockedFindFirst.mockResolvedValue({ id: "item_1" });
+
+    const result = await setItemCollectionsForUser("user_1", "item_1", []);
+
+    expect(result).toBe(true);
+    expect(mockedItemCollectionDeleteMany).toHaveBeenCalledWith({
+      where: { itemId: "item_1" }
+    });
+    expect(mockedItemCollectionCreateMany).toHaveBeenCalledWith({ data: [] });
   });
 });

@@ -9,7 +9,8 @@ vi.mock("@/lib/db/items", () => ({
   updateItemForUser: vi.fn(),
   deleteItemForUser: vi.fn(),
   setItemFavoriteForUser: vi.fn(),
-  setItemPinnedForUser: vi.fn()
+  setItemPinnedForUser: vi.fn(),
+  setItemCollectionsForUser: vi.fn()
 }));
 
 vi.mock("@/lib/db/collections", () => ({
@@ -31,6 +32,7 @@ import { verifyCollectionsOwnedByUser } from "@/lib/db/collections";
 import {
   createItemForUser,
   deleteItemForUser,
+  setItemCollectionsForUser,
   setItemFavoriteForUser,
   setItemPinnedForUser,
   updateItemForUser
@@ -39,6 +41,7 @@ import { keyFromPublicUrl } from "@/lib/r2";
 import {
   createItemAction,
   deleteItemAction,
+  setItemCollectionsAction,
   setItemFavoriteAction,
   setItemPinnedAction,
   updateItemAction
@@ -54,6 +57,8 @@ const mockedSetFavorite = setItemFavoriteForUser as unknown as ReturnType<
 const mockedSetPinned = setItemPinnedForUser as unknown as ReturnType<
   typeof vi.fn
 >;
+const mockedSetCollections =
+  setItemCollectionsForUser as unknown as ReturnType<typeof vi.fn>;
 const mockedVerifyCollections =
   verifyCollectionsOwnedByUser as unknown as ReturnType<typeof vi.fn>;
 const mockedKeyFromPublicUrl = keyFromPublicUrl as unknown as ReturnType<
@@ -855,6 +860,107 @@ describe("setItemPinnedAction", () => {
     expect(result).toEqual({
       success: false,
       error: "Could not update pin. Please try again."
+    });
+
+    errSpy.mockRestore();
+  });
+});
+
+describe("setItemCollectionsAction", () => {
+  beforeEach(() => {
+    mockedAuth.mockReset();
+    mockedSetCollections.mockReset();
+    mockedVerifyCollections.mockReset();
+  });
+
+  it("rejects when there is no session", async () => {
+    mockedAuth.mockResolvedValue(null);
+
+    const result = await setItemCollectionsAction("item_1", ["coll_1"]);
+
+    expect(result).toEqual({ success: false, error: "You are not signed in." });
+    expect(mockedSetCollections).not.toHaveBeenCalled();
+  });
+
+  it("rejects when itemId is empty", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+
+    const result = await setItemCollectionsAction("", ["coll_1"]);
+
+    expect(result).toEqual({ success: false, error: "Invalid item id" });
+    expect(mockedSetCollections).not.toHaveBeenCalled();
+  });
+
+  it("rejects when a collectionId is not owned by the user", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+    mockedVerifyCollections.mockResolvedValue(false);
+
+    const result = await setItemCollectionsAction("item_1", ["coll_other"]);
+
+    expect(result).toEqual({ success: false, error: "Invalid collection" });
+    expect(mockedVerifyCollections).toHaveBeenCalledWith("user_1", [
+      "coll_other"
+    ]);
+    expect(mockedSetCollections).not.toHaveBeenCalled();
+  });
+
+  it("returns 'Item not found' when the db reports nothing was updated", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+    mockedVerifyCollections.mockResolvedValue(true);
+    mockedSetCollections.mockResolvedValue(false);
+
+    const result = await setItemCollectionsAction("item_missing", ["coll_1"]);
+
+    expect(result).toEqual({ success: false, error: "Item not found" });
+    expect(mockedSetCollections).toHaveBeenCalledWith("user_1", "item_missing", [
+      "coll_1"
+    ]);
+  });
+
+  it("dedupes collectionIds, verifies ownership, and forwards them", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+    mockedVerifyCollections.mockResolvedValue(true);
+    mockedSetCollections.mockResolvedValue(true);
+
+    const result = await setItemCollectionsAction("item_1", [
+      "coll_1",
+      "coll_2",
+      "coll_1"
+    ]);
+
+    expect(result).toEqual({ success: true });
+    expect(mockedVerifyCollections).toHaveBeenCalledWith("user_1", [
+      "coll_1",
+      "coll_2"
+    ]);
+    expect(mockedSetCollections).toHaveBeenCalledWith("user_1", "item_1", [
+      "coll_1",
+      "coll_2"
+    ]);
+  });
+
+  it("clears all collections and skips the ownership check when none are supplied", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+    mockedSetCollections.mockResolvedValue(true);
+
+    const result = await setItemCollectionsAction("item_1", []);
+
+    expect(result).toEqual({ success: true });
+    expect(mockedVerifyCollections).not.toHaveBeenCalled();
+    expect(mockedSetCollections).toHaveBeenCalledWith("user_1", "item_1", []);
+  });
+
+  it("returns a generic error when the db function throws", async () => {
+    mockedAuth.mockResolvedValue(signedIn);
+    mockedVerifyCollections.mockResolvedValue(true);
+    mockedSetCollections.mockRejectedValue(new Error("db down"));
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const result = await setItemCollectionsAction("item_1", ["coll_1"]);
+
+    expect(result).toEqual({
+      success: false,
+      error: "Could not update collections. Please try again."
     });
 
     errSpy.mockRestore();
