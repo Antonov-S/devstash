@@ -41,6 +41,12 @@ type Props = {
   editorAriaLabel: string;
   /** Slot rendered between the URL field and Tags (e.g. file upload on create). */
   extraFields?: React.ReactNode;
+  /**
+   * Whether to render the collections picker. Create keeps it (you assign
+   * collections at create time); the edit form drops it because collections are
+   * managed inline in the drawer's read view instead.
+   */
+  showCollections?: boolean;
 };
 
 /**
@@ -65,7 +71,8 @@ export function ItemFormFields({
   descriptionRows = 3,
   contentRows = 10,
   editorAriaLabel,
-  extraFields
+  extraFields,
+  showCollections = true
 }: Props) {
   function update<K extends keyof ItemFormValue>(
     key: K,
@@ -208,13 +215,15 @@ export function ItemFormFields({
         />
       </Field>
 
-      <Field label="Collections">
-        <CollectionsPicker
-          selectedIds={value.collectionIds}
-          onChange={(next) => update("collectionIds", next)}
-          disabled={disabled}
-        />
-      </Field>
+      {showCollections && (
+        <Field label="Collections">
+          <CollectionsPicker
+            selectedIds={value.collectionIds}
+            onChange={(next) => update("collectionIds", next)}
+            disabled={disabled}
+          />
+        </Field>
+      )}
     </div>
   );
 }

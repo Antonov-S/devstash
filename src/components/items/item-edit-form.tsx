@@ -54,6 +54,7 @@ export function ItemEditForm({
       fileName={fileName}
       idPrefix="edit"
       editorAriaLabel="Edit item content"
+      showCollections={false}
     />
   );
 }

@@ -4,6 +4,7 @@ import { Download, ExternalLink, FileIcon } from "lucide-react";
 
 import { MoveToFolderSelect } from "@/components/folders/move-to-folder-select";
 import { CodeEditor, type ExplainContext } from "@/components/items/code-editor";
+import { InlineCollectionsPicker } from "@/components/items/inline-collections-picker";
 import {
   MarkdownEditor,
   type OptimizeContext
@@ -69,21 +70,12 @@ export function ItemDrawerBody({
         </Section>
       )}
 
-      {detail.collections.length > 0 && (
-        <Section title="Collections">
-          <div className="flex flex-wrap gap-1.5">
-            {detail.collections.map((collection) => (
-              <Badge
-                key={collection.id}
-                variant="outline"
-                className="text-[13px]"
-              >
-                {collection.name}
-              </Badge>
-            ))}
-          </div>
-        </Section>
-      )}
+      <Section title="Collections">
+        <InlineCollectionsPicker
+          itemId={detail.id}
+          collectionIds={detail.collections.map((collection) => collection.id)}
+        />
+      </Section>
 
       {isFoldered && (
         <Section title="Folder">

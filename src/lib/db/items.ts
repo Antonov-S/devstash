@@ -369,6 +369,34 @@ export async function setItemPinnedForUser(
   return result.count > 0;
 }
 
+export async function setItemCollectionsForUser(
+  userId: string,
+  itemId: string,
+  collectionIds: string[]
+): Promise<boolean> {
+  // Ownership-scope the item first so wrong-owner / missing collapses to
+  // not-found. Mirrors the collection-link rewrite inside updateItemForUser.
+  const existing = await prisma.item.findFirst({
+    where: { id: itemId, userId },
+    select: { id: true }
+  });
+  if (!existing) return false;
+
+  const uniqueCollectionIds = Array.from(new Set(collectionIds));
+
+  await prisma.$transaction([
+    prisma.itemCollection.deleteMany({ where: { itemId } }),
+    prisma.itemCollection.createMany({
+      data: uniqueCollectionIds.map((collectionId) => ({
+        itemId,
+        collectionId
+      }))
+    })
+  ]);
+
+  return true;
+}
+
 export async function deleteItemForUser(
   userId: string,
   itemId: string
